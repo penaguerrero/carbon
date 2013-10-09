@@ -70,7 +70,7 @@ for d, s in zip(data, specs):
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+spectrum_region[s]+"_lineinfo.txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
-    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, lineinfo_text_file, text_table=text_table, vacuum=False)
+    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, lineinfo_text_file, text_table=text_table, vacuum=True)
     print ''
     
 print 'Code finished!'
