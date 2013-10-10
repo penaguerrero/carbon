@@ -11,10 +11,21 @@ It writes a text file containing the line information it found for that waveleng
 ##################################################################################################################################
 
 # name of the object
-object_name = 'sbs1319'
+objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960', 
+               'mrk1087', 'mrk1199', 'ngc1741', 'pox4', 'sbs0218', 'sbs0948', 
+               'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
+# choose a number from objects_list:
+#              arp252 =0, iiizw107 =1, iras08208 =2, iras08339 =3, mrk5 =4, mrk960 =5, 
+#              mrk1087 =6, mrk1199 =7, ngc1741 =8, pox4 =9, sbs0218 =10,  sbs0948 =11, 
+#              sbs0926 =12, sbs1054 =13, sbs1319 =14, tol9 =15, tol1457 =16
+object_name = objects_list[0]
 
-# redshift of the object
-z = 0.0077
+# redshift of the object: same number as in object_list
+z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371,
+          0.02877, 0.013454, 0.01348, 0.01997, 0.058841, 0.0464,
+          0.01394, 0.002010, 0.0077, 0.011625, 0.01763]
+# choose a z from z_list (same numbers as in object_list)
+z = z_list[0]
 
 # use all 3 files for NUV, optical, and NIR?
 whole_spectrum = True
@@ -22,7 +33,7 @@ whole_spectrum = True
 specs = [1]
 
 # write the text file with the line net fluxes and equivalent widths?
-text_table = False
+text_table = True
 
 ##################################################################################################################################
 
