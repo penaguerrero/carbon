@@ -29,7 +29,7 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371,
 #              arp252 =0, iiizw107 =1, iras08208 =2, iras08339 =3, mrk5 =4, mrk960 =5, 
 #              mrk1087 =6, mrk1199 =7, ngc1741 =8, pox4 =9, sbs0218 =10,  sbs0948 =11, 
 #              sbs0926 =12, sbs1054 =13, sbs1319 =14, tol9 =15, tol1457 =16
-object_number = 0
+object_number = 11
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
@@ -41,7 +41,13 @@ specs = [1]
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
 
-# 4) write the text file with the line net fluxes and equivalent widths?
+# 4) Do you want to normalize the spectra to the continuum?
+normalize = False
+
+# 5) Do you want to see the plots of the fitted continuum?
+plot = True
+
+# 6) write the text file with the line net fluxes and equivalent widths?
 text_table = False
 
 
@@ -87,7 +93,7 @@ spectrum_region = ["_nuv", "_opt", "_nir"]
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
-    object_spectra, fitted_continuum = spectrum.fit_continuum(d, z, nth=5, thresold_fraction=1, window_wdith=150, normalize=False)
+    object_spectra, fitted_continuum = spectrum.fit_continuum(object_name, d, z, nth=5, thresold_fraction=0.5, window_wdith=150, plot=plot, normalize=normalize)
     
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+spectrum_region[s]+"_lineinfo.txt"
