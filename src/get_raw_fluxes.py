@@ -44,8 +44,11 @@ vacuum = False
 # 4) Do you want to normalize the spectra to the continuum?
 normalize = False
 
-# 5) Choose the threshold percentage to fit a good continuum
-thresold_fraction = 3.0
+# 5) Choose the confidence interval to fit a good continuum
+sigmas_away = 3
+
+# 6) Order of the polynomial for the continuum fit
+order = 5
 
 # 6) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -85,10 +88,10 @@ elif whole_spectrum == True:
 data = []
 for i in range(len(text_file_list)):
     txtfile_path = os.path.join(text_files_path, text_file_list[i])
-    f = open(txtfile_path, 'r')
+    print 'Opening: ', txtfile_path
     # The file is expected to be two columns without header: wavelengths, fluxes
-    data_file = numpy.loadtxt(f, unpack=True)
-    f.close()
+    data_file = numpy.loadtxt(txtfile_path, unpack=True)
+    #print 'LIMITS', data_file[0][0], max(data_file[0])
     data.append(data_file)
 
 # Terminations used for the lines text files
@@ -96,8 +99,8 @@ spectrum_region = ["_nuv", "_opt", "_nir"]
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
-    object_spectra, fitted_continuum = spectrum.fit_continuum(object_name, d, z, nth=5, thresold_fraction=thresold_fraction, window_wdith=150, plot=plot, normalize=normalize)
-    
+    object_spectra, fitted_continuum = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=150, plot=plot, z_correct=True, normalize=normalize)
+
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+spectrum_region[s]+"_lineinfo.txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
