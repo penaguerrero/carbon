@@ -29,14 +29,14 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371,
 #              arp252 =0, iiizw107 =1, iras08208 =2, iras08339 =3, mrk5 =4, mrk960 =5, 
 #              mrk1087 =6, mrk1199 =7, ngc1741 =8, pox4 =9, sbs0218 =10,  sbs0948 =11, 
 #              sbs0926 =12, sbs1054 =13, sbs1319 =14, tol9 =15, tol1457 =16
-object_number = 2
+object_number = 0
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR?
 whole_spectrum = False
 # 2.a) if False, type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -45,7 +45,7 @@ vacuum = False
 normalize = False
 
 # 5) Choose the threshold percentage to fit a good continuum
-thresold_fraction = 0.1
+thresold_fraction = 3.0
 
 # 6) Do you want to see the plots of the fitted continuum?
 plot = True
