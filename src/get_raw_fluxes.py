@@ -18,25 +18,25 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
                'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
 # corresponding redshifts
 z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371,
-          0.02877, 0.013454, 0.01348, 0.01997, 0.058420, 0.046240,
-          0.013642, 0.002010, 0.006870, 0.011625, 0.01763]
+          0.02877, 0.013454, 0.01348, 0.011970, 0.05842, 0.046240,
+          0.013642, 0.002010, 0.006870, 0.01195, 0.01763]
 
 ##################################################################################################################################
 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-#              arp252 =0, iiizw107 =1, iras08208 =2, iras08339 =3, mrk5 =4, mrk960 =5, 
-#              mrk1087 =6, mrk1199 =7, ngc1741 =8, pox4 =9, sbs0218 =10,  sbs0948 =11, 
-#              sbs0926 =12, sbs1054 =13, sbs1319 =14, tol9 =15, tol1457 =16
-object_number = 14
+#              arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, 
+#              mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  pox4 =9,  sbs0218 = 10,  sbs0948 = 11, 
+#              sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
+object_number = 12
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR?
 whole_spectrum = False
 # 2.a) if False, type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -45,16 +45,16 @@ vacuum = False
 normalize = False
 
 # 5) Choose the confidence interval to fit a good continuum
-sigmas_away = 1.5
+sigmas_away = 3
 
 # 6) Order of the polynomial for the continuum fit
-order = 11
+order = 3
 
 # 6) Do you want to see the plots of the fitted continuum?
 plot = True
 
 # 7) write the text file with the line net fluxes and equivalent widths?
-text_table = True
+text_table = False
 
 
 ##################################################################################################################################
