@@ -65,7 +65,7 @@ text_files_path = os.path.join(full_results_path, "1Dspecs/")
 results4object_path = os.path.join(full_results_path, object_name)
 
 add_str = "_selectedspecs"
-data, full_file_list = spectrum.get_data_from_files(object_name, add_str, specs, text_files_path)
+data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 for d, s in zip(data, specs):
