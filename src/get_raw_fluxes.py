@@ -26,7 +26,7 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.01
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 12
+object_number = 9
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
@@ -41,9 +41,6 @@ normalize = False
 
 # 5) Choose the confidence interval to fit a good continuum
 sigmas_away = 3
-
-# 6) Order of the polynomial for the continuum fit
-order = 3
 
 # 6) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -68,6 +65,9 @@ add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
+# in case I want to use a specific order for the polynomial
+order = None
+
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
