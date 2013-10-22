@@ -17,7 +17,7 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
                'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
 # corresponding redshifts
 z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.013454, 0.01348, 
-          0.011970, 0.05842, 0.046240, 0.013642, 0.002010, 0.006870, 0.01195, 0.01763]
+          0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0073, 0.01195, 0.01763]
 
 ############################################################################################################################################
 
@@ -26,12 +26,12 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.01
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 9
+object_number = 14
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0,1,2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -39,14 +39,14 @@ vacuum = False
 # 4) Do you want to normalize the spectra to the continuum?
 normalize = False
 
-# 5) Choose the confidence interval to fit a good continuum
+# 5) Choose how many sigmas to clip from the continuum array
 sigmas_away = 3
 
 # 6) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 7) write the text file with the line net fluxes and equivalent widths?
-text_table = False
+text_table = True
 
 
 ############################################################################################################################################
@@ -63,9 +63,11 @@ results4object_path = os.path.join(full_results_path, object_name)
 
 add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
+
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
-# in case I want to use a specific order for the polynomial
+
+# in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
 order = None
 
 for d, s in zip(data, specs):
@@ -76,9 +78,10 @@ for d, s in zip(data, specs):
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
+    
     object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, lineinfo_text_file, text_table=text_table, vacuum=vacuum)
     print ''
-    
+print sigmas_away, 'sigmas_away'    
 print 'Code finished!'
     
     
