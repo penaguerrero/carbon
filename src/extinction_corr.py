@@ -96,8 +96,12 @@ else:
     cols_in_file = science.spectrum.readlines_from_lineinfo(name_out_file)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 
-# Get the raw intensities from the raw fluxes
-
+# Step 1 - Remove underlying absorption for optical lines to get Intensities
+for i in enumerate(observed_wavelength):
+    if observed_wavelength[i] > 3000.0:
+        I = Eabs * EabsHbeta * continuum[i] * flux[i]
+    else:
+        I = flux[i]
 
 # Create an array of the numbers
 data = np.array([catalog_wavelength, observed_wavelength, flux, continuum])
