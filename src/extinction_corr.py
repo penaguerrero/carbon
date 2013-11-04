@@ -97,6 +97,7 @@ else:
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 
 # Step 1 - Remove underlying absorption for optical lines to get Intensities
+# get the 
 for i in enumerate(observed_wavelength):
     if observed_wavelength[i] > 3000.0:
         I = Eabs * EabsHbeta * continuum[i] * flux[i]
