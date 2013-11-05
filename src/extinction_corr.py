@@ -96,14 +96,6 @@ else:
     cols_in_file = science.spectrum.readlines_from_lineinfo(name_out_file)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 
-# Step 1 - Remove underlying absorption for optical lines to get Intensities
-# get the 
-for i in enumerate(observed_wavelength):
-    if observed_wavelength[i] > 3000.0:
-        I = Eabs * EabsHbeta * continuum[i] * flux[i]
-    else:
-        I = flux[i]
-
 # Create an array of the numbers
 data = np.array([catalog_wavelength, observed_wavelength, flux, continuum])
 # data: 0=catalog_wavelength, 1=observed_wavelength, 2=flux, 3=continuum
@@ -137,6 +129,17 @@ I_obs_HaHb =  norm_fluxes[idx]/norm_fluxes[Hb_idx]
 print 'norm_fluxes[idx], norm_fluxes[Hb_idx]', norm_fluxes[idx], norm_fluxes[Hb_idx]
 print 'OBS Ha/Hb', I_obs_HaHb
 I_theo_HaHb = 2.86 
+
+# Step 1 - Remove underlying absorption for optical lines to get Intensities
+# get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
+Hline_and_EWs, Heline_and_EWs = science.spectrum.readlines_EWabsRelHbeta()
+
+for i in enumerate(observed_wavelength):
+    if observed_wavelength[i] > 3000.0:
+        I = EWabsLine * EWabsHbeta * continuum[i] * flux[i]
+    else:
+        I = flux[i]
+
 #RC.setCorr(I_obs_HaHb / I_theo_HaHb, 6563., 4861.)
 RC.setCorr(I_obs_HaHb / I_theo_HaHb, Halpha, Hbeta)
 
