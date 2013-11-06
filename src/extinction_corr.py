@@ -113,33 +113,57 @@ for f,c in zip(data[2], data[3]):
 for w, f, oe, e in zip(data[0], norm_fluxes, EW, EWs):
     print w, '    norm_flux=', f, '    old_EW=', oe, '    newEW=', e
 
-# Correct observed line ratios
+# Step 1 of first iteration of reddening correction: Assume that there is no collisional excitation
+# get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
+Hline_and_EWs, Heline_and_EWs = science.spectrum.readlines_EWabsRelHbeta()
+# if both H and He lines are going to be used to correct for underlying absorption
+undabs_wav = []
+undabs_EW = []
+for i in range(len(Hline_and_EWs[0])):
+    undabs_wav.append(Hline_and_EWs[0][i])
+    undabs_EW.append(Hline_and_EWs[1][i])
+for i in range(len(Heline_and_EWs[0])):
+    undabs_wav.append(Heline_and_EWs[0][i])
+    undabs_EW.append(Heline_and_EWs[1][i])
+lines_undabs_and_EW = [undabs_wav, undabs_EW]
+
+# Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
+EWabsHbeta = 0.280
+# Remove underlying absorption for optical lines to get Intensities
+intensities = []
+for i in range(len(observed_wavelength)):
+    if observed_wavelength[i] < 3000.0:
+        I = flux[i]
+    else:
+        if observed_wavelength[i] in lines_undabs_and_EW[0]:
+            EWabsLine = undabs_EW.index(observed_wavelength[i])
+            I = EWabsLine * EWabsHbeta * continuum[i] * flux[i]
+    intensities.append(I)
+
+# Step 2 of first iteration of reddening correction: Using Seaton
+# set theoretical Halpha/Hbeta ratio
+I_theo_HaHb = 2.86 
+# Round all catalog lines
+rounded_catalog_wavelength = []
+for item in catalog_wavelength:
+    rw = int(item)
+    rounded_catalog_wavelength.append(rw)
+# Find observed Halpha/Hbeta ratio
+Halpha_idx = rounded_catalog_wavelength.index(6563)
+Halpha = norm_fluxes[Halpha_idx]
+Hbeta_idx = rounded_catalog_wavelength.index(4861)
+Hbeta = norm_fluxes[Hbeta_idx]
+I_obs_HaHb = Halpha/Hbeta
+print 'I_theo_HaHb = %0.2f      I_obs_HaHb = %0.2f' % (I_theo_HaHb, I_obs_HaHb)
+# Correct based on the given law and the observed Ha/Hb ratio
+RC = pn.RedCorr(law='CCM 89')
+
 wave1 = 5007
 _, idx = science.spectrum.find_nearest(data[0], 5007)
 I_obs1 = 4.0
 my_I_obs = norm_fluxes[idx]
 wave2 = 4686
 I_obs2 = 0.10
-
-# Correct based on the given law and the observed Ha/Hb ratio
-RC = pn.RedCorr(law='CCM 89')
-_, Ha_idx = science.spectrum.find_nearest(data[0], 6563.0)
-Halpha = data[2][Ha_idx]
-I_obs_HaHb =  norm_fluxes[idx]/norm_fluxes[Hb_idx]
-print 'norm_fluxes[idx], norm_fluxes[Hb_idx]', norm_fluxes[idx], norm_fluxes[Hb_idx]
-print 'OBS Ha/Hb', I_obs_HaHb
-I_theo_HaHb = 2.86 
-
-# Step 1 - Remove underlying absorption for optical lines to get Intensities
-# get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
-Hline_and_EWs, Heline_and_EWs = science.spectrum.readlines_EWabsRelHbeta()
-
-for i in enumerate(observed_wavelength):
-    if observed_wavelength[i] > 3000.0:
-        I = EWabsLine * EWabsHbeta * continuum[i] * flux[i]
-    else:
-        I = flux[i]
-
 #RC.setCorr(I_obs_HaHb / I_theo_HaHb, 6563., 4861.)
 RC.setCorr(I_obs_HaHb / I_theo_HaHb, Halpha, Hbeta)
 
