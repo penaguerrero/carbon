@@ -100,18 +100,6 @@ catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden,
 data = np.array([catalog_wavelength, observed_wavelength, flux, continuum])
 # data: 0=catalog_wavelength, 1=observed_wavelength, 2=flux, 3=continuum
 
-# Normalize observed line ratios to Hbeta
-_, Hb_idx = science.spectrum.find_nearest(data[0], 4861.0)
-Hbeta = data[2][Hb_idx]
-norm_fluxes = (data[2] / Hbeta) * 100
-print norm_fluxes[Hb_idx]
-# Recalculate the equivalent widths: Possitive = Emission, Negative = absorption
-EWs = []
-for f,c in zip(data[2], data[3]):
-    new_ew = f / (c) #* (-1)
-    EWs.append(new_ew)
-for w, f, oe, e in zip(data[0], norm_fluxes, EW, EWs):
-    print w, '    norm_flux=', f, '    old_EW=', oe, '    newEW=', e
 
 # Step 1 of first iteration of reddening correction: Assume that there is no collisional excitation
 # get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
@@ -141,12 +129,26 @@ for i in range(len(observed_wavelength)):
     intensities.append(I)
 
 # Step 2 of first iteration of reddening correction: Using Seaton
+# Normalize observed line ratios to Hbeta
+_, Hb_idx = science.spectrum.find_nearest(data[0], 4861.0)
+Hbeta = data[2][Hb_idx]
+norm_fluxes = (data[2] / Hbeta) * 100
+print norm_fluxes[Hb_idx]
+'''
+# Recalculate the equivalent widths: Possitive = Emission, Negative = absorption
+EWs = []
+for f,c in zip(data[2], data[3]):
+    new_ew = f / (c) #* (-1)
+    EWs.append(new_ew)
+for w, f, oe, e in zip(data[0], norm_fluxes, EW, EWs):
+    print w, '    norm_flux=', f, '    old_EW=', oe, '    newEW=', e
+'''
 # set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
 # Round all catalog lines
 rounded_catalog_wavelength = []
 for item in catalog_wavelength:
-    rw = int(item)
+    rw = np.round(item)
     rounded_catalog_wavelength.append(rw)
 # Find observed Halpha/Hbeta ratio
 Halpha_idx = rounded_catalog_wavelength.index(6563)
@@ -154,10 +156,15 @@ Halpha = norm_fluxes[Halpha_idx]
 Hbeta_idx = rounded_catalog_wavelength.index(4861)
 Hbeta = norm_fluxes[Hbeta_idx]
 I_obs_HaHb = Halpha/Hbeta
+print rounded_catalog_wavelength[Halpha_idx], 'Halpha_flux', Halpha
+print rounded_catalog_wavelength[Hbeta_idx], 'Hbeta_flux', Hbeta
 print 'I_theo_HaHb = %0.2f      I_obs_HaHb = %0.2f' % (I_theo_HaHb, I_obs_HaHb)
 # Correct based on the given law and the observed Ha/Hb ratio
 RC = pn.RedCorr(law='CCM 89')
 
+for w, i in zip(observed_wavelength, intensities):
+    
+    
 wave1 = 5007
 _, idx = science.spectrum.find_nearest(data[0], 5007)
 I_obs1 = 4.0
