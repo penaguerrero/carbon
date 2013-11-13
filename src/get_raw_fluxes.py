@@ -26,7 +26,7 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.01
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 9
+object_number = 14
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
@@ -43,7 +43,7 @@ normalize = False
 sigmas_away = 3
 
 # 6) What is the width of the window to use to find local continuum?
-window = 350
+window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
