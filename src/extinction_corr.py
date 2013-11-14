@@ -29,10 +29,10 @@ create_txt = True
 I_theo_HaHb = 2.85 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
-EWabsHbeta = 1.8
+EWabsHbeta = 0.8
 
 # Set value for extinction
-C_Hbeta = 0.07
+C_Hbeta = 0.02
 
 ############################################################################################################################################
 
@@ -60,8 +60,8 @@ cols_in_file, all_err_cont_fit = science.spectrum.gather_specs(text_file_list, n
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 
 ### Create an array of the numbers
-data = np.array([catalog_wavelength, observed_wavelength, flux, continuum])
-# data: 0=catalog_wavelength, 1=observed_wavelength, 2=flux, 3=continuum
+data = np.array([catalog_wavelength, observed_wavelength, flux, continuum, EW])
+# data: 0=catalog_wavelength, 1=observed_wavelength, 2=flux, 3=continuum, 4=equivalent_widths
 
 ### Step 1 of first iteration of reddening correction: Assume that there is no collisional excitation
 ### get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
@@ -86,9 +86,15 @@ for w in catalog_wavelength:
         e = 0.000
     corr_undelyingAbs_EWs.append(e)
 
+### Recalculate the continuum based on EWs
+calc_cont = []
+for f,ew in zip(data[2], data[4]):
+    new_c = f / (ew) #* (-1)
+    calc_cont.append(new_c)
+
 ### Remove UNDERLYING ABSORPTION for optical lines to get Intensities
 intensities = []
-for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
+for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, calc_cont, flux):
     I = EWabsLine * EWabsHbeta * cont + flx
     intensities.append(I)
 
@@ -128,7 +134,8 @@ final_f_lambda = []
 positive_normfluxes = []
 positive_norm_intensities = []
 positive_norm_Icorr = []
-EW_emission_lines =[]
+EW_emission_lines = []
+pos_calc_cont = []
 for i in range(len(norm_Icor)):
     if flux[i] > 0.00000:
         catalog_emission_lines.append(rounded_catalog_wavelength[i])
@@ -140,6 +147,7 @@ for i in range(len(norm_Icor)):
         positive_norm_intensities.append(normI)
         positive_norm_Icorr.append(norm_Icor[i])
         EW_emission_lines.append(EW[i])
+        pos_calc_cont.append(calc_cont[i])
 ### I am defining the  fainest line with a S/N=3 or error=33%
 faintest_line = min(positive_norm_Icorr)
 '''
@@ -168,15 +176,6 @@ for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
     #per_err_I = (F_norm/(e*e) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     #print w, 'F_norm = %0.2f  err = %0.2f' % (F_norm, per_err_I)
 
-'''
-# Recalculate the equivalent widths: Possitive = Emission, Negative = absorption
-EWs = []
-for f,c in zip(data[2], data[3]):
-    new_ew = f / (c) #* (-1)
-    EWs.append(new_ew)
-for w, f, oe, e in zip(data[0], norm_fluxes, EW, EWs):
-    print w, '    norm_flux=', f, '    old_EW=', oe, '    newEW=', e
-'''
 
 ##### FROM THIS POINT, THIS IS FROM THE ORIGINAL PYNEB SCRIPT
 # Convert wavelength to x
@@ -237,13 +236,13 @@ print str(wave2) + ': I_obs =', I_obs2, ' I_dered =', I_obs2 * RC.getCorrHb(wave
 
 ### For my intensities and using Seaton's law
 pyneb_Idered = []
-for w, nI, Ic in zip(catalog_emission_lines, positive_norm_intensities, positive_norm_Icorr):    
+for w, nF, nI, Ic, e, eo in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, pos_calc_cont, EW_emission_lines):    
     # Correct based on the given law and c(Hb)
     RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
     I_dered = nI * RC.getCorrHb(w)
     pyneb_Idered.append(I_dered)
     print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    print str(w) + ': I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic
+    print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e, '  old_EW =', eo
 
 ### Find observed Halpha/Hbeta ratio
 ## 
@@ -261,11 +260,13 @@ print catalog_emission_lines[Halpha_idx], 'Halpha_flux', Halpha, 'pyneb', pynebH
 print catalog_emission_lines[Hbeta_idx], 'Hbeta_flux', Hbeta, 'pyneb', pynebHbeta
 print 'ratio_theo_HaHb = %0.2f      ratio_obs_HaHb = %0.2f' % (I_theo_HaHb, I_obs_HaHb)
 print '                       pyneb_ratio_obs_HaHb = %0.2f' % (pynebI_obs_HaHb)
-raw_Ha = flux[rounded_catalog_wavelength.index(6563)]
-raw_Hb = flux[rounded_catalog_wavelength.index(4861)]
-raw_contHa = flux[rounded_catalog_wavelength.index(6563)]
-raw_contHb = continuum[rounded_catalog_wavelength.index(4861)]
-print 'ratio raw FLUXES Halpha/Hbeta = ', raw_Ha, raw_Hb, raw_Ha/raw_Hb
-print 'ratio raw continuum Halpha and Hbeta = ', raw_contHa, raw_contHb
+w1 = 6563
+w2 = 4861
+raw_w1 = flux[rounded_catalog_wavelength.index(w1)]
+raw_w2 = flux[rounded_catalog_wavelength.index(w2)]
+raw_contw1 = continuum[rounded_catalog_wavelength.index(w1)]
+raw_contw2 = continuum[rounded_catalog_wavelength.index(w2)]
+print 'ratio raw FLUXES: %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
+print 'ratio raw continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
 
 
