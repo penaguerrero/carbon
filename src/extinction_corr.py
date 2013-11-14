@@ -29,10 +29,10 @@ create_txt = True
 I_theo_HaHb = 2.85 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
-EWabsHbeta = 1.2
+EWabsHbeta = 1.8
 
 # Set value for extinction
-C_Hbeta = 0.06
+C_Hbeta = 0.07
 
 ############################################################################################################################################
 
@@ -265,8 +265,7 @@ raw_Ha = flux[rounded_catalog_wavelength.index(6563)]
 raw_Hb = flux[rounded_catalog_wavelength.index(4861)]
 raw_contHa = flux[rounded_catalog_wavelength.index(6563)]
 raw_contHb = continuum[rounded_catalog_wavelength.index(4861)]
-print 'ratio raw FLUXES Halpha/Hbeta = ', raw_Ha/raw_Hb
-print 'ratio raw continuum Halpha/Hbeta = ', raw_contHa, raw_contHb, raw_contHa/raw_contHb
-
+print 'ratio raw FLUXES Halpha/Hbeta = ', raw_Ha, raw_Hb, raw_Ha/raw_Hb
+print 'ratio raw continuum Halpha and Hbeta = ', raw_contHa, raw_contHb
 
 
