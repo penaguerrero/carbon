@@ -31,7 +31,7 @@ object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -43,13 +43,13 @@ normalize = False
 sigmas_away = 3
 
 # 6) What is the width of the window to use to find local continuum?
-window = 550
+window = 350
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 8) write the text file with the line net fluxes and equivalent widths?
-text_table = False
+text_table = True
 
 
 ############################################################################################################################################
