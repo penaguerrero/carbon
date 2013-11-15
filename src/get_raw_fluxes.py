@@ -31,7 +31,7 @@ object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -40,19 +40,22 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = None
+order = 1
 
 # 6) What is the width of the window to use to find local continuum?
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 8) write the text file with the line net fluxes and equivalent widths?
 text_table = True
+
+# Set width of Halpha in order to properly correct for reddening
+Halpha_width = 73.0
 
 
 ############################################################################################################################################
@@ -71,14 +74,14 @@ add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # alternative for when files have been corrected in splot
 altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
-f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)
-data = numpy.array([w,f])
+#f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)
+#data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
 for d, s in zip(data, specs):
-    #print 'Working with:  %s' % full_file_list[s]
+    print 'Working with:  %s' % full_file_list[s]
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
     object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=window, plot=plot, z_correct=True, normalize=normalize)
 
@@ -86,7 +89,7 @@ for d, s in zip(data, specs):
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     
-    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, text_table=text_table, vacuum=vacuum)
+    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum)
     print ''
 print sigmas_away, 'sigmas_away'    
 print 'Code finished!'
