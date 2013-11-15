@@ -29,10 +29,12 @@ create_txt = True
 I_theo_HaHb = 2.85 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
-EWabsHbeta = 0.8
+# for HII region type objects typical values are 2.0-4.0 
+EWabsHbeta = 2.0
 
 # Set value for extinction
-C_Hbeta = 0.02
+# for HII region type objects there is no restriction to max but values MUST be positive
+C_Hbeta = 0.4
 
 ############################################################################################################################################
 
