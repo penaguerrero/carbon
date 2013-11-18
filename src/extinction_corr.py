@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pyneb as pn 
 import os
 import science
-import copy
+from astropy.table import Table
 
 ############################################################################################################################################
 
@@ -26,7 +26,7 @@ object_name = objects_list[object_number]
 create_txt = True
 
 # Set theoretical Halpha/Hbeta ratio
-I_theo_HaHb = 2.85 
+I_theo_HaHb = 2.86 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
@@ -34,7 +34,7 @@ EWabsHbeta = 2.0
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.4
+C_Hbeta = 0.43
 
 ############################################################################################################################################
 
@@ -223,16 +223,6 @@ plt.xlabel('1/$\lambda$ ($\mu^{-1}$)')
 plt.ylabel('A$_V$/E(B-V)')
 plt.legend(loc='upper left')
 plt.show()
-wave1 = 5007
-I_obs1 = 4.0
-wave2 = 4686
-I_obs2 = 0.10
-# Correct based on the given law and the observed Ha/Hb ratio
-RC = pn.RedCorr(law='CCM 89', cHbeta=0.3)
-RC.setCorr(I_obs_HaHb / I_theo_HaHb, 6563., 4861.)
-print 'Correct based on the given law and the observed Ha/Hb ratio:'
-print str(wave1) + ': I_obs =', I_obs1, ' I_dered =', I_obs1 * RC.getCorrHb(wave1), 'CHRISTOPHE'
-print str(wave2) + ': I_obs =', I_obs2, ' I_dered =', I_obs2 * RC.getCorrHb(wave2), 'CHRISTOPHE'
 '''   
 ##### UP TO HERE: THIS IS FROM THE ORIGINAL PYNEB SCRIPT
 
@@ -258,17 +248,27 @@ I_obs_HaHb = Halpha/Hbeta
 pynebI_obs_HaHb = pynebHalpha/pynebHbeta
 print ''
 print 'cHbeta = %0.5f' % cHbeta
-print catalog_emission_lines[Halpha_idx], 'Halpha_flux', Halpha, 'pyneb', pynebHalpha
-print catalog_emission_lines[Hbeta_idx], 'Hbeta_flux', Hbeta, 'pyneb', pynebHbeta
-print 'ratio_theo_HaHb = %0.2f      ratio_obs_HaHb = %0.2f' % (I_theo_HaHb, I_obs_HaHb)
-print '                       pyneb_ratio_obs_HaHb = %0.2f' % (pynebI_obs_HaHb)
+print '            Using Seaton                    Using ', RC.law
+print 'Corrected for reddening and underlying absorption'
+print catalog_emission_lines[Halpha_idx], '    ', Halpha, '                  ', pynebHalpha
+print catalog_emission_lines[Hbeta_idx], '    ', Hbeta, '                          ', pynebHbeta
+print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
+print '      observed Ha/Hb = %0.2f           observed Ha/Hb = %0.2f' % (I_obs_HaHb, pynebI_obs_HaHb)
 w1 = 6563
 w2 = 4861
 raw_w1 = flux[rounded_catalog_wavelength.index(w1)]
 raw_w2 = flux[rounded_catalog_wavelength.index(w2)]
 raw_contw1 = continuum[rounded_catalog_wavelength.index(w1)]
 raw_contw2 = continuum[rounded_catalog_wavelength.index(w2)]
-print 'ratio raw FLUXES: %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
-print 'ratio raw continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
+print 'Before extinction correction'
+print 'FLUXES:    %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
+print 'continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
 
+# Finding the f_lambda values:
+pyneb_flambda = []
+for w,Icor,Iobs in zip(catalog_emission_lines, pyneb_Idered, positive_norm_intensities):
+    f12 = (np.log10(Icor) - np.log10(Iobs)) / C_Hbeta
+    print w, f12
+    pyneb_flambda.append(f12)
+    
 
