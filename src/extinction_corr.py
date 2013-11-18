@@ -1,8 +1,3 @@
-# Sample extinction in PyNeb
-# shows how to display available extinction laws, select one or define a new one,
-# and do some simple dereddening calculations
-# Further examples can be found in other sample scripts
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pyneb as pn 
@@ -118,12 +113,12 @@ for I, fl in zip(intensities,f_lambda):
 ### Step 3: Normalize observed line ratios to Hbeta
 Hb_idx = rounded_catalog_wavelength.index(4861.0)
 Hbeta = Is_corr[Hb_idx]
-print 'Corrected intensity of Hbeta = ', Hbeta
+#print 'Corrected intensity of Hbeta = ', Hbeta
 norm_Icor = []
 for I, w in zip(Is_corr, observed_wavelength):
     norm_f = (I / Hbeta) * 100.00
     norm_Icor.append(norm_f)
-    print w, I, Hbeta, norm_f
+    #print w, I, Hbeta, norm_f
 
 ### ERROR Calculation
 ### STIS Data Handbook states this depends on many factors so I set it up to 2% because
@@ -228,14 +223,17 @@ plt.show()
 
 ### For my intensities and using Seaton's law
 pyneb_Idered = []
-for w, nF, nI, Ic, e, eo in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, pos_calc_cont, EW_emission_lines):    
+I_dered_norCorUndAbs = []
+for w, nF, nI, Ic, e, eo  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, pos_calc_cont, EW_emission_lines):    
     # Correct based on the given law and c(Hb)
     RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
     I_dered = nI * RC.getCorrHb(w)
     pyneb_Idered.append(I_dered)
-    print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e, '  old_EW =', eo
-
+    #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
+    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e, '  old_EW =', eo
+    IdnUA = nF * RC.getCorrHb(w)
+    I_dered_norCorUndAbs.append(IdnUA)
+    
 ### Find observed Halpha/Hbeta ratio
 ## 
 Halpha_idx = catalog_emission_lines.index(6563)
@@ -266,9 +264,50 @@ print 'continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
 
 # Finding the f_lambda values:
 pyneb_flambda = []
-for w,Icor,Iobs in zip(catalog_emission_lines, pyneb_Idered, positive_norm_intensities):
-    f12 = (np.log10(Icor) - np.log10(Iobs)) / C_Hbeta
-    print w, f12
+for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_normfluxes):#pyneb_Idered, positive_norm_intensities):
+    f12 = (np.log10(Icor) - np.log10(Iobs)) / cHbeta
+    #print w, Iobs, Icor, f12
     pyneb_flambda.append(f12)
     
+# Write the first round of reddeding correction in pyneb readable format
+tfile1stRedCor = os.path.join(results4object_path, object_name+"_1stRedCor.txt")
+tf = open(tfile1stRedCor, 'w+')
+print >> tf,  ('{:<12} {:>12} {:>12}'.format('Ion_line', 'Intensity', 'Error Percentage'))
+for cw, w, e, i, fd, h, s, F, C, ew in zip(accepted_cols_in_file[0], accepted_cols_in_file[1], accepted_cols_in_file[2], accepted_cols_in_file[3], accepted_cols_in_file[4], 
+                                           accepted_cols_in_file[5], accepted_cols_in_file[6], accepted_cols_in_file[7], accepted_cols_in_file[8], accepted_cols_in_file[9]):
+    print >> tf,  ('{:<12.3f} {:<12.3f} {:>12} {:<12} {:<12} {:<12} {:<12} {:>16.3e} {:>16.3e} {:>12.3f}'.format(cw, w, e, i, fd, h, s, F, C, ew))
+tf.close()
+print 'File   %s   writen!' % name_out_file
+
+
+# Determine first approximation of temperatures and densities
+# OBSERVATIONS
+# explore the line label list to write an observation record
+pn.LINE_LABEL_LIST
+# simultaneously compute temperature and density from pairs of line ratios
+# First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
+diags = pn.Diagnostics()   # Instantiate the Diagnostics class
+diags.getAllDiags()  # see what Diagnostics exist
+#tem, den = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', 50, 1.0, guess_tem=10000, tol_tem = 1., tol_den = 1., max_iter = 5)
+
+# Include in diags the relevant line ratios
+diags.addDiag([
+                ## temperatures
+                #'[NII] 5755/6548',
+                '[OII] 7320/3737+',
+                '[OIII] 4363/5007',
+                '[ArIII] 5192/7136',
+                '[ArIII] 5192/7300+',
+                '[ArIV] 7230+/4720+',
+                #'[SIII] 6312/9532',
+                ## densities
+                #'[NI] 5198/5200',
+                #'[OII] 3729/3736',
+                '[ArIV] 4740/4711',
+                #'[SII] 4072+/6725+',
+                '[SII] 6731/6716',
+                ])
+
+
+
 
