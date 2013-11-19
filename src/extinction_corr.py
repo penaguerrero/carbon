@@ -167,6 +167,7 @@ second_faintest_line = min(kk)
 #print 'all_err_cont_fit', all_err_cont_fit
 ### Add errors and present it in percentage of line intensities
 percent_err_I = []
+absolute_err_I = []
 for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
     if w <= 2000.0:
         e = all_err_cont_fit[0]
@@ -175,9 +176,12 @@ for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
     elif w >= 5000.0:
         e = all_err_cont_fit[2]
     per_err_I = (e*e + 10000*(faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    #per_err_I = (e*e + 10000*(faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    #per_err_I = (10000*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    abs_err = (per_err_I * F_norm) / 100.
+    #print w, 'F_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, per_err_I, abs_err), '   S/N = ', F_norm/per_err_I*100.
     percent_err_I.append(per_err_I)
-    #per_err_I = (F_norm/(e*e) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    #print w, 'F_norm = %0.2f  err = %0.2f' % (F_norm, per_err_I)
+    absolute_err_I.append(abs_err)
 
 
 ##### FROM THIS POINT, THIS IS FROM THE ORIGINAL PYNEB SCRIPT
@@ -278,39 +282,46 @@ for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_no
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_1stRedCor.txt")
 tf = open(tfile1stRedCor, 'w+')
+print >> tf,  ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
 print >> tf, 'cHbeta  %0.3f' % cHbeta
-print >> tf,  ('{:<12} {:>12} {:>12}'.format('Ion_line', 'Intensity', 'Error Percentage'))
-for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, percent_err_I):
+for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, absolute_err_I):
     cw = int(cw)
     cw = str(cw)
     el = str(el)
     io = str(io)
-    pynebid = glob.glob(el+io+'*')
-    wavid = glob.glob('*'+cw+'*')
-    #wavid = cw+'A'
-    #pynebid = el+io+'_'+wavid
-    print pynebid
+    wavid = cw+'A'
+    pynebid = el+io
+    #print 'pynebid =', pynebid, '    wavid =', wavid
+    lineID = pynebid + '_' + wavid
     if pynebid in pn.LINE_LABEL_LIST:
         if wavid in pn.LINE_LABEL_LIST[pynebid]:
-            print >> tf,  ('{:<12} {:>12.3f} {:>12.3f}'.format(pynebid, Ic, er))
-        elif wavid in pn.BLEND_LIST[pynebid]:
-            print >> tf,  ('{:<12} {:>12.3f} {:>12.3f}'.format(pynebid, Ic, er))
+            print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(lineID, Ic, er))
         else:
-            continue
+            pynebid = el+io+'_'+wavid+'+'
+            if pynebid in pn.BLEND_LIST:
+                print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(pynebid, Ic, er))
+            else:
+                continue
 tf.close()
 print 'File   %s   writen!' % tfile1stRedCor
 
-'''
 # Determine first approximation of temperatures and densities
 # OBSERVATIONS
-# explore the line label list to write an observation record
-pn.LINE_LABEL_LIST
+# Define an Observation object and assign it to name 'obs'
+obs = pn.Observation()
+# read data from file created specifically for pyneb reading
+obs.readData(tfile1stRedCor, fileFormat='lines_in_columns', corrected=True, errIsRelative=True)
+
+# Define all atoms to make calculations
+all_atoms = pn.getAtomDict()
+    
 # simultaneously compute temperature and density from pairs of line ratios
 # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
 diags = pn.Diagnostics()   # Instantiate the Diagnostics class
 diags.getAllDiags()  # see what Diagnostics exist
 #tem, den = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', 50, 1.0, guess_tem=10000, tol_tem = 1., tol_den = 1., max_iter = 5)
 
+'''
 # Include in diags the relevant line ratios
 diags.addDiag([
                 ## temperatures
@@ -328,7 +339,7 @@ diags.addDiag([
                 #'[SII] 4072+/6725+',
                 '[SII] 6731/6716',
                 ])
-
 '''
+
 
 
