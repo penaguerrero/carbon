@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pyneb as pn 
 import os
 import science
+import glob
 from astropy.table import Table
 
 ############################################################################################################################################
@@ -126,6 +127,8 @@ for I, w in zip(Is_corr, observed_wavelength):
 abs_flux_calibration_err = 2.0
 ### Find the faintest detected emission line: get rid of negative fluxes
 catalog_emission_lines = []
+element_emission_lines = []
+ion_emission_lines = []
 wavs_emission_lines = []
 final_f_lambda = []
 positive_normfluxes = []
@@ -136,6 +139,8 @@ pos_calc_cont = []
 for i in range(len(norm_Icor)):
     if flux[i] > 0.00000:
         catalog_emission_lines.append(rounded_catalog_wavelength[i])
+        element_emission_lines.append(element[i])
+        ion_emission_lines.append(ion[i])
         wavs_emission_lines.append(observed_wavelength[i])
         final_f_lambda.append(f_lambda[i])
         norm_flux = flux[i] / flux[Hb_idx] * 100.
@@ -170,6 +175,7 @@ for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
     elif w >= 5000.0:
         e = all_err_cont_fit[2]
     per_err_I = (e*e + 10000*(faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    percent_err_I.append(per_err_I)
     #per_err_I = (F_norm/(e*e) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     #print w, 'F_norm = %0.2f  err = %0.2f' % (F_norm, per_err_I)
 
@@ -272,14 +278,29 @@ for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_no
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_1stRedCor.txt")
 tf = open(tfile1stRedCor, 'w+')
+print >> tf, 'cHbeta  %0.3f' % cHbeta
 print >> tf,  ('{:<12} {:>12} {:>12}'.format('Ion_line', 'Intensity', 'Error Percentage'))
-for cw, w, e, i, fd, h, s, F, C, ew in zip(accepted_cols_in_file[0], accepted_cols_in_file[1], accepted_cols_in_file[2], accepted_cols_in_file[3], accepted_cols_in_file[4], 
-                                           accepted_cols_in_file[5], accepted_cols_in_file[6], accepted_cols_in_file[7], accepted_cols_in_file[8], accepted_cols_in_file[9]):
-    print >> tf,  ('{:<12.3f} {:<12.3f} {:>12} {:<12} {:<12} {:<12} {:<12} {:>16.3e} {:>16.3e} {:>12.3f}'.format(cw, w, e, i, fd, h, s, F, C, ew))
+for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, percent_err_I):
+    cw = int(cw)
+    cw = str(cw)
+    el = str(el)
+    io = str(io)
+    pynebid = glob.glob(el+io+'*')
+    wavid = glob.glob('*'+cw+'*')
+    #wavid = cw+'A'
+    #pynebid = el+io+'_'+wavid
+    print pynebid
+    if pynebid in pn.LINE_LABEL_LIST:
+        if wavid in pn.LINE_LABEL_LIST[pynebid]:
+            print >> tf,  ('{:<12} {:>12.3f} {:>12.3f}'.format(pynebid, Ic, er))
+        elif wavid in pn.BLEND_LIST[pynebid]:
+            print >> tf,  ('{:<12} {:>12.3f} {:>12.3f}'.format(pynebid, Ic, er))
+        else:
+            continue
 tf.close()
-print 'File   %s   writen!' % name_out_file
+print 'File   %s   writen!' % tfile1stRedCor
 
-
+'''
 # Determine first approximation of temperatures and densities
 # OBSERVATIONS
 # explore the line label list to write an observation record
@@ -308,6 +329,6 @@ diags.addDiag([
                 '[SII] 6731/6716',
                 ])
 
-
+'''
 
 
