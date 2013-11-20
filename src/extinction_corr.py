@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import pyneb as pn 
 import os
 import science
-import glob
-from astropy.table import Table
 
 ############################################################################################################################################
 
@@ -150,6 +148,8 @@ for i in range(len(norm_Icor)):
         positive_norm_Icorr.append(norm_Icor[i])
         EW_emission_lines.append(EW[i])
         pos_calc_cont.append(calc_cont[i])
+print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
+
 ### I am defining the  fainest line with a S/N=3 or error=33%
 faintest_line = min(positive_norm_Icorr)
 '''
@@ -177,7 +177,7 @@ for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
         e = all_err_cont_fit[2]
     per_err_I = (e*e + 10000*(faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     #per_err_I = (e*e + 10000*(faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    #per_err_I = (10000*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    #per_err_I = (100*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     abs_err = (per_err_I * F_norm) / 100.
     #print w, 'F_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, per_err_I, abs_err), '   S/N = ', F_norm/per_err_I*100.
     percent_err_I.append(per_err_I)
@@ -234,13 +234,13 @@ plt.show()
 ### For my intensities and using Seaton's law
 pyneb_Idered = []
 I_dered_norCorUndAbs = []
-for w, nF, nI, Ic, e, eo  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, pos_calc_cont, EW_emission_lines):    
+for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
     # Correct based on the given law and c(Hb)
     RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
     I_dered = nI * RC.getCorrHb(w)
     pyneb_Idered.append(I_dered)
     #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e, '  old_EW =', eo
+    print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
     IdnUA = nF * RC.getCorrHb(w)
     I_dered_norCorUndAbs.append(IdnUA)
     
@@ -282,8 +282,9 @@ for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_no
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_1stRedCor.txt")
 tf = open(tfile1stRedCor, 'w+')
-print >> tf,  ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
-print >> tf, 'cHbeta  %0.3f' % cHbeta
+#print >> tf,  ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
+#print >> tf, 'cHbeta  %0.3f' % cHbeta
+lines_pyneb_matches = []
 for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, absolute_err_I):
     cw = int(cw)
     cw = str(cw)
@@ -293,13 +294,16 @@ for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, io
     pynebid = el+io
     #print 'pynebid =', pynebid, '    wavid =', wavid
     lineID = pynebid + '_' + wavid
+    matching_line = [cw, Ic, er]
     if pynebid in pn.LINE_LABEL_LIST:
         if wavid in pn.LINE_LABEL_LIST[pynebid]:
             print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(lineID, Ic, er))
+            lines_pyneb_matches.append(matching_line)
         else:
             pynebid = el+io+'_'+wavid+'+'
             if pynebid in pn.BLEND_LIST:
                 print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(pynebid, Ic, er))
+                lines_pyneb_matches.append(matching_line)
             else:
                 continue
 tf.close()
@@ -310,18 +314,51 @@ print 'File   %s   writen!' % tfile1stRedCor
 # Define an Observation object and assign it to name 'obs'
 obs = pn.Observation()
 # read data from file created specifically for pyneb reading
-obs.readData(tfile1stRedCor, fileFormat='lines_in_columns', corrected=True, errIsRelative=True)
+obs.readData(tfile1stRedCor, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
+# Intensities
+print 'len(lines_pyneb_matches)', len(lines_pyneb_matches)
+ilines = []
+for line in obs.lines:
+    iline = line.corrIntens
+    for matching_line in lines_pyneb_matches:
+        if matching_line[0] in line.label:
+            print 'found it!', matching_line[0]
+            print line.wave
+            print line.corrIntens
+            iline = line.corrIntens
 
 # Define all atoms to make calculations
 all_atoms = pn.getAtomDict()
-    
+ 
 # simultaneously compute temperature and density from pairs of line ratios
 # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
 diags = pn.Diagnostics()   # Instantiate the Diagnostics class
 diags.getAllDiags()  # see what Diagnostics exist
-#tem, den = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', 50, 1.0, guess_tem=10000, tol_tem = 1., tol_den = 1., max_iter = 5)
+# temperature determination from an intensity ratio
+# explore some specific atom in the atoms collection
+O3 = pn.Atom("O", "3")
+#O3ratio = 
+#O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
+# Simultaneously determine temps and densities
+try:
+    tem_Ar3, den_S2 = diags.getCrossTemDen('[ArIII] 5192/7300+', '[SII] 6731/6716', obs=obs)
+    tem_O3, den_Cl3 = diags.getCrossTemDen('[OIII] 4363/5007', '[ClIII] 5538/5518', obs=obs)
+except:
+    tem_Ar3 = 'NA'
+    den_S2 = 'NA'
+    tem_O3 = 'NA'
+    den_Cl3 = 'NA'
+    pass
+# Printout of physical conditions
+print 'tem_O2: ', tem_Ar3
+print 'den_S2: ', den_S2
+print 'tem_O3: ', tem_O3
+print 'den_Cl3: ', den_Cl3
 
 '''
+# Alternate way of computing T(OIII)
+if tem_O3 == 'NA':
+    tem_O3 = all_atoms['O3'].getTemDen(i5007/i4363, den=100., wave1=5007, wave2=4363)
 # Include in diags the relevant line ratios
 diags.addDiag([
                 ## temperatures
