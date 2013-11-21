@@ -13,11 +13,17 @@ It writes a text file containing the line information it found for that waveleng
 ''' OBJECTS OF THE SAMPLE '''
 
 # name of the object
+#                 0           1           2            3         4        5          6          7         8
 objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960', 'mrk1087', 'mrk1199', 'ngc1741', 
                'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
-# corresponding redshifts
+#                9         10        11         12         13         14        15       16
+
+# corresponding redshift
+#             0        1        2        3         4         5        6        7         8
 z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.013454, 0.01348, 
-          0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0073, 0.01195, 0.01763]
+          0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0076, 0.01195, 0.01763]
+#             9       10        11       12        13       14       15       16
+
 
 ############################################################################################################################################
 
@@ -49,13 +55,13 @@ order = 1
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = False
+plot = True
 
 # 8) write the text file with the line net fluxes and equivalent widths?
 text_table = True
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 73.0
+Halpha_width = 40.
 
 
 ############################################################################################################################################
