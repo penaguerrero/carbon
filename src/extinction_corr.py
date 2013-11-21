@@ -24,11 +24,11 @@ I_theo_HaHb = 2.86
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 2.0
+EWabsHbeta = 0.2
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.43
+C_Hbeta = 0.05
 
 ############################################################################################################################################
 
@@ -82,26 +82,42 @@ for w in catalog_wavelength:
         e = 0.000
     corr_undelyingAbs_EWs.append(e)
 
-### Recalculate the continuum based on EWs
-calc_cont = []
-for f,ew in zip(data[2], data[4]):
-    new_c = f / (ew) #* (-1)
-    calc_cont.append(new_c)
+### Round all catalog lines to make it easier to find lines
+rounded_catalog_wavelength = []
+for item in catalog_wavelength:
+    rw = np.round(item)
+    rounded_catalog_wavelength.append(rw)
+### Calculate fluxes of 3726 and 3739   -- this works as long as the sum of the individual lines add up to better than 85% of the total 3727 measurement
+idx3726 = rounded_catalog_wavelength.index(3726)
+idx3729 = rounded_catalog_wavelength.index(3729)
+idx3727 = rounded_catalog_wavelength.index(3727)
+# assume that real3726 + real3729 = real3727 and that measured3726 + measured3729 = measured3727
+# then we need a constant K that allows the fluxes of real3726 and real3729 to be comparable with measured3726 and measured3729
+measured3727 = flux[idx3727]
+measured3726 = flux[idx3726]
+measured3729 = flux[idx3729]
+K = measured3727 / (measured3726 + measured3729)
+real3726 = K * measured3726
+real3729 = K * measured3729
+# insert these fluxes and new equivalent wids in the corresponding places
+#print 'PREVIOUS flux of 3726 =', flux[idx3726], ' and 3729 =', flux[idx3729], '    sum =', flux[idx3726]+flux[idx3729]
+#print '          EWs of 3726 =', EW[idx3726], '   and 3729 =', EW[idx3729], '      sum =', EW[idx3726]+EW[idx3729]
+flux[idx3726] = real3726
+flux[idx3729] = real3729
+EW[idx3726] = real3726 / continuum[idx3726]
+EW[idx3729] = real3729 / continuum[idx3729]
+#print ' NEW     flux of 3726 =', flux[idx3726], ' and 3729 =', flux[idx3729], '    sum =', flux[idx3726]+flux[idx3729]
+#print '          EWs of 3726 =', EW[idx3726], '   and 3729 =', EW[idx3729], '      sum =', EW[idx3726]+EW[idx3729]
 
 ### Remove UNDERLYING ABSORPTION for optical lines to get Intensities
 intensities = []
-for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, calc_cont, flux):
+for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
     I = EWabsLine * EWabsHbeta * cont + flx
     intensities.append(I)
 
 ### Step 2 of first iteration of reddening correction: Using Seaton
 Is_corr = []
 cHbeta = 0.434*C_Hbeta
-### Round all catalog lines
-rounded_catalog_wavelength = []
-for item in catalog_wavelength:
-    rw = np.round(item)
-    rounded_catalog_wavelength.append(rw)
 ### f_lambda is the reddening law, in this case I got it from Seaton 1979 based on Tol 2146-319
 f_lambda = science.spectrum.readreddCorr(rounded_catalog_wavelength)
 for I, fl in zip(intensities,f_lambda):
@@ -147,7 +163,7 @@ for i in range(len(norm_Icor)):
         positive_norm_intensities.append(normI)
         positive_norm_Icorr.append(norm_Icor[i])
         EW_emission_lines.append(EW[i])
-        pos_calc_cont.append(calc_cont[i])
+        pos_calc_cont.append(continuum[i])
 print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
 
 ### I am defining the  fainest line with a S/N=3 or error=33%
