@@ -28,7 +28,7 @@ EWabsHbeta = 0.2
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.05
+C_Hbeta = 0.03
 
 ############################################################################################################################################
 
@@ -87,6 +87,7 @@ rounded_catalog_wavelength = []
 for item in catalog_wavelength:
     rw = np.round(item)
     rounded_catalog_wavelength.append(rw)
+'''
 ### Calculate fluxes of 3726 and 3739   -- this works as long as the sum of the individual lines add up to better than 85% of the total 3727 measurement
 idx3726 = rounded_catalog_wavelength.index(3726)
 idx3729 = rounded_catalog_wavelength.index(3729)
@@ -108,7 +109,7 @@ EW[idx3726] = real3726 / continuum[idx3726]
 EW[idx3729] = real3729 / continuum[idx3729]
 #print ' NEW     flux of 3726 =', flux[idx3726], ' and 3729 =', flux[idx3729], '    sum =', flux[idx3726]+flux[idx3729]
 #print '          EWs of 3726 =', EW[idx3726], '   and 3729 =', EW[idx3729], '      sum =', EW[idx3726]+EW[idx3729]
-
+'''
 ### Remove UNDERLYING ABSORPTION for optical lines to get Intensities
 intensities = []
 for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
@@ -332,16 +333,37 @@ obs = pn.Observation()
 # read data from file created specifically for pyneb reading
 obs.readData(tfile1stRedCor, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
 # Intensities
-print 'len(lines_pyneb_matches)', len(lines_pyneb_matches)
-ilines = []
+#print 'len(lines_pyneb_matches)', len(lines_pyneb_matches)
 for line in obs.lines:
     iline = line.corrIntens
     for matching_line in lines_pyneb_matches:
         if matching_line[0] in line.label:
-            print 'found it!', matching_line[0]
-            print line.wave
-            print line.corrIntens
-            iline = line.corrIntens
+            #print 'found it!', matching_line[0]
+            #print line.wave
+            #print line.corrIntens
+            #iline = line.corrIntens
+            if line.wave == 4363:
+                I1 = line.corrIntens
+                print '4363 has an intensity of', I1[0]
+            elif line.wave == 5007:
+                I2 = line.corrIntens
+                print '5007 has an intensity of', I2[0]
+            elif line.wave == 3726:
+                IO21 = line.corrIntens
+                print '3726 has an intensity of', IO21[0]
+            elif line.wave == 3729:
+                IO22 = line.corrIntens
+                print '3729 has an intensity of', IO22[0]
+            elif line.wave == 6312:
+                IS31 = line.corrIntens
+                print '6312 has an intensity of', IS31[0]
+            elif line.wave == 9069:
+                IS32 = line.corrIntens
+                print '9069 has an intensity of', IS32[0]
+            elif line.wave == 9531:
+                IS33 = line.corrIntens
+                print '9531 has an intensity of', IS33[0]
+
 
 # Define all atoms to make calculations
 all_atoms = pn.getAtomDict()
@@ -353,23 +375,40 @@ diags.getAllDiags()  # see what Diagnostics exist
 # temperature determination from an intensity ratio
 # explore some specific atom in the atoms collection
 O3 = pn.Atom("O", "3")
-#O3ratio = 
-#O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
+O3ratio = I1[0] / I2[0]
+print 'ratio of O3 = ', O3ratio
+TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
+print 'guess 1 of temp of O3 = ', TO3 
+O2 = pn.Atom("O", "2")
+O2ratio = IO22[0] / IO21[0]
+print 'ratio of O2 = ', O2ratio
+denO2 = O2.getTemDen(O2ratio, den=10000., wave1=3729, wave2=3726) 
+print 'guess 1 of density of O2 = ', denO2
+S3 = pn.Atom("S", "3")
+S3ratio = IS31[0] / (IS32[0]) 
+print 'ratio of S3 = ', S3ratio
+TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9532)
+print 'guess 1 of temp of S3 = ', TS3 
+
 # Simultaneously determine temps and densities
 try:
     tem_Ar3, den_S2 = diags.getCrossTemDen('[ArIII] 5192/7300+', '[SII] 6731/6716', obs=obs)
     tem_O3, den_Cl3 = diags.getCrossTemDen('[OIII] 4363/5007', '[ClIII] 5538/5518', obs=obs)
+    tem_O3, den_Ar4 = diags.getCrossTemDen('[OIII] 4363/5007', '[ArIV] 4740/4711', obs=obs)
+    tem_O3, den_O2 = diags.getCrossTemDen('[OIII] 4363/5007', '[OII] 3926/3929', obs=obs)
 except:
     tem_Ar3 = 'NA'
     den_S2 = 'NA'
     tem_O3 = 'NA'
+    den_O2 = 'NA'
+    den_Ar4 = 'NA'
     den_Cl3 = 'NA'
-    pass
+    
 # Printout of physical conditions
-print 'tem_O2: ', tem_Ar3
+print 'den_O2: ', den_O2
 print 'den_S2: ', den_S2
 print 'tem_O3: ', tem_O3
-print 'den_Cl3: ', den_Cl3
+print 'den_Ar4: ', den_Ar4
 
 '''
 # Alternate way of computing T(OIII)
