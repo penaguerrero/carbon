@@ -49,7 +49,7 @@ normalize = False
 sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 1
+order = None
 
 # 6) What is the width of the window to use to find local continuum?
 window = 550
