@@ -379,6 +379,13 @@ O3ratio = I1[0] / I2[0]
 print 'ratio of O3 = ', O3ratio
 TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
 print 'guess 1 of temp of O3 = ', TO3 
+### Get temperature of OII from OIII. 
+# Using equation of Peimbert, Peimbert, & Luridiana. 2002, ApJ, 565, 668 (Based from data of Stasinska's models.)
+TO2pei = 2430. + TO3 * (1.031 - TO3/54350.)
+print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', TO2pei
+# Using equation of Garnett, D. R. 1992, AJ, 103, 1330
+TO2gar = 0.7 * TO3 + 3000.
+print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
 O2 = pn.Atom("O", "2")
 O2ratio = IO22[0] / IO21[0]
 print 'ratio of O2 = ', O2ratio
