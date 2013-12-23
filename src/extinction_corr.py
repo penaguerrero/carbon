@@ -144,6 +144,8 @@ abs_flux_calibration_err = 2.0
 catalog_emission_lines = []
 element_emission_lines = []
 ion_emission_lines = []
+forbidden_emission_lines = []
+how_forbidden_emission_lines = []
 wavs_emission_lines = []
 final_f_lambda = []
 positive_normfluxes = []
@@ -156,6 +158,8 @@ for i in range(len(norm_Icor)):
         catalog_emission_lines.append(rounded_catalog_wavelength[i])
         element_emission_lines.append(element[i])
         ion_emission_lines.append(ion[i])
+        forbidden_emission_lines.append(forbidden[i])
+        how_forbidden_emission_lines.append(how_forbidden[i])
         wavs_emission_lines.append(observed_wavelength[i])
         final_f_lambda.append(f_lambda[i])
         norm_flux = flux[i] / flux[Hb_idx] * 100.
@@ -182,10 +186,13 @@ second_faintest_line = min(kk)
 ### To estimate the error on the polynomial fitting I added 1/sum(err), 
 ### were err=1/sqroot(points in window width)
 #print 'all_err_cont_fit', all_err_cont_fit
-### Add errors and present it in percentage of line intensities
+### Add errors and present them in percentage of line intensities
 percent_err_I = []
 absolute_err_I = []
-for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
+emission_lines_file = os.path.join(results4object_path, object_name+'_emlines.txt')
+emfile = open(emission_lines_file, '+w')
+for w, F_norm, I_norm in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities):
     if w <= 2000.0:
         e = all_err_cont_fit[0]
     elif w > 2000.0 and w < 5000.0:
@@ -196,9 +203,12 @@ for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
     #per_err_I = (e*e + 10000*(faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     #per_err_I = (100*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     abs_err = (per_err_I * F_norm) / 100.
-    #print w, 'F_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, per_err_I, abs_err), '   S/N = ', F_norm/per_err_I*100.
+    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', F_norm/per_err_I*100.
+    
     percent_err_I.append(per_err_I)
     absolute_err_I.append(abs_err)
+    
+emfile.close()
 
 
 ##### FROM THIS POINT, THIS IS FROM THE ORIGINAL PYNEB SCRIPT
@@ -257,7 +267,7 @@ for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positi
     I_dered = nI * RC.getCorrHb(w)
     pyneb_Idered.append(I_dered)
     #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
+    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
     IdnUA = nF * RC.getCorrHb(w)
     I_dered_norCorUndAbs.append(IdnUA)
     
@@ -363,6 +373,12 @@ for line in obs.lines:
             elif line.wave == 9531:
                 IS33 = line.corrIntens
                 print '9531 has an intensity of', IS33[0]
+            elif line.wave == 5518:
+                ICl31 = line.corrIntens
+                print '5518 has an intensity of', ICl31[0]
+            elif line.wave == 5538:
+                ICl32 = line.corrIntens
+                print '5538 has an intensity of', ICl32[0]
 
 
 # Define all atoms to make calculations
@@ -396,6 +412,10 @@ S3ratio = IS31[0] / (IS32[0])
 print 'ratio of S3 = ', S3ratio
 TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9532)
 print 'guess 1 of temp of S3 = ', TS3 
+#Cl3 = pn.Atom("Cl", "3")
+#Cl3ratio = ICl32[0] / (ICl31[0]) 
+#dCl3 = Cl3.getTemDen(S3ratio, temp=11000., wave1=5538, wave2=5518)
+#print 'guess 1 of density of Cl3 = ', dCl3 
 
 # Simultaneously determine temps and densities
 try:
