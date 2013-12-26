@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyneb as pn 
 import os
+import copy
 import science
 
 ############################################################################################################################################
@@ -171,16 +172,26 @@ for i in range(len(norm_Icor)):
         pos_calc_cont.append(continuum[i])
 print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
 
-### I am defining the  fainest line with a S/N=3 or error=33%
-faintest_line = min(positive_norm_Icorr)
-'''
-kk = copy.deepcopy(positive_norm_fluxes)
-for f in kk:
-    if f == faintest_line:
-        kk.pop(kk.index(faintest_line))
-second_faintest_line = min(kk)
-'''
-#print 'faintest_line (my definition of S/N~3) =', faintest_line, 'plus minus 33%'
+### I am defining the chosen fainest line with a S/N=3 or error=33%
+faintest_line = min(positive_normfluxes)
+print 'first faintest_line = ', faintest_line
+kk = copy.deepcopy(positive_normfluxes)
+min_counts = 1
+end_loop = False
+while end_loop != True:
+    if min_counts == 5:
+        end_loop = True
+    else:
+        for f in kk:
+            if f == faintest_line:
+                min_counts = min_counts + 1 
+                kk.pop(kk.index(faintest_line))
+                faintest_line = min(kk)
+                print 'new faintest_line = ', faintest_line
+chosen_faintest_line = faintest_line
+print 'my definition of S/N~3 after min_counts =', min_counts
+print 'chosen_faintest_line =', chosen_faintest_line, '+- 33%'
+
 ### In order to account for the error in the continuum fitting, I realized that the 
 ### polynomial order does not really change the intensity, however, the window width does!
 ### To estimate the error on the polynomial fitting I added 1/sum(err), 
@@ -190,24 +201,29 @@ second_faintest_line = min(kk)
 percent_err_I = []
 absolute_err_I = []
 emission_lines_file = os.path.join(results4object_path, object_name+'_emlines.txt')
-emfile = open(emission_lines_file, '+w')
-for w, F_norm, I_norm in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
-                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities):
+emfile = open(emission_lines_file, 'w+')
+print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
+print >> emfile, '# C_Hbeta = %0.3f' % C_Hbeta
+print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
+print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
+print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
+for w, el, i, f, h, F_norm, I_norm, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities, EW_emission_lines):
     if w <= 2000.0:
         e = all_err_cont_fit[0]
     elif w > 2000.0 and w < 5000.0:
         e = all_err_cont_fit[1]
     elif w >= 5000.0:
         e = all_err_cont_fit[2]
-    per_err_I = (e*e + 10000*(faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    #per_err_I = (e*e + 10000*(faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    per_err_I = (e*e + 10000*(chosen_faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+    #per_err_I = (e*e + 10000*(chosen_faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     #per_err_I = (100*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     abs_err = (per_err_I * F_norm) / 100.
-    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', F_norm/per_err_I*100.
-    
+    sn = F_norm/per_err_I*100.
+    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', sn
+    print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, F_norm, I_norm, per_err_I, abs_err, eqw, sn))
     percent_err_I.append(per_err_I)
     absolute_err_I.append(abs_err)
-    
 emfile.close()
 
 
