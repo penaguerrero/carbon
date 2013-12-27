@@ -4,6 +4,7 @@ import pyneb as pn
 import os
 import copy
 import science
+#import uncertainties
 
 ############################################################################################################################################
 
@@ -411,13 +412,6 @@ O3ratio = I1[0] / I2[0]
 print 'ratio of O3 = ', O3ratio
 TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
 print 'guess 1 of temp of O3 = ', TO3 
-### Get temperature of OII from OIII. 
-# Using equation of Peimbert, Peimbert, & Luridiana. 2002, ApJ, 565, 668 (Based from data of Stasinska's models.)
-TO2pei = 2430. + TO3 * (1.031 - TO3/54350.)
-print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', TO2pei
-# Using equation of Garnett, D. R. 1992, AJ, 103, 1330
-TO2gar = 0.7 * TO3 + 3000.
-print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
 O2 = pn.Atom("O", "2")
 O2ratio = IO22[0] / IO21[0]
 print 'ratio of O2 = ', O2ratio
@@ -432,6 +426,24 @@ print 'guess 1 of temp of S3 = ', TS3
 #Cl3ratio = ICl32[0] / (ICl31[0]) 
 #dCl3 = Cl3.getTemDen(S3ratio, temp=11000., wave1=5538, wave2=5518)
 #print 'guess 1 of density of Cl3 = ', dCl3 
+
+### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
+I4986 = 0.0
+I4987 = 0.0
+I4658 = 0.0
+for w, i in zip(catalog_emission_lines, positive_norm_Icorr):
+    if int(w) == 4986:
+        I4986 = i
+    elif int(w) == 4987:
+        I4987 = i
+    elif int(w) == 4658:
+        I4658 = i
+if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
+    log_Fe3den = 2 - ( (np.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(np.log10(TO3-4))) / (0.66 - 0.18*(np.log10(TO3-4))) )
+    Fe3den = 10**(log_Fe3den)
+    print 'Density measured from [Fe3] lines:', Fe3den
+else:
+    print 'No [Fe3] density available.'
 
 # Simultaneously determine temps and densities
 try:
@@ -477,4 +489,16 @@ diags.addDiag([
 '''
 
 
+### Second iteration of extinction correction: Collisional Excitation
+### Following analysis presented in Pena-Guerrero, Peimbert, Peimbert, Ruiz (2012, ApJ, 746, 115) & Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39).
+# If the [O II] temperature was not obtained directly from observations, get an estimate
+### Get temperature of OII from OIII. 
+# Using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
+TO2pei = 2430. + TO3 * (1.031 - TO3/54350.)
+print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', TO2pei
+# Using equation of Garnett, D. R. 1992, AJ, 103, 1330
+TO2gar = 0.7 * TO3 + 3000.
+print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
+
+# Recalculate the intensities of the most prominent hydrogen lines: Halpha through H12
 
