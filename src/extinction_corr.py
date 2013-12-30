@@ -21,6 +21,9 @@ object_name = objects_list[object_number]
 # 2) Do you want to create a unified lines text file?
 create_txt = True
 
+# Choose case
+case = 'B'
+
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
 
@@ -201,7 +204,7 @@ print 'chosen_faintest_line =', chosen_faintest_line, '+- 33%'
 ### Add errors and present them in percentage of line intensities
 percent_err_I = []
 absolute_err_I = []
-emission_lines_file = os.path.join(results4object_path, object_name+'_emlines.txt')
+emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
 emfile = open(emission_lines_file, 'w+')
 print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
 print >> emfile, '# C_Hbeta = %0.3f' % C_Hbeta
@@ -324,7 +327,7 @@ for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_no
     pyneb_flambda.append(f12)
     
 # Write the first round of reddeding correction in pyneb readable format
-tfile1stRedCor = os.path.join(results4object_path, object_name+"_1stRedCor.txt")
+tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
 tf = open(tfile1stRedCor, 'w+')
 #print >> tf,  ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
 #print >> tf, 'cHbeta  %0.3f' % cHbeta
@@ -500,5 +503,34 @@ print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2
 TO2gar = 0.7 * TO3 + 3000.
 print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
 
-# Recalculate the intensities of the most prominent hydrogen lines: Halpha through H12
+### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
+# Table 1
+# Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
+TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400]
+xalpha = [0.011, 0.037, 0.033, 0.086, 0.070]
+#xbeta = [0.007, 0.027, 0.021, 0.066, 0.053]
+# x_lambda = I_col/I_tot
+# now do the interpolation according to the [OII] temperature
+xL = []
+xalpha_interp = np.interp(TO2gar, TeOII, xalpha)
+xL.append(xalpha_interp)
+xbeta = xalpha_interp * 0.67
+xL.append(xbeta)
+L = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
+for l in L:
+    xl = xalpha_interp / ( 2**((l-2.0)/3.0) )
+    xL.append(xl)
+# For the following hydrogen lines recalculate the intensity correcting for collisional exitation
+Hlines = [6563, 4340, 4101, 3967, 3889, 3835, 3798, 3771, 3750]
+IcorrEC = [] #intensities corrected for collisional excitation
+for w, el, I in zip(catalog_emission_lines, element_emission_lines, positive_norm_Icorr):
+    for h, l in zip(Hlines, xL):
+        if (w == h) and (el == 'H'):
+            newI = I * (1-l)
+            IcorrEC.append(newI)
+            print w, I, newI
+
+# Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them with the
+# theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
+
 
