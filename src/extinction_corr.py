@@ -528,7 +528,7 @@ for w, el, I in zip(catalog_emission_lines, element_emission_lines, positive_nor
         if (w == h) and (el == 'H'):
             newI = I * (1-l)
             IcorrEC.append(newI)
-            print w, I, newI
+            print w, I, 'collisionally excited corrected', newI
 
 # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them with the
 # theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
