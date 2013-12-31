@@ -37,6 +37,63 @@ C_Hbeta = 0.03
 
 ############################################################################################################################################
 
+def Halpha2Hbeta_dered(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):
+    ''' Function to dered and obtain the Halpha/Hbeta ratio nicely printed along with the unreddend values to compare. '''
+    Idered = []
+    I_dered_norCorUndAbs = []
+    for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
+        # Correct based on the given law and c(Hb)
+        RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
+        I_dered = nI * RC.getCorrHb(w)
+        Idered.append(I_dered)
+        #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
+        #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
+        IdnUA = nF * RC.getCorrHb(w)
+        I_dered_norCorUndAbs.append(IdnUA)
+    pass
+'''
+### For my intensities and using Seaton's law
+pyneb_Idered = []
+I_dered_norCorUndAbs = []
+for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
+    # Correct based on the given law and c(Hb)
+    RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
+    I_dered = nI * RC.getCorrHb(w)
+    pyneb_Idered.append(I_dered)
+    #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
+    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
+    IdnUA = nF * RC.getCorrHb(w)
+    I_dered_norCorUndAbs.append(IdnUA)
+    
+### Find observed Halpha/Hbeta ratio
+## 
+Halpha_idx = catalog_emission_lines.index(6563)
+Halpha = positive_norm_Icorr[Halpha_idx]
+pynebHalpha = pyneb_Idered[Halpha_idx]
+Hbeta_idx = catalog_emission_lines.index(4861)
+Hbeta = positive_norm_Icorr[Hbeta_idx]
+pynebHbeta = pyneb_Idered[Hbeta_idx]
+I_obs_HaHb = Halpha/Hbeta
+pynebI_obs_HaHb = pynebHalpha/pynebHbeta
+print ''
+print 'cHbeta = %0.5f' % cHbeta
+print '            Using Seaton                    Using ', RC.law
+print 'Corrected for reddening and underlying absorption'
+print catalog_emission_lines[Halpha_idx], '    ', Halpha, '                  ', pynebHalpha
+print catalog_emission_lines[Hbeta_idx], '    ', Hbeta, '                          ', pynebHbeta
+print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
+print '      observed Ha/Hb = %0.2f           observed Ha/Hb = %0.2f' % (I_obs_HaHb, pynebI_obs_HaHb)
+w1 = 6563
+w2 = 4861
+raw_w1 = flux[rounded_catalog_wavelength.index(w1)]
+raw_w2 = flux[rounded_catalog_wavelength.index(w2)]
+raw_contw1 = continuum[rounded_catalog_wavelength.index(w1)]
+raw_contw2 = continuum[rounded_catalog_wavelength.index(w2)]
+print 'Before extinction correction'
+print 'FLUXES:    %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
+print 'continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
+'''
+
 #### Read the observed lines from the table of lines_info.txt and normalize to Hbeta
 ### Path of the text files of wavelengths and fluxes for the objects. 
 ### This works as long as the folder structure is always the same. This file is assumed to be in
@@ -204,13 +261,6 @@ print 'chosen_faintest_line =', chosen_faintest_line, '+- 33%'
 ### Add errors and present them in percentage of line intensities
 percent_err_I = []
 absolute_err_I = []
-emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
-emfile = open(emission_lines_file, 'w+')
-print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
-print >> emfile, '# C_Hbeta = %0.3f' % C_Hbeta
-print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
-print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
-print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
 for w, el, i, f, h, F_norm, I_norm, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
                              how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities, EW_emission_lines):
     if w <= 2000.0:
@@ -224,11 +274,9 @@ for w, el, i, f, h, F_norm, I_norm, eqw in zip(catalog_emission_lines, element_e
     #per_err_I = (100*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
     abs_err = (per_err_I * F_norm) / 100.
     sn = F_norm/per_err_I*100.
-    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', sn
-    print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, F_norm, I_norm, per_err_I, abs_err, eqw, sn))
     percent_err_I.append(per_err_I)
     absolute_err_I.append(abs_err)
-emfile.close()
+    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', sn
 
 
 ##### FROM THIS POINT, THIS IS FROM THE ORIGINAL PYNEB SCRIPT
@@ -534,3 +582,26 @@ for w, el, I in zip(catalog_emission_lines, element_emission_lines, positive_nor
 # theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
 
 
+'''
+### In order to account for the error in the continuum fitting, I realized that the 
+### polynomial order does not really change the intensity, however, the window width does!
+### To estimate the error on the polynomial fitting I added 1/sum(err), 
+### were err=1/sqroot(points in window width)
+#print 'all_err_cont_fit', all_err_cont_fit
+### Add errors and present them in percentage of line intensities
+percent_err_I = []
+absolute_err_I = []
+emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
+emfile = open(emission_lines_file, 'w+')
+print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
+print >> emfile, '# C_Hbeta = %0.3f' % C_Hbeta
+print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
+print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
+print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
+for w, el, i, f, h, F_norm, I_norm, pe, ab, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities, percent_err_I, absolute_err_I, EW_emission_lines):
+    sn = F_norm/pe*100.
+    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, pe, ae), '   S/N = ', sn
+    print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, F_norm, I_norm, per_err_I, abs_err, eqw, sn))
+emfile.close()
+'''
