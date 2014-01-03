@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pyneb as pn 
 import os
 import copy
@@ -33,66 +33,353 @@ EWabsHbeta = 0.2
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.03
+C_Hbeta = 0.024
+
+# Do you want to do the second iteration for reddening correction (that is collisional excitation)?
+reddeningCorrection2 = True
 
 ############################################################################################################################################
 
-def Halpha2Hbeta_dered(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):
+### FUNCTIONS
+def underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux):
+    intensities = []
+    for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
+        I = EWabsLine * EWabsHbeta * cont + flx
+        intensities.append(I)
+    return intensities
+
+def find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
+                        how_forbidden, observed_wavelength, flux, intensities, EW, continuum):
+    Hb_idx = rounded_catalog_wavelength.index(4861.0)
+    catalog_emission_lines = []
+    element_emission_lines = []
+    ion_emission_lines = []
+    forbidden_emission_lines = []
+    how_forbidden_emission_lines = []
+    wavs_emission_lines = []
+    positive_normfluxes = []
+    positive_norm_intensities = []
+    EW_emission_lines = []
+    pos_calc_cont = []
+    for i in range(len(flux)):
+        if flux[i] > 0.00000:
+            catalog_emission_lines.append(rounded_catalog_wavelength[i])
+            element_emission_lines.append(element[i])
+            ion_emission_lines.append(ion[i])
+            forbidden_emission_lines.append(forbidden[i])
+            how_forbidden_emission_lines.append(how_forbidden[i])
+            wavs_emission_lines.append(observed_wavelength[i])
+            norm_flux = flux[i] / flux[Hb_idx] * 100.
+            positive_normfluxes.append(norm_flux)
+            normI = intensities[i] / intensities[Hb_idx] * 100.
+            positive_norm_intensities.append(normI)
+            EW_emission_lines.append(EW[i])
+            pos_calc_cont.append(continuum[i])
+    #print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
+    return (catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+            how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines)
+    
+def Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities):
     ''' Function to dered and obtain the Halpha/Hbeta ratio nicely printed along with the unreddend values to compare. '''
+    # Normalized fluxes are the raw flux normalized to Hbeta. 
+    # Intensities are already corrected for underlying absorption and are also normalized to Hbeta.
     Idered = []
     I_dered_norCorUndAbs = []
-    for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
-        # Correct based on the given law and c(Hb)
+    for w, nF, nI in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities):    
+        # Obtain the reddening corrected intensities based on the given law and c(Hb)
         RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
         I_dered = nI * RC.getCorrHb(w)
         Idered.append(I_dered)
-        #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-        #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
+        # Obtain the reddening corrected intensities WITHOUT the correction due to 
+        # underlying absorption based on the given law and c(Hb)
         IdnUA = nF * RC.getCorrHb(w)
         I_dered_norCorUndAbs.append(IdnUA)
-    pass
-'''
-### For my intensities and using Seaton's law
-pyneb_Idered = []
-I_dered_norCorUndAbs = []
-for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
-    # Correct based on the given law and c(Hb)
-    RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
-    I_dered = nI * RC.getCorrHb(w)
-    pyneb_Idered.append(I_dered)
-    #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
-    IdnUA = nF * RC.getCorrHb(w)
-    I_dered_norCorUndAbs.append(IdnUA)
+    # Find observed Halpha/Hbeta ratio
+    Halpha_idx = catalog_emission_lines.index(6563)
+    Hbeta_idx = catalog_emission_lines.index(4861)
+    Halpha = positive_normfluxes[Halpha_idx]
+    Hbeta = positive_normfluxes[Hbeta_idx]
+    raw_ratio = Halpha/Hbeta
+    I_Halpha = Idered[Halpha_idx]
+    I_Hbeta = Idered[Hbeta_idx]
+    I_obs_HaHb = I_Halpha/I_Hbeta
+    print ''
+    print 'cHbeta = %0.5f' % cHbeta
+    print '            Using', RC.law, '                   Normalized fluxes before extinction correction'
+    print 'Corrected for reddening and underlying absorption'
+    print catalog_emission_lines[Halpha_idx], '    ', I_Halpha, '                  ', Halpha
+    print catalog_emission_lines[Hbeta_idx], '    ', I_Hbeta, '                          ', Hbeta
+    print 'theoretical ratio Ha/Hb = %0.3f' % (I_theo_HaHb)
+    print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
+    return Idered, I_dered_norCorUndAbs
+
+def det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit):
+    ''' Uncertainty Calculation '''
+    ### STIS Data Handbook states this depends on many factors so I set it up to 2% because
+    ### they suggest 1% to increase considerably for faint objects.
+    abs_flux_calibration_err = 2.0
+    ### I am defining the chosen fainest line with a S/N=3 or error=33%
+    faintest_line = min(positive_normfluxes)
+    print 'first faintest_line = ', faintest_line
+    kk = copy.deepcopy(positive_normfluxes)
+    min_counts = 1
+    end_loop = False
+    while end_loop != True:
+        if min_counts == 5:
+            end_loop = True
+        else:
+            for f in kk:
+                if f == faintest_line:
+                    min_counts = min_counts + 1 
+                    kk.pop(kk.index(faintest_line))
+                    faintest_line = min(kk)
+                    #print 'new faintest_line = ', faintest_line
+    chosen_faintest_line = faintest_line
+    print 'my definition of S/N~3 after min_counts =', min_counts
+    print 'chosen_faintest_line =', chosen_faintest_line, '+- 33%'
+    ### In order to account for the error in the continuum fitting, I realized that the 
+    ### polynomial order does not really change the intensity, however, the window width does!
+    ### To estimate the error on the polynomial fitting I added 1/sum(err), 
+    ### were err=1/sqroot(points in window width)
+    #print 'all_err_cont_fit', all_err_cont_fit
+    ### Add errors and present them in percentage of line intensities
+    percent_Iuncert = []
+    absolute_Iuncert = []
+    S2N = []
+    for w, F_norm in zip(catalog_emission_lines, positive_normfluxes):
+        if w <= 2000.0:
+            e = all_err_cont_fit[0]
+        elif w > 2000.0 and w < 5000.0:
+            e = all_err_cont_fit[1]
+        elif w >= 5000.0:
+            e = all_err_cont_fit[2]
+        per_Iu = (e*e + 10000*(chosen_faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
+        abs_Iu = (per_Iu * F_norm) / 100.
+        sn = F_norm/per_Iu*100.
+        percent_Iuncert.append(per_Iu)
+        absolute_Iuncert.append(abs_Iu)
+        S2N.append(sn)
+        #print w, '   F_norm = %0.2f   I_norm = %0.2f   uncert_percent = %0.2f   abs_uncert = %0.2f' % (F_norm, I_norm, per_Iu, abs_Iu), '   S/N = ', sn
+    return percent_Iuncert, absolute_Iuncert, S2N
+
+def find_flambdas(cHbeta, I_dered_norCorUndAbs, positive_normfluxes):
+    # Finding the f_lambda values
+    flambdas = []
+    for Icor, Iobs in zip(I_dered_norCorUndAbs, positive_normfluxes):
+        f12 = (np.log10(Icor) - np.log10(Iobs)) / cHbeta
+        flambdas.append(f12)
+    return flambdas
+
+def corr_ColExcit(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines):
+    '''
+    This function is the second iteration of reddening correction. It fits the observed H lines given to the theoretical
+    ones found with INTRAT by Storey & Hummer (1995).
+    # Idered = first iteration of reddening correction
+    # Hlines = list of the hydrogen wavelengths to look for (typically from Halpha to H12).
+    # theoCE = theoretical hydrogen intensities corrected for collisional excitation.
+    '''
+    ### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
+    # Table 1
+    # Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
+    TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400]
+    xalpha = [0.011, 0.037, 0.033, 0.086, 0.070]
+    #xbeta = [0.007, 0.027, 0.021, 0.066, 0.053]
+    # x_lambda = I_col/I_tot
+    # now do the interpolation according to the [OII] temperature
+    xL = []
+    xalpha_interp = np.interp(TO2gar, TeOII, xalpha)
+    xL.append(xalpha_interp)
+    xbeta = xalpha_interp * 0.67
+    xL.append(xbeta)
+    L = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
+    for l in L:
+        xl = xalpha_interp / ( 2**((l-2.0)/3.0) )
+        xL.append(xl)
+    # For the following hydrogen lines recalculate the intensity correcting for collisional exitation
+    norm_IcorrCE = [] #intensities corrected for collisional excitation
+    obs_ratios = []
+    found_Hlines = []
+    for w, el, I in zip(catalog_emission_lines, element_emission_lines, Idered):
+        for h, l in zip(Hlines, xL):
+            if (w == h) and (el == 'H'):
+                found_Hlines.append(h)
+                newI = I * (1-l)
+                normI = newI/100.
+                print w, 'before', I, '  after collisionally excited corrected', newI, '  ratio2Hbeta', normI
+                norm_IcorrCE.append(newI)
+                obs_ratios.append(normI)
+                if w == 4102:
+                    norm_H6theo = normI
+    return norm_IcorrCE, obs_ratios, found_Hlines, norm_H6theo
+
+def find_Chi_of_CE(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines, theoCE, percent_Iuncert):
+    # Correct for collisional excitation
+    IcorrCE, obs_ratios, found_Hlines, norm_H6theo = corr_ColExcit(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines)
+    # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them 
+    # with the theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
+    uncert = []
+    for H, Ic, obsr in zip(found_Hlines, IcorrCE, obs_ratios):
+        idx = Hlines.index(H)
+        if H in catalog_emission_lines:
+            H_index = catalog_emission_lines.index(H)
+            u = (1 - (obsr / theoCE[idx])) * 100.0 / percent_Iuncert[H_index]
+            I = Idered[H_index]
+            print H, 'theo_ratio =', theoCE[idx], 'obs_ratio', obsr, '   Icorr =', Ic, '   Idered = ', I#, '   percent_Iuncert[H_index]=', percent_Iuncert[H_index]
+            print '   error de excitacion colisional = ', u 
+            uncert.append(u)
+    # In order to find the best combination of C_Hbeta and EWabsHbeta determine chi squared
+    sqs = []
+    for u in uncert:
+        nu = u * u
+        sqs.append(nu)
+    Chi_sq = sum(sqs)
+    return Chi_sq, norm_H6theo
     
-### Find observed Halpha/Hbeta ratio
-## 
-Halpha_idx = catalog_emission_lines.index(6563)
-Halpha = positive_norm_Icorr[Halpha_idx]
-pynebHalpha = pyneb_Idered[Halpha_idx]
-Hbeta_idx = catalog_emission_lines.index(4861)
-Hbeta = positive_norm_Icorr[Hbeta_idx]
-pynebHbeta = pyneb_Idered[Hbeta_idx]
-I_obs_HaHb = Halpha/Hbeta
-pynebI_obs_HaHb = pynebHalpha/pynebHbeta
-print ''
-print 'cHbeta = %0.5f' % cHbeta
-print '            Using Seaton                    Using ', RC.law
-print 'Corrected for reddening and underlying absorption'
-print catalog_emission_lines[Halpha_idx], '    ', Halpha, '                  ', pynebHalpha
-print catalog_emission_lines[Hbeta_idx], '    ', Hbeta, '                          ', pynebHbeta
-print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
-print '      observed Ha/Hb = %0.2f           observed Ha/Hb = %0.2f' % (I_obs_HaHb, pynebI_obs_HaHb)
-w1 = 6563
-w2 = 4861
-raw_w1 = flux[rounded_catalog_wavelength.index(w1)]
-raw_w2 = flux[rounded_catalog_wavelength.index(w2)]
-raw_contw1 = continuum[rounded_catalog_wavelength.index(w1)]
-raw_contw2 = continuum[rounded_catalog_wavelength.index(w2)]
-print 'Before extinction correction'
-print 'FLUXES:    %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
-print 'continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
-'''
+def redcor2(I_theo_HaHb, theoCE, Hlines, TO2gar, Idered, C_Hbeta, EWabsHbeta, catalog_emission_lines, corr_undelyingAbs_EWs, 
+            rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, 
+            intensities, EW, continuum, all_err_cont_fit):
+    number_iterations = 14 #this number must be even
+    EWabsHbeta_increase = 0.1
+    C_Hbeta_increase = 0.01
+    Chi_sq_models = []
+    EWabsHbeta_values = []
+    EWabsHbeta_values.append(EWabsHbeta)
+    C_Hbeta_values = []
+    C_Hbeta_values.append(C_Hbeta)
+    Halpha_idx = catalog_emission_lines.index(6563.)
+    Hbeta_idx = catalog_emission_lines.index(4861.)
+    H6_idx = catalog_emission_lines.index(4102)
+    dif_TheoObs_H6Hb_values = []
+    # Find the faintest detected emission line: get rid of negative fluxes
+    catalog_emission_lines, _, element_emission_lines, _, _, _, positive_normfluxes, _, positive_norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+    I_obs_H6Hb = catalog_emission_lines[H6_idx] / catalog_emission_lines[Hbeta_idx]
+    # Determine uncertainties
+    percent_Iuncert, _, _ = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
+    Chi_sq, I_theo_H6Hb = find_Chi_of_CE(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines, theoCE, percent_Iuncert)
+    Chi_sq_models.append(Chi_sq)
+    dif_TheoObs_H6Hb = np.fabs(I_theo_H6Hb - I_obs_H6Hb) 
+    dif_TheoObs_H6Hb_values.append(dif_TheoObs_H6Hb)
+    I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+    print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+    diff_HaHb_values = []
+    diff_HaHb = np.fabs(I_theo_HaHb - I_obs_HaHb)
+    diff_HaHb_values.append(diff_HaHb)
+    # First, variate EWabsHbeta with C_Hbeta fixed
+    for EWabsHbeta_iterations in range(0, number_iterations):
+        print 'EWabsHbeta_iterations', EWabsHbeta_iterations
+        if I_theo_HaHb < I_obs_HaHb:
+            EWabsHbeta = EWabsHbeta + EWabsHbeta_increase
+        elif I_theo_HaHb > I_obs_HaHb:
+            EWabsHbeta = EWabsHbeta - EWabsHbeta_increase
+            if EWabsHbeta < 0.0:
+                EWabsHbeta = 0.00001
+        EWabsHbeta_values.append(EWabsHbeta)
+        intensities = underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux)
+        # Find the faintest detected emission line: get rid of negative fluxes
+        catalog_emission_lines, _, element_emission_lines, _, _, _, positive_normfluxes, _, positive_norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+        # Determine uncertainties
+        percent_Iuncert, _, _ = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
+        # Dered again and find the Chi_squared of that model
+        cHbeta = 0.434*C_Hbeta
+        Idered, _ = Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities)
+        I_obs_H6Hb = catalog_emission_lines[H6_idx] / catalog_emission_lines[Hbeta_idx]
+        Chi_sq, norm_H6theo = find_Chi_of_CE(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines, theoCE, percent_Iuncert)
+        Chi_sq_models.append(Chi_sq)
+        dif_TheoObs_HaHb = np.fabs(norm_H6theo - I_obs_H6Hb) 
+        dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
+        I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+        print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+        diff_HaHb = np.fabs(I_theo_HaHb - I_obs_HaHb)
+        diff_HaHb_values.append(diff_HaHb)
+        EWabsHbeta_iterations = EWabsHbeta_iterations + 1
+    # Second, variate C_Hbeta with EWabsHbeta fixed
+    EWabsHbeta = EWabsHbeta_values[0]
+    for C_Hbeta_iterations in range(0, number_iterations):
+        print 'C_Hbeta_iterations =', C_Hbeta_iterations
+        if I_theo_HaHb < I_obs_HaHb:
+            C_Hbeta = C_Hbeta + C_Hbeta_increase
+        elif I_theo_HaHb > I_obs_HaHb:
+            C_Hbeta = C_Hbeta - C_Hbeta_increase
+            if C_Hbeta < 0.0:
+                C_Hbeta = 0.00001            
+        C_Hbeta_values.append(C_Hbeta)
+        cHbeta = 0.434*C_Hbeta
+        intensities = underlyingAbsCorr(EWabsHbeta_values[0], corr_undelyingAbs_EWs, continuum, flux)
+        # Find the faintest detected emission line: get rid of negative fluxes
+        catalog_emission_lines, _, element_emission_lines, _, _, _, positive_normfluxes, _, positive_norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
+                        how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+        # Determine uncertainties
+        percent_Iuncert, _, _ = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
+        # Dered again and find the Chi_squared of that model
+        Idered, _ = Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities)
+        I_obs_H6Hb = catalog_emission_lines[H6_idx] / catalog_emission_lines[Hbeta_idx]
+        Chi_sq, norm_H6theo = find_Chi_of_CE(TO2gar, catalog_emission_lines, element_emission_lines, Idered, Hlines, theoCE, percent_Iuncert)
+        Chi_sq_models.append(Chi_sq)
+        dif_TheoObs_HaHb = np.fabs(norm_H6theo - I_obs_H6Hb) 
+        dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
+        I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+        print ' ***    I_theo_HaHb =',I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+        diff_HaHb = np.fabs(I_theo_HaHb - I_obs_HaHb)
+        diff_HaHb_values.append(diff_HaHb)
+        C_Hbeta_iterations = C_Hbeta_iterations + 1
+    # With all 41 models find the one that has the smallest Chi_sq
+    print 'Chi_sq_models:', Chi_sq_models
+    minChi = min(Chi_sq_models)
+    minChi_idx = Chi_sq_models.index(minChi)
+    print 'minChi', minChi, 'minChi_idx', minChi_idx
+    # Now find the model that has the closest observed Hdelta/Hbeta ratio to the theoretical one
+    min_dif_TheoObs_H6Hb = min(dif_TheoObs_H6Hb_values)
+    min_dif_TheoObs_H6Hb_idx = dif_TheoObs_H6Hb_values.index(min_dif_TheoObs_H6Hb)
+    print 'min_dif_TheoObs_HaHb = ', min_dif_TheoObs_H6Hb, 'min_dif_TheoObs_HaHb_idx', min_dif_TheoObs_H6Hb_idx
+    # Calculate the final dereddend values but keep in mind that model 0 is the first reddening iteration, 
+    # if there were number_iterations = 10
+    # model 5 through 9 is where EWabsHbeta varied and C_Hbeta was fixed at model 0, and
+    # model 10 though 14 is where C_Hbeta varied and EWabsHbeta was fixed at model 0.
+    print 'LENGTHS OF CHbeta, EWabsHbeta, and diff_HaHb_values lists: ', len(C_Hbeta_values), len(EWabsHbeta_values), len(diff_HaHb_values)
+    if minChi_idx == min_dif_TheoObs_H6Hb_idx:
+        print 'min indeces are the same!'
+    tolerance = 0.005
+    if (I_obs_HaHb < I_theo_HaHb+tolerance) and (I_obs_HaHb > I_theo_HaHb-tolerance):
+        print ' VALUE WITHIN TOLERANCE!'
+        EWabsHbeta = EWabsHbeta_values[0]
+        C_Hbeta = C_Hbeta_values[minChi_idx - number_iterations]
+    elif (I_obs_HaHb > I_theo_HaHb+tolerance) or (I_obs_HaHb < I_theo_HaHb-tolerance):
+        print ' VALUE STILL FAR... LOOKING FOR ALTERNATIVE...'
+        min_diff_HaHb = min(diff_HaHb_values)
+        min_diff_HaHb_idx = diff_HaHb_values.index(min_diff_HaHb)
+        if min_diff_HaHb_idx >= number_iterations:
+            idx = min_diff_HaHb_idx - number_iterations
+            EWabsHbeta = EWabsHbeta_values[0]
+            C_Hbeta = C_Hbeta_values[idx]
+        else:
+            EWabsHbeta = EWabsHbeta_values[min_diff_HaHb_idx]
+            C_Hbeta = C_Hbeta_values[0]
+    print 'Chi_sq_models', Chi_sq_models
+    print 'dif_TheoObs_H6Hb_values', dif_TheoObs_H6Hb_values
+    cHbeta = 0.434*C_Hbeta
+    intensities = underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux)
+    # Find the faintest detected emission line: get rid of negative fluxes
+    catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
+                        how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+    emission_lines_info = [catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines]
+    # Dered again and find the Chi_squared of that model
+    norm_Idered, I_dered_norCorUndAbs = Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities)
+    flambdas = find_flambdas(cHbeta, I_dered_norCorUndAbs, positive_normfluxes)
+    dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
+    # Determine uncertainties    
+    percent_Iuncert, absolute_Iuncert, S2N = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
+    uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
+    I_obs_HaHb = norm_Idered[Halpha_idx] / norm_Idered[Hbeta_idx]
+    print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+    print''
+    print 'First iteration of reddening correction:   EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta_values[0], C_Hbeta_values[0])
+    print '    The best combination was:              EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta, C_Hbeta)
+    print '                                                     this means cHbeta = %0.3f' % (cHbeta)
+    return (emission_lines_info, dereddening_info, uncertainties_info)
+
+
+############################################################################################################################################
+
 
 #### Read the observed lines from the table of lines_info.txt and normalize to Hbeta
 ### Path of the text files of wavelengths and fluxes for the objects. 
@@ -173,10 +460,7 @@ EW[idx3729] = real3729 / continuum[idx3729]
 #print '          EWs of 3726 =', EW[idx3726], '   and 3729 =', EW[idx3729], '      sum =', EW[idx3726]+EW[idx3729]
 '''
 ### Remove UNDERLYING ABSORPTION for optical lines to get Intensities
-intensities = []
-for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
-    I = EWabsLine * EWabsHbeta * cont + flx
-    intensities.append(I)
+intensities = underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux)
 
 ### Step 2 of first iteration of reddening correction: Using Seaton
 Is_corr = []
@@ -198,86 +482,12 @@ for I, w in zip(Is_corr, observed_wavelength):
     norm_Icor.append(norm_f)
     #print w, I, Hbeta, norm_f
 
-### ERROR Calculation
-### STIS Data Handbook states this depends on many factors so I set it up to 2% because
-### they suggest 1% to increase considerably for faint objects.
-abs_flux_calibration_err = 2.0
-### Find the faintest detected emission line: get rid of negative fluxes
-catalog_emission_lines = []
-element_emission_lines = []
-ion_emission_lines = []
-forbidden_emission_lines = []
-how_forbidden_emission_lines = []
-wavs_emission_lines = []
-final_f_lambda = []
-positive_normfluxes = []
-positive_norm_intensities = []
-positive_norm_Icorr = []
-EW_emission_lines = []
-pos_calc_cont = []
-for i in range(len(norm_Icor)):
-    if flux[i] > 0.00000:
-        catalog_emission_lines.append(rounded_catalog_wavelength[i])
-        element_emission_lines.append(element[i])
-        ion_emission_lines.append(ion[i])
-        forbidden_emission_lines.append(forbidden[i])
-        how_forbidden_emission_lines.append(how_forbidden[i])
-        wavs_emission_lines.append(observed_wavelength[i])
-        final_f_lambda.append(f_lambda[i])
-        norm_flux = flux[i] / flux[Hb_idx] * 100.
-        positive_normfluxes.append(norm_flux)
-        normI = intensities[i] / intensities[Hb_idx] * 100.
-        positive_norm_intensities.append(normI)
-        positive_norm_Icorr.append(norm_Icor[i])
-        EW_emission_lines.append(EW[i])
-        pos_calc_cont.append(continuum[i])
-print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
-
-### I am defining the chosen fainest line with a S/N=3 or error=33%
-faintest_line = min(positive_normfluxes)
-print 'first faintest_line = ', faintest_line
-kk = copy.deepcopy(positive_normfluxes)
-min_counts = 1
-end_loop = False
-while end_loop != True:
-    if min_counts == 5:
-        end_loop = True
-    else:
-        for f in kk:
-            if f == faintest_line:
-                min_counts = min_counts + 1 
-                kk.pop(kk.index(faintest_line))
-                faintest_line = min(kk)
-                print 'new faintest_line = ', faintest_line
-chosen_faintest_line = faintest_line
-print 'my definition of S/N~3 after min_counts =', min_counts
-print 'chosen_faintest_line =', chosen_faintest_line, '+- 33%'
-
-### In order to account for the error in the continuum fitting, I realized that the 
-### polynomial order does not really change the intensity, however, the window width does!
-### To estimate the error on the polynomial fitting I added 1/sum(err), 
-### were err=1/sqroot(points in window width)
-#print 'all_err_cont_fit', all_err_cont_fit
-### Add errors and present them in percentage of line intensities
-percent_err_I = []
-absolute_err_I = []
-for w, el, i, f, h, F_norm, I_norm, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
-                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities, EW_emission_lines):
-    if w <= 2000.0:
-        e = all_err_cont_fit[0]
-    elif w > 2000.0 and w < 5000.0:
-        e = all_err_cont_fit[1]
-    elif w >= 5000.0:
-        e = all_err_cont_fit[2]
-    per_err_I = (e*e + 10000*(chosen_faintest_line/9)/(F_norm) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    #per_err_I = (e*e + 10000*(chosen_faintest_line/1)/F_norm + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    #per_err_I = (100*(1/(e*e*F_norm)) + abs_flux_calibration_err*abs_flux_calibration_err)**0.5
-    abs_err = (per_err_I * F_norm) / 100.
-    sn = F_norm/per_err_I*100.
-    percent_err_I.append(per_err_I)
-    absolute_err_I.append(abs_err)
-    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, per_err_I, abs_err), '   S/N = ', sn
-
+### Uncertainty Calculation
+# Find the faintest detected emission line: get rid of negative fluxes
+catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
+                        how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+### Determine uncertainties
+percent_Iuncert, absolute_Iuncert, S2N = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
 
 ##### FROM THIS POINT, THIS IS FROM THE ORIGINAL PYNEB SCRIPT
 # Convert wavelength to x
@@ -326,61 +536,21 @@ plt.show()
 '''   
 ##### UP TO HERE: THIS IS FROM THE ORIGINAL PYNEB SCRIPT
 
-### For my intensities and using Seaton's law
-pyneb_Idered = []
-I_dered_norCorUndAbs = []
-for w, nF, nI, Ic, e  in zip(catalog_emission_lines, positive_normfluxes, positive_norm_intensities, positive_norm_Icorr, EW_emission_lines):    
-    # Correct based on the given law and c(Hb)
-    RC = pn.RedCorr(law= 'CCM 89', cHbeta=cHbeta)
-    I_dered = nI * RC.getCorrHb(w)
-    pyneb_Idered.append(I_dered)
-    #print '\nCorrect based on the given law and the observed Ha/Hb ratio:'
-    #print str(w) + ': F_obs =', nF, 'I_obs =', nI, ' I_dered =', I_dered, '  my_I_dered =', Ic, '  EW =', e
-    IdnUA = nF * RC.getCorrHb(w)
-    I_dered_norCorUndAbs.append(IdnUA)
-    
-### Find observed Halpha/Hbeta ratio
-## 
-Halpha_idx = catalog_emission_lines.index(6563)
-Halpha = positive_norm_Icorr[Halpha_idx]
-pynebHalpha = pyneb_Idered[Halpha_idx]
-Hbeta_idx = catalog_emission_lines.index(4861)
-Hbeta = positive_norm_Icorr[Hbeta_idx]
-pynebHbeta = pyneb_Idered[Hbeta_idx]
-I_obs_HaHb = Halpha/Hbeta
-pynebI_obs_HaHb = pynebHalpha/pynebHbeta
-print ''
-print 'cHbeta = %0.5f' % cHbeta
-print '            Using Seaton                    Using ', RC.law
-print 'Corrected for reddening and underlying absorption'
-print catalog_emission_lines[Halpha_idx], '    ', Halpha, '                  ', pynebHalpha
-print catalog_emission_lines[Hbeta_idx], '    ', Hbeta, '                          ', pynebHbeta
-print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
-print '      observed Ha/Hb = %0.2f           observed Ha/Hb = %0.2f' % (I_obs_HaHb, pynebI_obs_HaHb)
-w1 = 6563
-w2 = 4861
-raw_w1 = flux[rounded_catalog_wavelength.index(w1)]
-raw_w2 = flux[rounded_catalog_wavelength.index(w2)]
-raw_contw1 = continuum[rounded_catalog_wavelength.index(w1)]
-raw_contw2 = continuum[rounded_catalog_wavelength.index(w2)]
-print 'Before extinction correction'
-print 'FLUXES:    %i = %e    %i = %e    ratio = %0.2f' % (w1, raw_w1, w2, raw_w2, raw_w1/raw_w2)
-print 'continuum: %i = %e    %i = %e' % (w1, raw_contw1, w2, raw_contw2)
+# Find dered intensities with and without underlying absorption
+norm_Idered, I_dered_norCorUndAbs = Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities)
 
-# Finding the f_lambda values:
-pyneb_flambda = []
-for w,Icor,Iobs in zip(catalog_emission_lines, I_dered_norCorUndAbs, positive_normfluxes):#pyneb_Idered, positive_norm_intensities):
-    f12 = (np.log10(Icor) - np.log10(Iobs)) / cHbeta
-    #print w, Iobs, Icor, f12
-    pyneb_flambda.append(f12)
-    
+flambdas = find_flambdas(cHbeta, I_dered_norCorUndAbs, positive_normfluxes)
+
+percent_Iuncert, absolute_Iuncert, S2N = det_I_uncertainties(catalog_emission_lines, positive_normfluxes, all_err_cont_fit)
+
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
 tf = open(tfile1stRedCor, 'w+')
 #print >> tf,  ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
 #print >> tf, 'cHbeta  %0.3f' % cHbeta
 lines_pyneb_matches = []
-for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, absolute_err_I):
+#for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, positive_norm_Icorr, absolute_Iuncert):
+for cw, el, io, Ic, er in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, norm_Idered, absolute_Iuncert):
     cw = int(cw)
     cw = str(cw)
     el = str(el)
@@ -482,7 +652,7 @@ print 'guess 1 of temp of S3 = ', TS3
 I4986 = 0.0
 I4987 = 0.0
 I4658 = 0.0
-for w, i in zip(catalog_emission_lines, positive_norm_Icorr):
+for w, i in zip(catalog_emission_lines, norm_Idered):
     if int(w) == 4986:
         I4986 = i
     elif int(w) == 4987:
@@ -551,57 +721,62 @@ print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2
 TO2gar = 0.7 * TO3 + 3000.
 print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
 
-### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
-# Table 1
-# Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
-TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400]
-xalpha = [0.011, 0.037, 0.033, 0.086, 0.070]
-#xbeta = [0.007, 0.027, 0.021, 0.066, 0.053]
-# x_lambda = I_col/I_tot
-# now do the interpolation according to the [OII] temperature
-xL = []
-xalpha_interp = np.interp(TO2gar, TeOII, xalpha)
-xL.append(xalpha_interp)
-xbeta = xalpha_interp * 0.67
-xL.append(xbeta)
-L = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
-for l in L:
-    xl = xalpha_interp / ( 2**((l-2.0)/3.0) )
-    xL.append(xl)
-# For the following hydrogen lines recalculate the intensity correcting for collisional exitation
-Hlines = [6563, 4340, 4101, 3967, 3889, 3835, 3798, 3771, 3750]
-IcorrEC = [] #intensities corrected for collisional excitation
-for w, el, I in zip(catalog_emission_lines, element_emission_lines, positive_norm_Icorr):
-    for h, l in zip(Hlines, xL):
-        if (w == h) and (el == 'H'):
-            newI = I * (1-l)
-            IcorrEC.append(newI)
-            print w, I, 'collisionally excited corrected', newI
+if reddeningCorrection2 == True:
+    ### Correct for collisional excitation
+    # Hydrogen lines to be considered for correction
+    #        Halpha,  H5,   H6,   H7,   H8,   H9,  H10,   H11,  H12
+    #Hlines = [6563, 4340, 4101, 3967, 3889, 3835, 3798, 3771, 3750]
+    # HOWERVER H7 and H8 are contaminated by HeI (H8 is also contaminated with [NeIII] 
+    Hlines = [6563, 4340, 4102, 3967, 3798, 3771, 3750]
+    # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them with the
+    # theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
+    # This has to be done separately object by object for both Case A and B with its respective [OII] temperature.
+    #               Halpha, H5,   H6,   H7,    H8,     H9,     H10,    H11,    H12
+    theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.109, 0.0760, 0.0553, 0.0415, 0.0320]
+    theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.105, 0.733, 0.0532, 0.0398, 0.0306]
+    # write the file with these theoretical ratios
+    file_theoreticalHratios = os.path.join(results4object_path, object_name+"_Case"+case+'_HtheoRatios.txt')
+    Htheofile = open(file_theoreticalHratios, 'w+')
+    print >> Htheofile, '# Theoretical ratios obtained with INTRAT by Storey & Hummer (1995, MNRAS, 272, 41).' 
+    print >> Htheofile, '# Temperature of [O II] used : ', TO2gar
+    print >> Htheofile, ('# {:<13} {:<10} '.format('Wavelength', 'H_X / H_beta'))
+    # Determine which theoretical ratios to use
+    if case == 'A':
+        theoCE = theoCE_caseA
+    elif case == 'B':
+        theoCE = theoCE_caseB
+    for w, r in zip(Hlines, theoCE):
+        print >> Htheofile, ('{:<15} {:<10.4f} '.format(w, r))
+    Htheofile.close()
+    # Do the second iteration of correction: collisional excitation
+    I_theo_HaHb = theoCE[0]
+    emission_lines_info, dereddening_info, uncertainties_info = redcor2(I_theo_HaHb, theoCE, Hlines, TO2gar, norm_Idered, C_Hbeta, EWabsHbeta, catalog_emission_lines, corr_undelyingAbs_EWs, 
+                rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, 
+                intensities, EW, continuum, all_err_cont_fit)
+    # separate the results
+    catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines = emission_lines_info
+    EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas = dereddening_info
+    cHbeta = 0.434*C_Hbeta
+    percent_Iuncert, absolute_Iuncert, S2N = uncertainties_info
+    
+    ### In order to account for the error in the continuum fitting, I realized that the 
+    ### polynomial order does not really change the intensity, however, the window width does!
+    ### To estimate the error on the polynomial fitting I added 1/sum(err), 
+    ### were err=1/sqroot(points in window width)
+    #print 'all_err_cont_fit', all_err_cont_fit
+    ### Add errors and present them in percentage of line intensities
+    emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
+    emfile = open(emission_lines_file, 'w+')
+    print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
+    print >> emfile, '# C_Hbeta = %0.3f   or   cHbeta = %0.3f' % (C_Hbeta, cHbeta)
+    print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
+    print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
+    print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'f_lambda', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
+    for w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+                                 how_forbidden_emission_lines, flambdas, positive_normfluxes, positive_norm_intensities, percent_Iuncert, absolute_Iuncert, EW_emission_lines):
+        sn = F_norm/pu*100.
+        #print w, '   F_norm = %0.2f   I_norm = %0.2f   uncert_percent = %0.2f   abs_uncert = %0.2f' % (F_norm, I_norm, pu, au), '   S/N = ', sn
+        print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw, sn))
+    emfile.close()
 
-# Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them with the
-# theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
-
-
-'''
-### In order to account for the error in the continuum fitting, I realized that the 
-### polynomial order does not really change the intensity, however, the window width does!
-### To estimate the error on the polynomial fitting I added 1/sum(err), 
-### were err=1/sqroot(points in window width)
-#print 'all_err_cont_fit', all_err_cont_fit
-### Add errors and present them in percentage of line intensities
-percent_err_I = []
-absolute_err_I = []
-emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
-emfile = open(emission_lines_file, 'w+')
-print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
-print >> emfile, '# C_Hbeta = %0.3f' % C_Hbeta
-print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
-print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
-print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
-for w, el, i, f, h, F_norm, I_norm, pe, ab, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
-                             how_forbidden_emission_lines,positive_normfluxes, positive_norm_intensities, percent_err_I, absolute_err_I, EW_emission_lines):
-    sn = F_norm/pe*100.
-    print w, '   F_norm = %0.2f   I_norm = %0.2f   err_porcent = %0.2f   abs_err = %0.2f' % (F_norm, I_norm, pe, ae), '   S/N = ', sn
-    print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, F_norm, I_norm, per_err_I, abs_err, eqw, sn))
-emfile.close()
-'''
+print '\n Code finished for Case', case
