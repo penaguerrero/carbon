@@ -771,9 +771,15 @@ if reddeningCorrection2 == True:
     print >> emfile, '# C_Hbeta = %0.3f   or   cHbeta = %0.3f' % (C_Hbeta, cHbeta)
     print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
     print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
+    Halpha_idx = catalog_emission_lines.index(6563)
+    Hbeta_idx = catalog_emission_lines.index(4861)
+    Halpha = norm_Idered[Halpha_idx]
+    Hbeta = norm_Idered[Hbeta_idx]
+    I_obs_HaHb = Halpha / Hbeta
+    print 'I_theo_HaHb = %0.3f     I_obs_HaHb = %0.3f' % (I_theo_HaHb, I_obs_HaHb)
     print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'f_lambda', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
     for w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
-                                 how_forbidden_emission_lines, flambdas, positive_normfluxes, positive_norm_intensities, percent_Iuncert, absolute_Iuncert, EW_emission_lines):
+                                 how_forbidden_emission_lines, flambdas, positive_normfluxes, norm_Idered, percent_Iuncert, absolute_Iuncert, EW_emission_lines):
         sn = F_norm/pu*100.
         #print w, '   F_norm = %0.2f   I_norm = %0.2f   uncert_percent = %0.2f   abs_uncert = %0.2f' % (F_norm, I_norm, pu, au), '   S/N = ', sn
         print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw, sn))
