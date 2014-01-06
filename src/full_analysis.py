@@ -799,7 +799,7 @@ if abundances == True:
         pn.log_.timer('Ending full_analysis.py', calling='full_analysis.py')
     except (RuntimeError, TypeError, NameError):
         pass
-    
+     
     # Write result in a file
     filepath = os.path.join(results4object_path, object_name+"_Case"+case+"_abunds.txt")
     fout = open(filepath, 'w+')
@@ -815,14 +815,23 @@ if abundances == True:
     for i in range(1, len(line_label_list)):
         first3chars_i_1 = string.split(line_label_list[i-1], sep="_")
         first3chars_i = string.split(line_label_list[i], sep="_")
-        total_ionicab_withTO3_i_1 = ab1_list[i-1][0]
-        counter = 1
+        #total_ionicab_withTO3_i_1 = ab1_list[i-1][0]
+        #counter = 1
+        lines4ionab = []
+        lines4ionab.append(line_label_list[i-1])
         if first3chars_i_1 == first3chars_i:
+            lines4ionab.append(line_label_list[i])
+            '''
             counter = counter + 1
             total_ionicab = total_ionicab_withTO3_i_1 + ab1_list[i][0]
             # choose greater intensity value to keep that abundance error
             if line_I_list[i-1][0] > line_I_list[i][0]:
                 tot_ionab_err = ab1_list[i-1][1]
+            '''
+            for line in obs.lines:
+                if line.atom in all_atoms:
+                    new_ab = all_atoms[line.atom].getIonAbundance(line.corrIntens, TO3, den, to_eval=line.to_eval)
+        
     fout.close()
 
 print '\n Code finished for Case', case
