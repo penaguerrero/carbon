@@ -4,6 +4,7 @@ import pyneb as pn
 import os
 import copy
 import science
+import string
 #import uncertainties
 
 ############################################################################################################################################
@@ -22,7 +23,7 @@ object_name = objects_list[object_number]
 create_txt = True
 
 # Choose case
-case = 'B'
+case = 'A'
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
@@ -773,29 +774,55 @@ all_atoms = pn.getAtomDict()
 
 if abundances == True:
     den = 100.
+    ab1_list = []
+    ab2_list = []
+    ab3_list = []
+    line_label_list = []
+    line_I_list = []
     # Calculation and printout of abundances
     try:
         for line in obs.lines:
             if line.atom in all_atoms:
-                ab = all_atoms[line.atom].getIonAbundance(line.corrIntens, TO3, den, to_eval=line.to_eval)
+                ab1 = all_atoms[line.atom].getIonAbundance(line.corrIntens, TO3, den, to_eval=line.to_eval)
                 ab2 = all_atoms[line.atom].getIonAbundance(line.corrIntens, TS3, den, to_eval=line.to_eval)
                 ab3 = all_atoms[line.atom].getIonAbundance(line.corrIntens, TO2gar, den, to_eval=line.to_eval)
-                print '{0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in (ab)])
-                print '{0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab2)])
-                print '{0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab3)])
+                print 'ab1: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in (ab1)])
+                print 'ab2: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab2)])
+                print 'ab3: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab3)])
+                ab1_list.append(ab1)
+                ab2_list.append(ab2)
+                ab3_list.append(ab3)
+                line_label_list.append(line.label)
+                line_I_list.append(line.corrIntens)
             else:
                 pn.log_.warn('line from %s not used because ion not found' % line.atom, calling='full_analysis.py')
         pn.log_.timer('Ending full_analysis.py', calling='full_analysis.py')
     except (RuntimeError, TypeError, NameError):
         pass
-
+    
     # Write result in a file
     filepath = os.path.join(results4object_path, object_name+"_Case"+case+"_abunds.txt")
     fout = open(filepath, 'w+')
-    fout.write('tem_03 ' + str(TO3)+"\n")
-    fout.write('tem_S3 ' + str(TS3)+"\n")
-    fout.write('tem_O2 ' + str(TO2gar)+"\n")
-    fout.write('den_forced ' + str(den)+"\n")
+    print >> fout, ('{:<45} {:>10} {:>6}'.format('# Temperature used [K]', 'O3 =', int(TO3))+'{:>30} {:>6}'.format('S3 =', int(TS3))+
+                    '{:>35} {:>6}'.format('O2-Garnet92 =', int(TO2gar)))
+    print >> fout, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'ab1', 'ab1_err', 
+                                                                                    'ab2', 'ab2_err', 'ab3', 'ab3_err'))
+    for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab1_list, ab2_list, ab3_list):
+        percent_I = (I[1] * 100.)/I[0]
+        print >> fout, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
+                                                                                                                      ab2[0], ab2[1], ab3[0], ab3[1]))
+    # total ionic abundances direct method: with temperature of [O III]
+    for i in range(1, len(line_label_list)):
+        first3chars_i_1 = string.split(line_label_list[i-1], sep="_")
+        first3chars_i = string.split(line_label_list[i], sep="_")
+        total_ionicab_withTO3_i_1 = ab1_list[i-1][0]
+        counter = 1
+        if first3chars_i_1 == first3chars_i:
+            counter = counter + 1
+            total_ionicab = total_ionicab_withTO3_i_1 + ab1_list[i][0]
+            # choose greater intensity value to keep that abundance error
+            if line_I_list[i-1][0] > line_I_list[i][0]:
+                tot_ionab_err = ab1_list[i-1][1]
     fout.close()
 
 print '\n Code finished for Case', case
