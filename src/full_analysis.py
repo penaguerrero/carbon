@@ -23,7 +23,7 @@ object_name = objects_list[object_number]
 create_txt = True
 
 # Choose case
-case = 'A'
+case = 'B'
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
@@ -812,26 +812,54 @@ if abundances == True:
         print >> fout, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
                                                                                                                       ab2[0], ab2[1], ab3[0], ab3[1]))
     # total ionic abundances direct method: with temperature of [O III]
-    for i in range(1, len(line_label_list)):
-        first3chars_i_1 = string.split(line_label_list[i-1], sep="_")
-        first3chars_i = string.split(line_label_list[i], sep="_")
-        #total_ionicab_withTO3_i_1 = ab1_list[i-1][0]
-        #counter = 1
-        lines4ionab = []
-        lines4ionab.append(line_label_list[i-1])
-        if first3chars_i_1 == first3chars_i:
-            lines4ionab.append(line_label_list[i])
-            '''
-            counter = counter + 1
-            total_ionicab = total_ionicab_withTO3_i_1 + ab1_list[i][0]
-            # choose greater intensity value to keep that abundance error
-            if line_I_list[i-1][0] > line_I_list[i][0]:
-                tot_ionab_err = ab1_list[i-1][1]
-            '''
-            for line in obs.lines:
-                if line.atom in all_atoms:
-                    new_ab = all_atoms[line.atom].getIonAbundance(line.corrIntens, TO3, den, to_eval=line.to_eval)
-        
+    atoms_only = []
+    for label in line_label_list:
+        word = label.split("_")[0]
+        atoms_only.append(word)
+    # get only the atoms you found
+    atoms = sorted(set(atoms_only))
+    # create a list per atom
+    atoms_abs = []
+    for a in atoms:
+        a1 = []
+        atoms_abs.append(a1)
+    for a, i in zip(atoms, atoms_abs):
+        for l, ab in zip(atoms_only, ab1_list):
+            if a == l:
+                #print a
+                i.append(ab)
+    # calculate the total ionic abundances taking the average of all values of that ion
+    tot_ion_ab = []
+    tot_ion_ab_err = []
+    print >> fout, '#####'
+    print >> fout, ('{:<9} {:>15} {:>15}'.format('# Ion', 'abundance', 'error'))
+    for a, ab in zip(atoms, atoms_abs):
+        # ab contains the abundance value and the corresponding error, hence ab[0] and ab[1]
+        if len(ab) > 1:
+            print a, ab
+            avg = sum(ab[0]) / float(len(ab[0]))
+            tot_ion_ab.append(avg)
+            squares = []
+            for e in ab[1]:
+                e = float(e)
+                squares.append(e*e)
+                #print e, e*e
+            err = np.sqrt(sum(squares))
+            tot_ion_ab_err.append(err)
+            ionab = avg
+            ionerr = err
+        else:
+            print a, ab[0]
+            tot_ion_ab.append(ab[0][0])
+            tot_ion_ab_err.append(ab[0][1])
+            ionab = ab[0][0]
+            ionerr = ab[0][1]
+        print a, ionab, ionerr
+        # print the results in the file
+        print >> fout, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
     fout.close()
 
+
 print '\n Code finished for Case', case
+
+
