@@ -32,12 +32,12 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.01
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 9
+object_number = 0
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -49,10 +49,10 @@ normalize = False
 sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 3
+order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 600
+window = 300
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -90,6 +90,18 @@ for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
     object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=window, plot=plot, z_correct=True, normalize=normalize)
+
+    ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
+    # of the spectra to appear in the title of the text file
+    splot_text = True
+    part_of_spec = 'nuv'
+    if splot_text == True:
+        name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
+        fout = open(name_out_file, 'w+')
+        wavs, fluxs = object_spectra
+        for w, f in zip(wavs, fluxs):
+            fout.write('{:<4.5f} {:>20.10e}\n'.format(w, f))
+        fout.close()
 
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
