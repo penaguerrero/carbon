@@ -15,38 +15,38 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
                'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
-#        
+#       3.5, 3.72         
 #       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
 #       2.0, 1.06                                                             0.2, 0.024
-object_number = 9
+object_number = 0
 object_name = objects_list[object_number]
 
 # 2) Do you want to create a unified lines text file?
 create_txt = True
 
 # Choose case
-case = 'A'
+case = 'B'
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 2.0
+EWabsHbeta = 3.5
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 1.06
+C_Hbeta = 3.72
 
 # Still finding first round of reddening?
-first_redcorr = False
+first_redcorr = True
 
 # Do you want to do the second iteration for reddening correction (that is collisional excitation)?
-reddeningCorrection2 = True
+reddeningCorrection2 = False
 
 # Do you want to calculate abundances?
-abundances = True
+abundances = False
 
 ############################################################################################################################################
 
@@ -447,7 +447,7 @@ name_out_file = os.path.join(results4object_path, object_name+"_linesNUV2NIR.txt
 
 cols_in_file, all_err_cont_fit = science.spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
-
+    
 ### Step 1 of first iteration of reddening correction: Assume that there is no collisional excitation
 ### get the EW_abs of the H and He lines with respect to EW_abs(Hbeta)
 Hline_and_EWs, Heline_and_EWs = science.spectrum.readlines_EWabsRelHbeta()
@@ -801,12 +801,10 @@ if abundances == True:
         print 'O2-Garnet92:', TO2gar
         print 'S3 =', TS3
     except:
-        #(NameError,),e
-        TS3 = 'NA'
+        (NameError,),e
         TS3 = TO3 * 0.8
         print ' *** Temperature Calculation Failed for S3! ESTIMATING A LOWER TEMPERATURE ZONE as 80% of TO3 =', TS3, '***'
-        denO2 = 'NA'
-        print ' *** Density Calculation Failed! USING density =', den, '***'
+        print ' *** USING density =', den, '***'
         print ''
     try:
         for line in obs.lines:
