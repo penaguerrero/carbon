@@ -40,7 +40,7 @@ EWabsHbeta = 3.5
 C_Hbeta = 3.72
 
 # Still finding first round of reddening?
-first_redcorr = True
+first_redcorr = False
 
 # Do you want to do the second iteration for reddening correction (that is collisional excitation)?
 reddeningCorrection2 = False
