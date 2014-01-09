@@ -20,7 +20,7 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
 
 # corresponding redshift
 #             0        1        2        3         4         5        6        7         8
-z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.013454, 0.01348, 
+z_list = [0.032989, 0.01972, 0.04678, 0.019113, 0.002695, 0.021371, 0.02877, 0.013454, 0.01348, 
           0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0076, 0.01195, 0.01763]
 #             9       10        11       12        13       14       15       16
 
@@ -32,12 +32,12 @@ z_list = [0.032989, 0.01972, 0.04678, 0.19113, 0.002695, 0.021371, 0.02877, 0.01
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 0
+object_number = 3
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -52,13 +52,13 @@ sigmas_away = 3
 order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 300
+window = 150
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
 
 # 8) write the text file with the line net fluxes and equivalent widths?
-text_table = True
+text_table = False
 
 # Set width of Halpha in order to properly correct for reddening
 Halpha_width = 43.
@@ -93,8 +93,8 @@ for d, s in zip(data, specs):
 
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
-    splot_text = True
-    part_of_spec = 'nuv'
+    splot_text = False
+    part_of_spec = 'nir'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
@@ -106,10 +106,18 @@ for d, s in zip(data, specs):
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
-    
+    # Now obtain the continuum and equivalent widths
     object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum)
     print ''
+    
+c = 3.0e5 #km/s
+velocity = c * z
+print 'v = c * z = 3e5 * %0.5f = %0.3f' % (z, velocity)
+H0 = 75#67.8 #+-0.77 km/sec/Mpc (from Planck mission)
+distance = velocity / H0
+print 'Estimated distance assuming H0 = %f:   d[Mpc] = %0.3f' % (H0, distance)
 print sigmas_away, 'sigmas_away'    
+
 print 'Code finished!'
     
     
