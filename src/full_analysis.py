@@ -19,7 +19,7 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
 #       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
 #       2.0, 1.06                                                             0.2, 0.024
-object_number = 0
+object_number = 14
 object_name = objects_list[object_number]
 
 # 2) Do you want to create a unified lines text file?
@@ -33,20 +33,20 @@ I_theo_HaHb = 2.86
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 3.5
+EWabsHbeta = 0.2
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 3.72
+C_Hbeta = 0.024
 
-# Still finding first round of reddening?
+# Still finding first round of reddening? (write False if done with the first part)
 first_redcorr = False
 
 # Do you want to do the second iteration for reddening correction (that is collisional excitation)?
-reddeningCorrection2 = False
+reddeningCorrection2 = True
 
 # Do you want to calculate abundances?
-abundances = False
+abundances = True
 
 ############################################################################################################################################
 
