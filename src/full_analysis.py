@@ -23,7 +23,7 @@ object_number = 14
 object_name = objects_list[object_number]
 
 # 2) Do you want to create a unified lines text file?
-create_txt = True
+create_txt = False
 
 # Choose case
 case = 'B'
@@ -778,7 +778,9 @@ if reddeningCorrection2 == True:
     tfile_final_RedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_FinalRedCor.txt")
     lines_pyneb_matches = writeRedCorrFile(tfile_final_RedCor, catalog_emission_lines, element_emission_lines, ion_emission_lines, norm_Idered, absolute_Iuncert, verbose=False)
 
+### Determine ionic and TOTAL abundances
 if abundances == True:
+    ### Ionic abundances
     # Define an Observation object and assign it to name 'obs' to read the final intensities
     obs = pn.Observation()
     # read data from file created specifically for pyneb reading
@@ -885,7 +887,12 @@ if abundances == True:
         print >> fout, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
     fout.close()
 
-
+    ### TOTAL abundances
+    icf = pn.ICF()
+    icf.getAvailableICFs()
+    icf.printAllICFs(type_=['HII'])
+    r = icf.getReference('Ial06_22a')
+    print r
 print '\n Code finished for Case', case
 
 
