@@ -31,8 +31,8 @@ z_list = [0.032989, 0.01985, 0.04678, 0.019113, 0.002695, 0.021371, 0.02877, 0.0
 
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
-#       pox4 =9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
-object_number = 12
+#       pox4 = 9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 = 15,  tol1457 = 16
+object_number = 5
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
@@ -49,10 +49,10 @@ normalize = False
 sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 3
+order = 2
 
 # 6) What is the width of the window to use to find local continuum?
-window = 200
+window = 500
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -61,7 +61,7 @@ plot = True
 text_table = True
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 27.
+Halpha_width = 22.
 
 
 ############################################################################################################################################
@@ -79,8 +79,11 @@ results4object_path = os.path.join(full_results_path, object_name)
 add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # alternative for when files have been corrected in splot
-altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
+#altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 #f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)
+### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
+#altern = '../results/tol9/tol9_opt_corr1.txt'
+#w, f = numpy.loadtxt(altern, unpack=True)
 #data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
@@ -107,7 +110,8 @@ for d, s in zip(data, specs):
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
-    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum)
+    faintObj = False  # --> use this option if object is VERY faint and want to use thiner widths for emission lines
+    object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum, faintObj=faintObj)
     print ''
     
 c = 3.0e5 #km/s
