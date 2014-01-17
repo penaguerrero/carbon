@@ -32,12 +32,12 @@ z_list = [0.032989, 0.01985, 0.04678, 0.019113, 0.002695, 0.021371, 0.02877, 0.0
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 #       pox4 = 9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 = 15,  tol1457 = 16
-object_number = 5
+object_number = 2
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -49,10 +49,10 @@ normalize = False
 sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 2
+order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 500
+window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -61,7 +61,7 @@ plot = True
 text_table = True
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 22.
+Halpha_width = 50.
 
 
 ############################################################################################################################################
