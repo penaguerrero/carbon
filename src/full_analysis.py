@@ -4,6 +4,7 @@ import pyneb as pn
 import os
 import copy
 import science
+from collections import OrderedDict
 #import uncertainties
 
 ############################################################################################################################################
@@ -19,11 +20,11 @@ objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960',
 #       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
 #       2.0, 1.06                                                             0.2, 0.024
-object_number = 7
+object_number = 14
 object_name = objects_list[object_number]
 
 # 2) Do you want to create a unified lines text file?
-create_txt = True
+create_txt = False
 
 # Choose case
 case = 'B'
@@ -33,20 +34,27 @@ I_theo_HaHb = 2.86
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 2.5
+EWabsHbeta = 0.2
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 2.35
+C_Hbeta = 0.024
 
 # Still finding first round of reddening? (write False if done with the first part)
-first_redcorr = True
+first_redcorr = False
 
 # Do you want to do the second iteration for reddening correction (that is collisional excitation)?
-reddeningCorrection2 = False
+reddeningCorrection2 = True
+# print file with theoretical ratios of collissional excitation?
+print_theoratios_file = True
+# print file of emission lines with second iteration of reddening?
+print_2corr_file = True
 
 # Do you want to calculate abundances?
-abundances = False
+abundances = True
+# print the file with ionic abundances?
+print_ionabs_file = True
+# print file with total abundances?
 
 ############################################################################################################################################
 
@@ -723,20 +731,21 @@ if reddeningCorrection2 == True:
     # SBS1319       Halpha, H5,   H6,   H7,    H8,     H9,     H10,    H11,    H12
     #theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.109, 0.0760, 0.0553, 0.0415, 0.0320]
     #theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.105, 0.733, 0.0532, 0.0398, 0.0306]
-    # write the file with these theoretical ratios
-    file_theoreticalHratios = os.path.join(results4object_path, object_name+"_Case"+case+'_HtheoRatios.txt')
-    Htheofile = open(file_theoreticalHratios, 'w+')
-    print >> Htheofile, '# Theoretical ratios obtained with INTRAT by Storey & Hummer (1995, MNRAS, 272, 41).' 
-    print >> Htheofile, '# Temperature of [O II] used : ', TO2gar
-    print >> Htheofile, ('# {:<13} {:<10} '.format('Wavelength', 'H_X / H_beta'))
-    # Determine which theoretical ratios to use
-    if case == 'A':
-        theoCE = theoCE_caseA
-    elif case == 'B':
-        theoCE = theoCE_caseB
-    for w, r in zip(Hlines, theoCE):
-        print >> Htheofile, ('{:<15} {:<10.4f} '.format(w, r))
-    Htheofile.close()
+    if print_theoratios_file == True:
+        # write the file with these theoretical ratios
+        file_theoreticalHratios = os.path.join(results4object_path, object_name+"_Case"+case+'_HtheoRatios.txt')
+        Htheofile = open(file_theoreticalHratios, 'w+')
+        print >> Htheofile, '# Theoretical ratios obtained with INTRAT by Storey & Hummer (1995, MNRAS, 272, 41).' 
+        print >> Htheofile, '# Temperature of [O II] used : ', TO2gar
+        print >> Htheofile, ('# {:<13} {:<10} '.format('Wavelength', 'H_X / H_beta'))
+        # Determine which theoretical ratios to use
+        if case == 'A':
+            theoCE = theoCE_caseA
+        elif case == 'B':
+            theoCE = theoCE_caseB
+        for w, r in zip(Hlines, theoCE):
+            print >> Htheofile, ('{:<15} {:<10.4f} '.format(w, r))
+        Htheofile.close()
     # Do the second iteration of correction: collisional excitation
     I_theo_HaHb = theoCE[0]
     emission_lines_info, dereddening_info, uncertainties_info = redcor2(I_theo_HaHb, theoCE, Hlines, TO2gar, norm_Idered, C_Hbeta, EWabsHbeta, catalog_emission_lines, corr_undelyingAbs_EWs, 
@@ -754,29 +763,30 @@ if reddeningCorrection2 == True:
     ### were err=1/sqroot(points in window width)
     #print 'all_err_cont_fit', all_err_cont_fit
     ### Add errors and present them in percentage of line intensities
-    emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
-    emfile = open(emission_lines_file, 'w+')
-    print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
-    print >> emfile, '# C_Hbeta = %0.3f   or   cHbeta = %0.3f' % (C_Hbeta, cHbeta)
-    print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
-    print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
     Halpha_idx = catalog_emission_lines.index(6563)
     Hbeta_idx = catalog_emission_lines.index(4861)
     Halpha = norm_Idered[Halpha_idx]
     Hbeta = norm_Idered[Hbeta_idx]
     I_obs_HaHb = Halpha / Hbeta
-    print 'I_theo_HaHb = %0.3f     I_obs_HaHb = %0.3f' % (I_theo_HaHb, I_obs_HaHb)
-    print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'f_lambda', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
-    for w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
-                                 how_forbidden_emission_lines, flambdas, positive_normfluxes, norm_Idered, percent_Iuncert, absolute_Iuncert, EW_emission_lines):
-        sn = F_norm/pu*100.
-        #print w, '   F_norm = %0.2f   I_norm = %0.2f   uncert_percent = %0.2f   abs_uncert = %0.2f' % (F_norm, I_norm, pu, au), '   S/N = ', sn
-        print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw, sn))
-    emfile.close()
+    if print_2corr_file == True:
+        emission_lines_file = os.path.join(results4object_path, object_name+"_Case"+case+'_emlines.txt')
+        emfile = open(emission_lines_file, 'w+')
+        print >> emfile, '# Positive EW = emission        Negative EW = absorption' 
+        print >> emfile, '# C_Hbeta = %0.3f   or   cHbeta = %0.3f' % (C_Hbeta, cHbeta)
+        print >> emfile, '# EWabs_Hbeta = %0.3f' % EWabsHbeta
+        print >> emfile, '# I_theo_HaHb = %0.3f' % I_theo_HaHb
+        print 'I_theo_HaHb = %0.3f     I_obs_HaHb = %0.3f' % (I_theo_HaHb, I_obs_HaHb)
+        print >> emfile, ('# {:<13} {:<8} {:>6} {:<12} {:<12} {:<16} {:<16} {:<18} {:<18} {:<16} {:<16} {:<16}'.format('Wavelength', 'Element', 'Ion', 'Forbidden', 'How much', 'f_lambda', 'Flux [cgs]', 'Intensity [cgs]', '% Err', 'Abs err', 'EW [A]', 'S/N'))
+        for w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw in zip(catalog_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+                                     how_forbidden_emission_lines, flambdas, positive_normfluxes, norm_Idered, percent_Iuncert, absolute_Iuncert, EW_emission_lines):
+            sn = F_norm/pu*100.
+            #print w, '   F_norm = %0.2f   I_norm = %0.2f   uncert_percent = %0.2f   abs_uncert = %0.2f' % (F_norm, I_norm, pu, au), '   S/N = ', sn
+            print >> emfile, ('{:<15.0f} {:<8} {:>6} {:<12} {:<12} {:<16.3f} {:<16.3f} {:<18.3f} {:<18.3f} {:<16.3f} {:<16.3f} {:<16.3f}'.format(w, el, i, f, h, ls, F_norm, I_norm, pu, au, eqw, sn))
+        emfile.close()
 
-    # Write the final round of reddeding correction in pyneb readable format
-    tfile_final_RedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_FinalRedCor.txt")
-    lines_pyneb_matches = writeRedCorrFile(tfile_final_RedCor, catalog_emission_lines, element_emission_lines, ion_emission_lines, norm_Idered, absolute_Iuncert, verbose=False)
+        # Write the final round of reddeding correction in pyneb readable format
+        tfile_final_RedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_FinalRedCor.txt")
+        lines_pyneb_matches = writeRedCorrFile(tfile_final_RedCor, catalog_emission_lines, element_emission_lines, ion_emission_lines, norm_Idered, absolute_Iuncert, verbose=False)
 
 ### Determine ionic and TOTAL abundances
 if abundances == True:
@@ -828,17 +838,6 @@ if abundances == True:
     except (RuntimeError, TypeError, NameError):
         pass
      
-    # Write result in a file
-    filepath = os.path.join(results4object_path, object_name+"_Case"+case+"_abunds.txt")
-    fout = open(filepath, 'w+')
-    print >> fout, ('{:<45} {:>10} {:>6}'.format('# Temperature used [K]', 'O3 =', int(TO3))+'{:>30} {:>6}'.format('S3 =', int(TS3))+
-                    '{:>35} {:>6}'.format('O2-Garnet92 =', int(TO2gar)))
-    print >> fout, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'ab1', 'ab1_err', 
-                                                                                    'ab2', 'ab2_err', 'ab3', 'ab3_err'))
-    for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab1_list, ab2_list, ab3_list):
-        percent_I = (I[1] * 100.)/I[0]
-        print >> fout, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
-                                                                                                                      ab2[0], ab2[1], ab3[0], ab3[1]))
     # total ionic abundances direct method: with temperature of [O III]
     atoms_only = []
     for label in line_label_list:
@@ -859,8 +858,6 @@ if abundances == True:
     # calculate the total ionic abundances taking the average of all values of that ion
     tot_ion_ab = []
     tot_ion_ab_err = []
-    print >> fout, '#####'
-    print >> fout, ('{:<9} {:>15} {:>15}'.format('# Ion', 'abundance', 'error'))
     for a, ab in zip(atoms, atoms_abs):
         # ab contains the abundance value and the corresponding error, hence ab[0] and ab[1]
         if len(ab) > 1:
@@ -878,21 +875,52 @@ if abundances == True:
             ionerr = err
         else:
             #print a, ab[0]
-            tot_ion_ab.append(ab[0][0])
-            tot_ion_ab_err.append(ab[0][1])
             ionab = ab[0][0]
             ionerr = ab[0][1]
+            tot_ion_ab.append(ionab)
+            tot_ion_ab_err.append(ionerr)
         #print a, ionab, ionerr
         # print the results in the file
-        print >> fout, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
-    fout.close()
+    # Write result in a file
+    if print_ionabs_file == True:
+        filepath = os.path.join(results4object_path, object_name+"_Case"+case+"_abunds.txt")
+        fout = open(filepath, 'w+')
+        print >> fout, ('{:<45} {:>10} {:>6}'.format('# Temperature used [K]', 'O3 =', int(TO3))+'{:>30} {:>6}'.format('S3 =', int(TS3))+
+                        '{:>35} {:>6}'.format('O2-Garnet92 =', int(TO2gar)))
+        print >> fout, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'ab1', 'ab1_err', 
+                                                                                        'ab2', 'ab2_err', 'ab3', 'ab3_err'))
+        for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab1_list, ab2_list, ab3_list):
+            percent_I = (I[1] * 100.)/I[0]
+            print >> fout, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
+                                                                                                                          ab2[0], ab2[1], ab3[0], ab3[1]))
+        print >> fout, '#####'
+        print >> fout, ('{:<9} {:>15} {:>15}'.format('# Ion', 'abundance', 'error'))
+        for a, ionab, ionerr in zip(atoms, tot_ion_ab, tot_ion_ab_err):
+            print >> fout, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
+        fout.close()
 
     ### TOTAL abundances
+    #print atoms
+    #print tot_ion_ab
+    #print tot_ion_ab_err
     icf = pn.ICF()
     icf.getAvailableICFs()
     icf.printAllICFs(type_=['HII'])
-    r = icf.getReference('Ial06_22a')
-    print r
+    #r = icf.getReference('Ial06_22a')
+    #print r
+    #atom_abun = {}
+    atom_abun = OrderedDict()
+    for atom, ionab, err in zip(atoms, tot_ion_ab, tot_ion_ab_err):
+        atom_abun[atom] = ionab
+        #err_str = atom + '_err'
+        #atom_abun[err_str] = err
+    elem_abun = icf.getElemAbundance(atom_abun)#, icf_list=['TPP85'])
+    print elem_abun
+    print elem_abun['Ial06_22a']
+
+# Get the version of pyneb
+#print pn.__version__    
+
 print '\n Code finished for Case', case
 
 
