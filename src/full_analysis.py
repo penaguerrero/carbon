@@ -13,18 +13,18 @@ from collections import OrderedDict
 
 # 1) Select a number from objects_list, i = :
 objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960', 'mrk1087', 'mrk1199', 'ngc1741', 
-               'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
+               'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457', 'sbs1415']
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
 #       3.5, 3.28     3.0, 4.07       2.0, 1.51      0.0, 0.0       2.5, 3.2   3.0, 1.4    2.5, 2.35
-#       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16
+#       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16, sbs1415 = 17
 # values of EWabsHbeta and C_Hbeta for first round of reddening correction
-#       2.0, 1.06                                                             0.2, 0.024
-object_number = 14
+#       2.0, 1.06                                                             0.2, 0.024                                1.0, 0.32
+object_number = 17
 object_name = objects_list[object_number]
 
 # 2) Do you want to create a unified lines text file?
-create_txt = False
+create_txt = True
 
 # Choose case
 case = 'B'
@@ -34,26 +34,26 @@ I_theo_HaHb = 2.86
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 0.2
+EWabsHbeta = 1.0
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.024
+C_Hbeta = 0.32
 
 # Still finding first round of reddening? (write False if done with the first part)
 first_redcorr = False
 
 # Do you want to do the second iteration for reddening correction (that is collisional excitation)?
-reddeningCorrection2 = True
+reddeningCorrection2 = False
 # print file with theoretical ratios of collissional excitation?
-print_theoratios_file = True
+print_theoratios_file = False
 # print file of emission lines with second iteration of reddening?
-print_2corr_file = True
+print_2corr_file = False
 
 # Do you want to calculate abundances?
-abundances = True
+abundances = False
 # print the file with ionic abundances?
-print_ionabs_file = True
+print_ionabs_file = False
 # print file with total abundances?
 
 ############################################################################################################################################
@@ -556,8 +556,17 @@ RC.law = 'CCM 89'
 # filter emission_lines_only and normalize to Hbeta
 emission_lines_only = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
                         how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+
 # expand the result
 catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines = emission_lines_only
+# print in screen the line intensities and their error
+emission_flux = []
+for wa, fl in zip(rounded_catalog_wavelength, flux):
+    if wa in catalog_emission_lines:
+        emission_flux.append(fl)
+print 'Wavelength  flux      continuum     EW    normalized dereddend intensity'
+for wa, fl, co, ew, I in zip(catalog_emission_lines, emission_flux, pos_calc_cont, EW_emission_lines, positive_norm_intensities):
+    print '{:<8.1f} {:<12.3e} {:<12.3e} {:<8.3f} {:<8.3f}'.format(wa, fl, co, ew, I)
 
 # Find dered intensities with and without underlying absorption and get the flambdas used
 norm_Idered, I_dered_norCorUndAbs = Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_emission_lines, positive_normfluxes, positive_norm_intensities)
