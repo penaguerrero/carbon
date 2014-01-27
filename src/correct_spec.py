@@ -9,9 +9,9 @@ This script creates the text files of wavelength and flux in case there are some
         2. reconvert the corrected fits file to text with wspectext
 '''
 
-obj = 'tol9'
-img = 'obqn12030_opt21_x1d'
-part = 'opt'
+obj = 'sbs1415'
+img = 'obqn16012_nuv16_512_x1d'
+part = 'nuv'
 
 spec_path = os.path.abspath('../HSTdata/')
 spec = os.path.join(spec_path,img+".fits")
