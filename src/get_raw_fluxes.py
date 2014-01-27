@@ -15,14 +15,14 @@ It writes a text file containing the line information it found for that waveleng
 # name of the object
 #                 0           1           2            3         4        5          6          7         8
 objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960', 'mrk1087', 'mrk1199', 'ngc1741', 
-               'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457']
-#                9         10        11         12         13         14        15       16
+               'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457', 'sbs1415']
+#                9         10        11         12         13         14        15       16         17
 
 # corresponding redshift
 #             0        1        2        3         4         5        6        7         8
 z_list = [0.032989, 0.01985, 0.04678, 0.019113, 0.002695, 0.021371, 0.02877, 0.01354, 0.01348, 
-          0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0076, 0.01195, 0.01763]
-#             9       10        11       12        13       14       15       16
+          0.01201, 0.05842, 0.046240, 0.013642, 0.002010, 0.0076, 0.01195, 0.01763, 0.0020]
+#             9       10        11       12        13       14       15       16       17
 
 
 ############################################################################################################################################
@@ -31,13 +31,13 @@ z_list = [0.032989, 0.01985, 0.04678, 0.019113, 0.002695, 0.021371, 0.02877, 0.0
 
 # 1) Select a number from objects_list, i = :
 #       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
-#       pox4 = 9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 = 15,  tol1457 = 16
-object_number = 2
+#       pox4 = 9,  sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 = 15,  tol1457 = 16, sbs1415 = 17
+object_number = 17
 object_name = objects_list[object_number]
 z = z_list[object_number]
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -46,13 +46,13 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 1
+order = 4
 
 # 6) What is the width of the window to use to find local continuum?
-window = 550
+window = 50
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -61,7 +61,7 @@ plot = True
 text_table = True
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 50.
+Halpha_width = 35.
 
 
 ############################################################################################################################################
@@ -110,7 +110,7 @@ for d, s in zip(data, specs):
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
-    faintObj = False  # --> use this option if object is VERY faint and want to use thiner widths for emission lines
+    faintObj = True  # --> use this option if object is VERY faint and want to use thiner widths for emission lines
     object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum, faintObj=faintObj)
     print ''
     
