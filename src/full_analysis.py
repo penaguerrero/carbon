@@ -12,14 +12,15 @@ from collections import OrderedDict
 '''  Choose parameters to run script  '''
 
 # 1) Select a number from objects_list, i = :
-objects_list =['arp252', 'iiizw107', 'iras08208', 'iras08339', 'mrk5', 'mrk960', 'mrk1087', 'mrk1199', 'ngc1741', 
-               'pox4', 'sbs0218', 'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol9', 'tol1457', 'sbs1415']
-#       arp252 = 0,  iiizw107 = 1,  iras08208 = 2,  iras08339 = 3,  mrk5 = 4,  mrk960 = 5, mrk1087 = 6,  mrk1199 = 7,  ngc1741 = 8,  
-# values of EWabsHbeta and C_Hbeta for first round of reddening correction
-#       3.5, 3.28     3.0, 4.07       2.0, 1.51      0.0, 0.0       2.5, 3.2   3.0, 1.4    2.5, 2.35
-#       pox4 =9,   sbs0218 = 10,  sbs0948 = 11, sbs0926 = 12,  sbs1054 = 13,  sbs1319 = 14,  tol9 =15,  tol1457 = 16, sbs1415 = 17
-# values of EWabsHbeta and C_Hbeta for first round of reddening correction
-#       2.0, 1.06                                                             0.2, 0.024                                1.0, 0.32
+objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
+               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+#
+# values of EWabsHbeta and C_Hbeta for first round of reddening correction: EWabsHbeta, C_Hbeta
+#   iiizw107 = 0,  iras08339 = 1,  mrk1087 = 2,  mrk1199 = 3,  mrk5 = 4,  mrk960 = 5, ngc1741 = 6,  pox4 = 7,  sbs0218 = 8,  
+#   3.0, 4.07       0.0, 0.0       2.5, 2.35                   2.5, 3.2    3.0, 1.4                2.0, 1.06
+#   sbs0948 =9,   sbs0926 = 10,  sbs1054 = 11, sbs1319 = 12,  tol1457 = 13,  tol9 = 14,  arp252 =15,  iras08208 = 16, sbs1415 = 17
+#                                              0.2, 0.024                                3.5, 3.28     2.0, 1.51       1.0, 0.32
+
 object_number = 17
 object_name = objects_list[object_number]
 
