@@ -49,7 +49,7 @@ class OneDspecs:
             self.counter = self.counter + 1   
 
     def do_plot(self, plot_name, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim, save=True):
-        fig1 = pyplot.figure(1, figsize=(12, 8))
+        fig1 = pyplot.figure(1, figsize=(15, 8))
         # Making the plot
         j = 0
         k = 0
