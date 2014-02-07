@@ -20,18 +20,26 @@ in order to let me choose which one has the best S/N.
 '''
 
 path_oneDspecs = '../HSTdata/'
+path_oneDspecs_notMain = '../HSTdata/not_main_specs/'
 path_results = '../results/1Dspecs/'
 path_plots = '../results/plots/'
 
 print('Please type first 3 digits of obqn number for the object of interest (i.e. obqn18010_... type 180)')
 print('    OR ')
 print('type the full path to a .txt file containing the HST obs number (obqn number) and the name of the object separated by a coma.')
-print('      i.e.  180, iiizw108')
+print('      i.e.  180, iiizw107')
 print('            030, mrk1087')
 
 obqn_num = raw_input()
+
+# In case of wanting to study the non main spectra, change to True
+main_specs = True
+if main_specs == False:
+    oneDspecs = glob.glob(path_oneDspecs_notMain+'obqn'+obqn_num+'*x*.fits')    
+
+# Read the spectra...
 # This is assuming that the fits files have been cleaned from cosmic rays with the cosmic_rays script
-oneDspecs = glob.glob(path_oneDspecs+'obqn'+obqn_num+'*x*.fits')
+oneDspecs = glob.glob(path_oneDspecs+'obqn'+obqn_num+'*x*.fits')    
 
 print('Please type name of object or some identifier (i.e. ngc6822)')
 obj_name = raw_input()
