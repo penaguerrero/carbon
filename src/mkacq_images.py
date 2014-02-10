@@ -20,7 +20,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 1
+object_number = 0
 vmin = 18
 vmax = 65
 
