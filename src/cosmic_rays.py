@@ -22,13 +22,13 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 11
+object_number = 0
 # choose the region to correct: opt=1  or  nir=2
-region = 2
+region = 1
 
 # paremeters for contrast in plotted image
-vmin = -5
-vmax = 18
+vmin = -3
+vmax = 15
 # useful cmap options: Blues, Greens, Greys, hot, Purples, binary, rainbow,  for default type None
 cmap = 'Greys'
 
