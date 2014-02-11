@@ -1,7 +1,9 @@
 import os
 import pyfits
 import pylab as plt
-from PIL import Image
+import numpy
+import PIL.Image as Image
+#from PIL import Image
 from scipy import ndimage
 
 '''
@@ -53,7 +55,7 @@ img_list = ['obqn18wbq_raw.fits', 'obqn08a6q_raw.fits', 'obqn03ogq_raw.fits', 'o
 img_name = img_list[object_number]
 
 #fits_path = '/Users/pena/Documents/STIS/prop12472/raw_data'
-fits_path = '/Users/pena/Documents/AptanaStudio3/carbon/HSTdata/raw_acq_imgs'
+fits_path = '../HSTdata/raw_acq_imgs'
 jpgs_path = '../results/plots/object_images'
 
 fits_img = os.path.join(fits_path, img_name)
@@ -66,6 +68,21 @@ PA_APER = h1['PA_APER']
 ORIENT = h1['ORIENTAT']
 PA = ORIENT-45.  # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
 print 'PA = ', PA
+
+
+def add_slit_line(lolim, uplim):
+    x = [uplim/2, uplim/2]
+    y = [lolim, uplim]
+    teta = 180.0 - numpy.fabs(PA)
+    co = numpy.fabs((uplim/2.0 / numpy.cos(teta)) * numpy.sin(teta))
+    z0 = x[0] - co
+    z1 = x[0] + co
+    z = [z0, z1]
+    print 'teta =', numpy.cos(teta)*(180/numpy.pi)
+    plt.plot(z, y, 'w-', lw=2)
+    plt.xlim(lolim, uplim)
+    plt.ylim(lolim, uplim)
+
 
 jpg_img_name = object_name+'_before'+'.jpg'
 destination = os.path.join(jpgs_path, jpg_img_name)
@@ -116,6 +133,9 @@ else:
         im2 = ax2.imshow(img_recenter, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     ax1.set_title(object_name+'_before')
     # After
+    lolim = 0
+    uplim = 90    
+    add_slit_line(lolim, uplim)
     ax2.set_title(object_name+'_after')
     cbar_ax = f.add_axes([0.92, 0.15, 0.02, 0.7])
     f.colorbar(im1, cax=cbar_ax)
