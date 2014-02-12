@@ -23,13 +23,15 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 0
+object_number = 17
 # choose the region to correct: opt=1  or  nir=2
-region = 1
+region = 2
 
 # paremeters for contrast in plotted image
-vmin = -3
-vmax = 15
+#vmin = -20
+#vmax = 4
+vmin = -10
+vmax = 30
 # useful cmap options: Blues, Greens, Greys, hot, Purples, binary, rainbow,  for default type None
 cmap = 'Greys'
 
@@ -180,22 +182,6 @@ PA = ORIENT-45.  # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
 #print PA_APER, ORIENT, '   ORENT = P.A.+ 45 = %f' % (PA)
 #clean_data = clean_data.rotate(PA)
 
-def add_slit_line(lolim, uplim):
-    #x = [uplim/2, uplim/2]
-    #y = [lolim, uplim]
-    x = [lolim, uplim]
-    y = [uplim/2, uplim/2]
-    teta = 180.0 - numpy.fabs(PA)
-    co = numpy.fabs((uplim/2.0 / numpy.cos(teta)) * numpy.sin(teta))
-    z0 = x[0] - co
-    z1 = x[0] + co
-    z = [z0, z1]
-    print 'teta =', numpy.cos(teta)*(180/numpy.pi)
-    plt.plot(z, y, 'w-', lw=2)
-    plt.xlim(lolim, uplim)
-    plt.ylim(lolim, uplim)
-
-
 # plot the spectrum before cosmic ray correction as a 2-d array
 object_name = objects_list[object_number]
 # Before the cosmic ray correcting
@@ -207,9 +193,9 @@ elif region == 2:
     reg = '_nir'
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20,10))
 if rotate == True:
-    rotate_im = ndimage.rotate(ori_data, PA, reshape=True)
+    rotate_im = ndimage.rotate(ori_data, PA, reshape=False)
     im1 = ax1.imshow(rotate_im, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
-    rotate_clean = ndimage.rotate(clean_data, PA, reshape=True)
+    rotate_clean = ndimage.rotate(clean_data, PA, reshape=False)
     im2 = ax2.imshow(rotate_clean, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     jpg_img_name = object_name+reg+'_rotated'+'.jpg'
 else:
@@ -222,10 +208,6 @@ im2 = ax2.imshow(clean_data, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
 ax2.set_title(object_name+'='+obj_id[0]+'_after')
 cbar_ax = f.add_axes([0.92, 0.15, 0.02, 0.7])
 
-lolim = 0
-uplim = 1050    
-add_slit_line(lolim, uplim)
-
 f.colorbar(im1, cax=cbar_ax)
 jpgs_path = '../results/plots/object_images'
 destination = os.path.join(jpgs_path, jpg_img_name)
@@ -237,7 +219,7 @@ if save_plt == 'y':
         im2 = plt.imshow(rotate_im2, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     else:
         im2 = plt.imshow(ori_data, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
-    PA = int(PA)#-90)
+    PA = int(PA)
     plt.title(object_name+'_PA'+repr(PA))
     plt.colorbar(im2, orientation='vertical')
     plt.savefig(destination)
