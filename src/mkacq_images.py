@@ -22,11 +22,13 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 11
+object_number = 0
+# faint objects
+#vmin = 20
+#vmax = 50
+# clear objects
 vmin = 10
-vmax = 60
-#vmin = 10
-#vmax = 90
+vmax = 90
 
 # want to save images?  (type 'y' for yes or 'n' for no)
 save_plt = 'n'
@@ -38,7 +40,7 @@ change_format = False
 new_filetype = 'eps'
 
 # Do you want to see the plots separate or together? (choose separate=True for creating the jpg images)
-separate = True
+separate = False
 
 # Do you want to see the rotation angle of the slit in the 2d spectra?
 rotate = False
@@ -114,11 +116,11 @@ def add_slit_line(lolim, uplim, teta):
             
     _, center1, m, slit_x, slit_y = find_slit_center_eqn(ca, alfa, x, y)
     alfa = numpy.fabs(alfa*180/numpy.pi)
-    if (alfa < 45.0) or (alfa > 180.0):
-        #print alfa
+    if (alfa < 45.0) or (alfa > 305.0):
+        #print alfa, 'caso 1'
         slit_right = m * (slit_x - (center1 - 2.4)) + y[1]
         slit_left = m * (slit_x - (center1 + 2.4)) + y[1]
-    elif (alfa >= 45.0) and (alfa <= 180.0):
+    elif (alfa >= 45.0) and (alfa <= 305.0):
         #print alfa
         slit_right = m * (slit_x - center1) + (y[1]+2.0)
         slit_left = m * (slit_x - center1) + (y[1]-2.0)        
