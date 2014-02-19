@@ -170,6 +170,11 @@ class OneDspecs:
         # now do the plotting
         plot_selecSpecs = plot_name.replace(".eps", "_selecSpectra.eps")
         keep_prevFig = raw_input('Is there is a previous figure you want to keep?  (n)  y   ')
+        # but first smoothen the overlapping regions of the spectra and make a single nice spectrum to plot 
+        # get all the wavelengths but disregard the first 50 Angstroms of the opt and nir because they are too noisy
+        whole_spec_wavs = []
+        whole_spec_wavs.append(object)
+        # plot the smooth spectra
         if keep_prevFig == 'y':
             self.do_plot(plot_selecSpecs, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=False)
         else:
