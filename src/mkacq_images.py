@@ -34,7 +34,7 @@ save_plt = 'n'
 cmap = None#'Greys'
 
 # do you want to change the format of the image?
-change_format = True
+change_format = False
 new_filetype = 'eps'
 
 # Do you want to see the plots separate or together? (choose separate=True for creating the jpg images)
@@ -77,36 +77,97 @@ PA = ORIENT-45.  # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
 print 'PA = ', PA
 
 
+def find_slit_center_eqn(ca, alfa, x, y):
+    co = (ca / numpy.cos(alfa)) * numpy.sin(alfa)
+    center0 = x[0] - co
+    center1 = x[0] + co
+    m = (y[1] - y[0]) / (center1 - center0)
+    slit_x = []
+    for xi in range(y[0], y[1]+10): 
+        slit_x.append(xi)
+    slit_x = numpy.array(slit_x)
+    slit_y = m * (slit_x - center1) + y[1]
+    return center0, center1, m, slit_x, slit_y
+
 def add_slit_line(lolim, uplim, teta):
-    if (teta <= 90.0) and (teta >= -90.0):
-        alfa = -1*(teta) * numpy.pi / 180.0
-        print 'quadrant 1 or 2'
-    elif (teta > 90.0) and (teta < 180.0):
-        alfa = (180.0 - teta) * numpy.pi / 180.0
-        print 'quadrant 3'
-    elif (teta > 180.0) and (teta < 270.0):
-        alfa = (-1)*(180.0 - teta) * numpy.pi / 180.0
-        print 'quadrant 4'
-    elif (teta < -90.0) and (teta > -180.):
-        alfa = (180.0 - teta) * numpy.pi / 180.0
-        print 'quadrant 4'
-    elif (teta < -180.0) and (teta > -270.):
-        alfa = ((-1)*teta - 180.0) * numpy.pi / 180.0
-        print 'quadrant 3'
     x = [uplim/2, uplim/2]
     y = [lolim, uplim]
     ca = uplim/2.0
-    co = (ca / numpy.cos(alfa)) * numpy.sin(alfa)
-    z0 = x[0] - co
-    z1 = x[0] + co
-    z = [z0, z1]
+    if (teta >= 0.0) and (teta <= 90.0):
+        alfa = -1*(teta) * numpy.pi / 180.0
+        #print 'quadrant 1'
+    elif (teta < 0.0) and (teta >= -90.0):
+        alfa = -1*(teta) * numpy.pi / 180.0
+        #print 'quadrant 2'
+    elif (teta > 90.0) and (teta < 180.0):
+        alfa = (180.0 - teta) * numpy.pi / 180.0        
+        #print 'quadrant 3a'
+    elif (teta > 180.0) and (teta < 270.0):
+        alfa = (-1)*(180.0 - teta) * numpy.pi / 180.0
+        #print 'quadrant 4'
+    elif (teta < -90.0) and (teta > -180.):
+        alfa = (180.0 - teta) * numpy.pi / 180.0
+        #print 'quadrant 4'
+    elif (teta < -180.0) and (teta > -270.):
+        alfa = ((-1)*teta - 180.0) * numpy.pi / 180.0
+        #print 'quadrant 3b'
+            
+    _, center1, m, slit_x, slit_y = find_slit_center_eqn(ca, alfa, x, y)
+    alfa = numpy.fabs(alfa*180/numpy.pi)
+    if (alfa < 45.0) or (alfa > 180.0):
+        #print alfa
+        slit_right = m * (slit_x - (center1 - 2.4)) + y[1]
+        slit_left = m * (slit_x - (center1 + 2.4)) + y[1]
+    elif (alfa >= 45.0) and (alfa <= 180.0):
+        #print alfa
+        slit_right = m * (slit_x - center1) + (y[1]+2.0)
+        slit_left = m * (slit_x - center1) + (y[1]-2.0)        
+        
     # draw plane
     #plt.plot(x, y, 'k-', lw=2)
     #plt.plot(y, x, 'k-', lw=2)
-    # now draw slit
-    plt.plot(z, y, 'w-', lw=2)
+    # draw center of slit
+    #plt.plot(slit_x, slit_y, 'r--', lw=2)
+    plt.plot(slit_x, slit_left, 'w', lw=2)
+    plt.plot(slit_x, slit_right, 'w', lw=2)
     plt.xlim(lolim, uplim)
-    plt.ylim(lolim, uplim)
+    plt.ylim(lolim, uplim)   
+    '''
+    ### THIS IS IN CASE THE SPACE EITHER OUTSIDE OR INSIDE OF THE SLIT NEEDS TO BE FILLED 
+    # find the slope of the line
+    print 'slope =', m
+    print 'range of x:', slit_left[1], slit_left[0]
+    slit_x0 = numpy.round(slit_left[1], 0)
+    slit_x = []
+    for xi in range(int(slit_x0), 100): 
+        slit_x.append(xi)
+    slit_x = numpy.array(slit_x)
+    yu = m * (slit_x - slit_x[0] - 4.0) + uplim
+    yl = m * (slit_x - slit_x[0]) + uplim
+    #for xi, l, u in zip(slit_x, yl, yu):
+        #print xi, l, u
+    plt.fill_between(slit_x, yl, yu, facecolor='white', alpha=0.4)
+    # make an array of the same length as the lines:
+    x_inc = slit_left[0] / float(len(yu))
+    area_before_line = []
+    xi = lolim
+    area_before_line.append(xi)
+    for _ in range(0, len(yu)-1):
+        xi = xi + x_inc
+        area_before_line.append(xi)
+    plt.fill_between(area_before_line, lolim, m*(area_before_line-slit_x[0])+uplim, facecolor='k', alpha=0.4)   
+    area_after_line = []
+    x_inc = slit_right[0] / float(len(yu))
+    print 'slit_right[0]', slit_right[0]
+    area_before_line = []
+    xi = uplim
+    area_before_line.append(xi)
+    for _ in range(0, len(yu)-1):
+        xi = xi - x_inc
+        print xi
+        area_after_line.append(xi)
+    plt.fill_between(area_after_line, m*(area_after_line-slit_x[0] - 4.0)+uplim, uplim, facecolor='k', alpha=0.4)    
+    '''
 
 
 jpg_img_name = object_name+'_before'+'.jpg'
@@ -143,8 +204,8 @@ if separate:
     #plt.title(object_name+'_PA'+repr(pangle))
     color = 'w'
     size = 'x-large'
-    plt.text(60, 10, full_name, size=size, color=color)
-    plt.text(60, 6, 'P.A. = '+repr(pangle), size=size, color=color)
+    plt.text(68, 10, full_name, size=size, color=color)
+    plt.text(68, 6, 'P.A. = '+repr(pangle), size=size, color=color)
     add_slit_line(lolim, uplim, PA)
     cbar_ax = f2.add_axes([0.92, 0.11, 0.03, 0.776])
     plt.colorbar(im2, cax=cbar_ax)#, orientation='vertical')
