@@ -2,8 +2,10 @@ import os
 import pyfits
 import numpy
 import string
-#import spectrum
+import copy
+from science import spectrum
 from matplotlib import pyplot
+from scipy import stats
 
 
 '''
@@ -133,12 +135,12 @@ class OneDspecs:
         ylolim = self.ylolim
         yuplim = self.yuplim
         # this is assuming there are ONLY 3 spectra that were selected, 1 for nuv, 1 for opt, and 1 for nir.
-        w_nuv = self.wavs[self.indx_selected_wavs_and_flxs[0]]
-        w_opt = self.wavs[self.indx_selected_wavs_and_flxs[1]]
-        w_nir = self.wavs[self.indx_selected_wavs_and_flxs[2]]
-        f_nuv = self.flxs[self.indx_selected_wavs_and_flxs[0]]
-        f_opt = self.flxs[self.indx_selected_wavs_and_flxs[1]]
-        f_nir = self.flxs[self.indx_selected_wavs_and_flxs[2]]
+        w_nuv = copy.deepcopy(self.wavs[self.indx_selected_wavs_and_flxs[0]])
+        w_opt = copy.deepcopy(self.wavs[self.indx_selected_wavs_and_flxs[1]])
+        w_nir = copy.deepcopy(self.wavs[self.indx_selected_wavs_and_flxs[2]])
+        f_nuv = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[0]])
+        f_opt = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[1]])
+        f_nir = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[2]])
         
         # store the wavelengths and fluxes of the spectra selected in wf_used_specs            
         wf_nuv = numpy.array([w_nuv, f_nuv])
@@ -171,9 +173,45 @@ class OneDspecs:
         plot_selecSpecs = plot_name.replace(".eps", "_selecSpectra.eps")
         keep_prevFig = raw_input('Is there is a previous figure you want to keep?  (n)  y   ')
         # but first smoothen the overlapping regions of the spectra and make a single nice spectrum to plot 
-        # get all the wavelengths but disregard the first 50 Angstroms of the opt and nir because they are too noisy
+        # disregard the first 50 Angstroms of the opt and nir because they are too noisy
+        new_w_opt = []
+        new_f_opt = []
+        for wi, fi in zip(w_opt, f_opt):
+            if wi >= (w_opt[0]+50.0):
+                new_w_opt.append(wi)
+                new_f_opt.append(fi)
+        new_w_nir = []
+        new_f_nir = []
+        for wi, fi in zip(w_nir, f_nir):
+            if wi >= (w_nir[0]+50.0):
+                new_w_nir.append(wi)
+                new_f_nir.append(fi)
+        # find the overlapping regions
+        overlap1 = spectrum.find_nearest_within(new_w_opt, new_w_nir[0], threshold=2.0)
+        overlap_wavs1 = new_w_opt[overlap1:new_w_opt[-1]]
+        overlap_flxs1 = new_f_opt[new_w_opt[overlap1:new_w_opt[-1]]]
+        overlap2 = spectrum.find_nearest_within(new_w_nir, new_w_opt[-1], threshold=2.0)
+        overlap_wavs2 = new_w_nir[new_w_nir[0]:overlap2]
+        overlap_flxs2 = new_f_nir[new_w_nir[overlap2:new_w_nir[-1]]]
+        # find the medium of the two spectra
+        overlap_avg_wavs = []
+        ovelap_avg_flx = []
+        for w1, w2, f1, f2 in zip(overlap_wavs1, overlap_wavs2, overlap_flxs1, overlap_flxs2):
+            wavg = (w1 + w2) / 2.0
+            overlap_avg_wavs.append(wavg)
+            favg = (f1 + f2) / 2.0
+            ovelap_avg_flx.append(favg)
+        # get all the wavelengths into a single array
         whole_spec_wavs = []
-        whole_spec_wavs.append(object)
+        for wi in w_nuv:
+            if wi < overlap_avg_wavs[0]:
+                whole_spec_wavs.append(wi)
+        for wi in overlap_avg_wavs:
+            whole_spec_wavs.append(wi)
+        for wi in w_opt:
+            if wi > overlap_avg_wavs[-1]:
+                whole_spec_wavs.append(wi)
+        
         # plot the smooth spectra
         if keep_prevFig == 'y':
             self.do_plot(plot_selecSpecs, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=False)
