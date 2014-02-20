@@ -47,9 +47,9 @@ obj_name = raw_input()
 selectedspecs_file = obj_name+'_selectedspecs'
 txtf = path_results+selectedspecs_file
 img_format = '.jpg'
-plot_name = os.path.join(path_plots, obj_name+img_format)
+plot_name = os.path.join(path_plots, obj_name)
 # plot the spectra for the input object
-used_specs = metallicity.OneDspecs(oneDspecs, txtf, plot_name)
+used_specs = metallicity.OneDspecs(oneDspecs, txtf, plot_name, img_format)
 
 print("I'm done and I live.")
 
