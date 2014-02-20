@@ -3,9 +3,9 @@ import pyfits
 import numpy
 import string
 import copy
+import PIL.Image as Image
 from science import spectrum
 from matplotlib import pyplot
-from scipy import stats
 
 
 '''
@@ -17,7 +17,7 @@ class OneDspecs:
     This uses the 1d fits extraction files from all three filters (g230l, g430l, and g750l), 
     in order to let me choose which one has the best S/N. 
     '''
-    def __init__(self, oneDspecs, selectedspecs_file, plot_name):
+    def __init__(self, oneDspecs, selectedspecs_file, plot_name, img_format):
         self.oneDspecs = oneDspecs 
         self.wavs = []
         self.flxs = []
@@ -31,8 +31,9 @@ class OneDspecs:
         self.indx_selected_wavs_and_flxs = []
         self.wf_used_specs = []
         self.get_specs()
-        self.plot_chose_from(plot_name)
-        self.selecting_specs(selectedspecs_file, plot_name)
+        self.plot_chose_from(plot_name, img_format)
+        self.selecting_specs(selectedspecs_file, plot_name, img_format)
+        self.smooth_spec(plot_name, img_format)
         
     def get_specs(self):
         print 'Found %i files in the oneDspecs list.' % len(self.oneDspecs)
@@ -50,7 +51,7 @@ class OneDspecs:
             # Count the spectra you find with the sci extension
             self.counter = self.counter + 1   
 
-    def do_plot(self, plot_name, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim, save=True):
+    def do_plot(self, plot_name, img_format, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim, save=True):
         fig1 = pyplot.figure(1, figsize=(15, 8))
         # Making the plot
         j = 0
@@ -73,14 +74,14 @@ class OneDspecs:
             j = j + 1
         pyplot.figure(1).legend(curves, specs_list, labelspacing=0.2, bbox_to_anchor=(0.9, 0.9))
         if save == True:
-            fig1.savefig(plot_name)
+            fig1.savefig(plot_name+img_format)
         pyplot.show(fig1)
 
-    def save_plot(self, plot_name, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim):
+    def save_plot(self, plot_name, img_format, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim):
         pyplot.ioff()
         save_plt = raw_input('Do you want to save this plot? (n)  y  ')
         if save_plt == 'n' or save_plt == '':
-            os.remove(plot_name)
+            os.remove(plot_name+img_format)
             print('Plot not saved.')
         else:
             axis_scale = raw_input('Do you want to modify axis scale? (n) y  ')
@@ -101,34 +102,33 @@ class OneDspecs:
                     yuplim = float(yup)
                 else:
                     print('y-lolim: %e,  y-uplim: %e' % (ylolim, yuplim))
-                os.remove(plot_name)
-                self.do_plot(plot_name, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim)
+                os.remove(plot_name+img_format)
+                self.do_plot(plot_name, img_format, specs_list, x_axs, y_axs, xlolim, xuplim, ylolim, yuplim)
             else:
                 print('x-lolim: %i,  x-uplim: %i, y-lolim: %e,  y-uplim: %e' % (xlolim, xuplim, ylolim, yuplim))
             #plot_name = raw_input('Enter plot name (including directory)')
-            print('Plot %s was saved!' % plot_name)
+            print('Plot %s was saved!' % plot_name+img_format)
       
-    def plot_chose_from(self, plot_name):
+    def plot_chose_from(self, plot_name, img_format):
         xlolim = self.xlolim
         xuplim = self.xuplim
         ylolim = self.ylolim
         yuplim = self.yuplim
         keep_prevFig = raw_input('Is there is a previous figure you want to keep?  (n)  y   ')
         if keep_prevFig == 'y':
-            self.do_plot(plot_name, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim, save=False)
+            self.do_plot(plot_name, img_format, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim, save=False)
         else:
-            self.do_plot(plot_name, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim, save=True)
+            self.do_plot(plot_name, img_format, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim, save=True)
             pyplot.ioff()
-            self.save_plot(plot_name, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim)
+            self.save_plot(plot_name, img_format, self.specs, self.wavs, self.flxs, xlolim, xuplim, ylolim, yuplim)
     
-    def selecting_specs(self, selectedspecs_file, plot_name):
+    def selecting_specs(self, selectedspecs_file, plot_name, img_format):
         # Now choose the spectra to use for building the whole spectrum
         print('List which spectra do you want to keep for NUV, optical, and NIR (i.e. 0,2,5)')
         indxs = raw_input()
         indx_list = string.split(indxs, sep=',')
         for i in indx_list:
             self.indx_selected_wavs_and_flxs.append(int(i))
-            
         # Do the plot of the selected files, save the text file, and save the eps
         xlolim = self.xlolim
         xuplim = self.xuplim
@@ -141,7 +141,6 @@ class OneDspecs:
         f_nuv = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[0]])
         f_opt = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[1]])
         f_nir = copy.deepcopy(self.flxs[self.indx_selected_wavs_and_flxs[2]])
-        
         # store the wavelengths and fluxes of the spectra selected in wf_used_specs            
         wf_nuv = numpy.array([w_nuv, f_nuv])
         wf_opt = numpy.array([w_opt, f_opt])
@@ -170,9 +169,19 @@ class OneDspecs:
             txtout1.close()
             txtout2.close()            
         # now do the plotting
-        plot_selecSpecs = plot_name.replace(".eps", "_selecSpectra.eps")
+        plot_selecSpecs = plot_name+"_selecSpectra"
         keep_prevFig = raw_input('Is there is a previous figure you want to keep?  (n)  y   ')
-        # but first smoothen the overlapping regions of the spectra and make a single nice spectrum to plot 
+        # plot the smooth spectra
+        if keep_prevFig == 'y':
+            self.do_plot(plot_selecSpecs, img_format, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=False)
+        else:
+            self.do_plot(plot_selecSpecs, img_format, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=True)
+            self.save_plot(plot_selecSpecs, img_format, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim)
+        # used_specs is the list of the used spectra that will appear in the plot
+        # self.wf_used_specs is an array that contains the arrays of wavs and fluxes of the used spectra
+        return(self.wf_used_specs, used_specs)
+        
+    def find_overlapping_region(self, w_nuv, w_opt, w_nir, f_nuv, f_opt, f_nir, region):
         # disregard the first 50 Angstroms of the opt and nir because they are too noisy
         new_w_opt = []
         new_f_opt = []
@@ -187,38 +196,82 @@ class OneDspecs:
                 new_w_nir.append(wi)
                 new_f_nir.append(fi)
         # find the overlapping regions
-        overlap1 = spectrum.find_nearest_within(new_w_opt, new_w_nir[0], threshold=2.0)
-        overlap_wavs1 = new_w_opt[overlap1:new_w_opt[-1]]
-        overlap_flxs1 = new_f_opt[new_w_opt[overlap1:new_w_opt[-1]]]
-        overlap2 = spectrum.find_nearest_within(new_w_nir, new_w_opt[-1], threshold=2.0)
-        overlap_wavs2 = new_w_nir[new_w_nir[0]:overlap2]
-        overlap_flxs2 = new_f_nir[new_w_nir[overlap2:new_w_nir[-1]]]
-        # find the medium of the two spectra
+        if region == 'nuv2opt':
+            _, overlap1_idx = spectrum.find_nearest(w_nuv, new_w_opt[0])
+            _, overlap2_idx = spectrum.find_nearest(new_w_opt, w_nuv[-1])
+            overlap_wavs1 = w_nuv[overlap1_idx:-1]
+            overlap_flxs1 = f_nuv[overlap1_idx:-1]
+            overlap_wavs2 = new_w_opt[0:overlap2_idx]
+            overlap_flxs2 = new_f_opt[0:overlap2_idx]
+        if region == 'opt2nir':
+            _, overlap1_idx = spectrum.find_nearest(new_w_opt, new_w_nir[0])
+            _, overlap2_idx = spectrum.find_nearest(new_w_nir, new_w_opt[-1])
+            overlap_wavs1 = new_w_opt[overlap1_idx:-1]
+            overlap_flxs1 = new_f_opt[overlap1_idx:-1]
+            overlap_wavs2 = new_w_nir[0:overlap2_idx]
+            overlap_flxs2 = new_f_nir[0:overlap2_idx]
+        # find the average wavelength and flux of the two spectra
         overlap_avg_wavs = []
-        ovelap_avg_flx = []
+        overlap_avg_flxs = []
         for w1, w2, f1, f2 in zip(overlap_wavs1, overlap_wavs2, overlap_flxs1, overlap_flxs2):
             wavg = (w1 + w2) / 2.0
             overlap_avg_wavs.append(wavg)
             favg = (f1 + f2) / 2.0
-            ovelap_avg_flx.append(favg)
+            overlap_avg_flxs.append(favg)
+        return (overlap_avg_wavs, overlap_avg_flxs)
+    
+    def smooth_spec(self, used_specs, plot_name, img_format):
+        w_nuv = copy.deepcopy(self.wf_used_specs[0][0][0])
+        f_nuv = copy.deepcopy(self.wf_used_specs[0][0][1])
+        w_opt = copy.deepcopy(self.wf_used_specs[0][1][0])
+        f_opt = copy.deepcopy(self.wf_used_specs[0][1][1])
+        w_nir = copy.deepcopy(self.wf_used_specs[0][2][0])
+        f_nir = copy.deepcopy(self.wf_used_specs[0][2][1])
+        # show the entire spectra with smoothened overlapping regions
+        # first smoothen the overlapping regions of the spectra and make a single nice spectrum to plot 
+        nuv2opt_overlap_avg_wavs, nuv2opt_overlap_avg_flxs = self.find_overlapping_region(w_nuv, w_opt, w_nir, f_nuv, f_opt, f_nir, region='nuv2opt')
+        opt2nir_overlap_avg_wavs, opt2nir_overlap_avg_flxs = self.find_overlapping_region(w_nuv, w_opt, w_nir, f_nuv, f_opt, f_nir, region='opt2nir')
         # get all the wavelengths into a single array
         whole_spec_wavs = []
-        for wi in w_nuv:
-            if wi < overlap_avg_wavs[0]:
+        whole_spec_flxs = []
+        # add all the nuv wavelengths and fluxes before the first overlapping region
+        for wi, fi in zip(w_nuv, f_nuv):
+            if wi < nuv2opt_overlap_avg_wavs[0]:
                 whole_spec_wavs.append(wi)
-        for wi in overlap_avg_wavs:
+                whole_spec_flxs.append(fi)
+        # add the first overlapping region
+        for wi, fi in zip(nuv2opt_overlap_avg_wavs, nuv2opt_overlap_avg_flxs):
             whole_spec_wavs.append(wi)
-        for wi in w_opt:
-            if wi > overlap_avg_wavs[-1]:
+            whole_spec_flxs.append(fi)
+        # add the optical region before the second overlapping region
+        for wi, fi in zip(w_opt, f_opt):
+            if (wi > nuv2opt_overlap_avg_wavs[-1]) and (wi < opt2nir_overlap_avg_wavs[0]):
                 whole_spec_wavs.append(wi)
-        
-        # plot the smooth spectra
-        if keep_prevFig == 'y':
-            self.do_plot(plot_selecSpecs, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=False)
-        else:
-            self.do_plot(plot_selecSpecs, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim, save=True)
-            self.save_plot(plot_selecSpecs, used_specs, wf_arr[:,0], wf_arr[:,1], xlolim, xuplim, ylolim, yuplim)        
-        return(self.wf_used_specs)
+                whole_spec_flxs.append(fi)
+        # add the second overlapping region
+        for wi, fi in zip(opt2nir_overlap_avg_wavs, opt2nir_overlap_avg_flxs): 
+            whole_spec_wavs.append(wi)
+            whole_spec_flxs.append(fi)
+        # add the nir wavelengths after the second overlaping region
+        for wi, fi in zip(w_nir, f_nir):
+            if wi > opt2nir_overlap_avg_wavs[-1]:
+                whole_spec_wavs.append(wi)
+                whole_spec_flxs.append(fi)
+        pyplot.figure(1, figsize=(15, 8))
+        save_plt = raw_input('Do you want to save the smoothened whole spectrum image?  (n)  y   ')
+        pyplot.xlabel('Wavelength [$\AA$]')
+        pyplot.ylabel('Flux [ergs/s/cm$^2$/$\AA$]')
+        obj_name = os.path.basename(plot_name)
+        pyplot.text(1, 1, obj_name, fontsize=12)
+        pyplot.plot(whole_spec_wavs, whole_spec_flxs, 'k')
+        if save_plt == 'y':
+            destination = plot_name+'_wholespec'+img_format
+            pyplot.savefig(destination)
+            print('Plot %s was saved!' % destination)
+        elif save_plt == 'n':
+            print('Plot not saved.')
+        pyplot.show()
+
         
         '''
         # Do the plot of the selected files, save the text file, and save the eps
@@ -246,7 +299,8 @@ class OneDspecs:
             # wf_used_specs is a list of pairs of arrays of wavelengths and fluxes
             self.wf_used_specs.append(wf)       
 
-        plot_selecSpecs = plot_name.replace(".eps", "_selecSpectra.eps")
+        plot_name = plot_name+img_format
+        plot_selecSpecs = plot_name.replace(img_format, "_selecSpectra"+img_format)
         keep_prevFig = raw_input('Is there is a previous figure you want to keep?  (n)  y   ')
         if keep_prevFig == 'y':
             self.do_plot(plot_selecSpecs, used_specs, w, f, xlolim, xuplim, ylolim, yuplim, save=False)
