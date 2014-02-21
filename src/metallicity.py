@@ -17,7 +17,7 @@ class OneDspecs:
     This uses the 1d fits extraction files from all three filters (g230l, g430l, and g750l), 
     in order to let me choose which one has the best S/N. 
     '''
-    def __init__(self, oneDspecs, selectedspecs_file, plot_name, img_format):
+    def __init__(self, oneDspecs, selectedspecs_file, plot_name, img_format, full_name):
         self.oneDspecs = oneDspecs 
         self.wavs = []
         self.flxs = []
@@ -33,7 +33,7 @@ class OneDspecs:
         self.get_specs()
         self.plot_chose_from(plot_name, img_format)
         self.selecting_specs(selectedspecs_file, plot_name, img_format)
-        self.smooth_spec(plot_name, img_format)
+        self.smooth_spec(plot_name, img_format, full_name)
         
     def get_specs(self):
         print 'Found %i files in the oneDspecs list.' % len(self.oneDspecs)
@@ -220,7 +220,7 @@ class OneDspecs:
             overlap_avg_flxs.append(favg)
         return (overlap_avg_wavs, overlap_avg_flxs)
     
-    def smooth_spec(self, used_specs, plot_name, img_format):
+    def smooth_spec(self, plot_name, img_format, full_name):
         w_nuv = copy.deepcopy(self.wf_used_specs[0][0][0])
         f_nuv = copy.deepcopy(self.wf_used_specs[0][0][1])
         w_opt = copy.deepcopy(self.wf_used_specs[0][1][0])
@@ -236,7 +236,7 @@ class OneDspecs:
         whole_spec_flxs = []
         # add all the nuv wavelengths and fluxes before the first overlapping region
         for wi, fi in zip(w_nuv, f_nuv):
-            if wi < nuv2opt_overlap_avg_wavs[0]:
+            if (wi > w_nuv[0]+50.0) and (wi < nuv2opt_overlap_avg_wavs[0]):
                 whole_spec_wavs.append(wi)
                 whole_spec_flxs.append(fi)
         # add the first overlapping region
@@ -254,16 +254,22 @@ class OneDspecs:
             whole_spec_flxs.append(fi)
         # add the nir wavelengths after the second overlaping region
         for wi, fi in zip(w_nir, f_nir):
-            if wi > opt2nir_overlap_avg_wavs[-1]:
+            if (wi > opt2nir_overlap_avg_wavs[-1]) and (wi <= w_nir[-1]-50.0):
                 whole_spec_wavs.append(wi)
                 whole_spec_flxs.append(fi)
+        whole_spec_arr = numpy.array([whole_spec_wavs, whole_spec_flxs])
+        # rebin the arrays to make a prettier spectra
+        print 'Type rebinning factor:  '
+        desired_rebin_factor = raw_input('(i.e. value<1 will reduce the resolution)  ')
+        rebin_factor = (1, float(desired_rebin_factor))
+        whole_spec_arr = spectrum.rebin(whole_spec_arr, rebin_factor)
         pyplot.figure(1, figsize=(15, 8))
         save_plt = raw_input('Do you want to save the smoothened whole spectrum image?  (n)  y   ')
-        pyplot.xlabel('Wavelength [$\AA$]')
-        pyplot.ylabel('Flux [ergs/s/cm$^2$/$\AA$]')
-        obj_name = os.path.basename(plot_name)
-        pyplot.text(1, 1, obj_name, fontsize=12)
-        pyplot.plot(whole_spec_wavs, whole_spec_flxs, 'k')
+        pyplot.xlabel('Wavelength  [$\AA$]')
+        pyplot.ylabel('Flux  [ergs/s/cm$^2$/$\AA$]')
+        fmax = max(whole_spec_arr[1]) - max(whole_spec_arr[1])*0.2 
+        pyplot.text(8500, fmax, full_name, fontsize=18)
+        pyplot.plot(whole_spec_arr[0], whole_spec_arr[1], 'k')
         if save_plt == 'y':
             destination = plot_name+'_wholespec'+img_format
             pyplot.savefig(destination)
