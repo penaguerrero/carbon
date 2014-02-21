@@ -220,6 +220,17 @@ class OneDspecs:
             overlap_avg_flxs.append(favg)
         return (overlap_avg_wavs, overlap_avg_flxs)
     
+    def plot_rebinned_spec(self, whole_spec_arr, full_name):
+        pyplot.figure(1, figsize=(15, 8))
+        pyplot.xlabel('Wavelength  [$\AA$]')
+        pyplot.ylabel('Flux  [ergs/s/cm$^2$/$\AA$]')
+        pyplot.xlim(1640.0, 10100.0)
+        ymax = max(whole_spec_arr[1]) + max(whole_spec_arr[1])*0.12
+        pyplot.ylim(-1.5e-15, ymax)
+        fmax = max(whole_spec_arr[1]) - max(whole_spec_arr[1])*0.2 
+        pyplot.text(8000, fmax, full_name, fontsize=18)
+        pyplot.plot(whole_spec_arr[0], whole_spec_arr[1], 'k')
+    
     def smooth_spec(self, plot_name, img_format, full_name):
         w_nuv = copy.deepcopy(self.wf_used_specs[0][0][0])
         f_nuv = copy.deepcopy(self.wf_used_specs[0][0][1])
@@ -257,26 +268,41 @@ class OneDspecs:
             if (wi > opt2nir_overlap_avg_wavs[-1]) and (wi <= w_nir[-1]-50.0):
                 whole_spec_wavs.append(wi)
                 whole_spec_flxs.append(fi)
-        whole_spec_arr = numpy.array([whole_spec_wavs, whole_spec_flxs])
+        original_whole_spec_arr = numpy.array([whole_spec_wavs, whole_spec_flxs])
         # rebin the arrays to make a prettier spectra
-        print 'Type rebinning factor:  '
-        desired_rebin_factor = raw_input('(i.e. value<1 will reduce the resolution)  ')
-        rebin_factor = (1, float(desired_rebin_factor))
-        whole_spec_arr = spectrum.rebin(whole_spec_arr, rebin_factor)
-        pyplot.figure(1, figsize=(15, 8))
+        print 'Do you want to rebin?  If no press enter, if yes type rebinning factor:  '
+        desired_rebin_factor = raw_input('(value < 1  will reduce the resolution,  0.4 generally gives a good "clean" spectrum)  ')
+        if (desired_rebin_factor == '') or (desired_rebin_factor == 'n'):
+            whole_spec_arr = original_whole_spec_arr
+            self.plot_rebinned_spec(whole_spec_arr, full_name)
+            pyplot.show()
+        else:
+            rebin_factor = (1, float(desired_rebin_factor))
+            whole_spec_arr = spectrum.rebin(original_whole_spec_arr, rebin_factor)
+            self.plot_rebinned_spec(whole_spec_arr, full_name)
+            pyplot.show()
+            rebin_again = raw_input('    Do you want to rebin again from the original spectrum?  (n)  y   ')
+            end_while = False
+            if (rebin_again == 'n') or (rebin_again == ''):
+                end_while = True
+            while end_while == False:
+                print '    Type rebinning factor:  '
+                desired_rebin_factor = raw_input('    (value < 1  will reduce the resolution,  0.4 generally gives a good "clean" spectrum) ')
+                rebin_factor = (1, float(desired_rebin_factor))
+                whole_spec_arr = spectrum.rebin(original_whole_spec_arr, rebin_factor)
+                self.plot_rebinned_spec(whole_spec_arr, full_name)
+                pyplot.show()
+                rebin_again = raw_input('    Do you want to rebin again from the original spectrum?  (n)  y   ')                 
+                if (rebin_again == 'n') or (rebin_again == ''):
+                    end_while = True
+        self.plot_rebinned_spec(whole_spec_arr, full_name)
         save_plt = raw_input('Do you want to save the smoothened whole spectrum image?  (n)  y   ')
-        pyplot.xlabel('Wavelength  [$\AA$]')
-        pyplot.ylabel('Flux  [ergs/s/cm$^2$/$\AA$]')
-        fmax = max(whole_spec_arr[1]) - max(whole_spec_arr[1])*0.2 
-        pyplot.text(8500, fmax, full_name, fontsize=18)
-        pyplot.plot(whole_spec_arr[0], whole_spec_arr[1], 'k')
         if save_plt == 'y':
             destination = plot_name+'_wholespec'+img_format
             pyplot.savefig(destination)
             print('Plot %s was saved!' % destination)
         elif save_plt == 'n':
             print('Plot not saved.')
-        pyplot.show()
 
         
         '''
