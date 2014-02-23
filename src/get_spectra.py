@@ -17,7 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10         11         12         13       14        15         16         17
 
 ''' CHOOSE THE OBJECT NUMBER '''
-object_number = 17
+object_number = 0
+
+''' Choose the expected extension of the spectra. '''
+img_format = '.eps'
 
 #####################################################################################################################################
 
@@ -50,7 +53,6 @@ oneDspecs = glob.glob(path_oneDspecs+'obqn'+obqn_num+'*x*.fits')
 # Create the name for the plot
 selectedspecs_file = obj_name+'_selectedspecs'
 txtf = path_results+selectedspecs_file
-img_format = '.jpg'
 plot_name = os.path.join(path_plots, obj_name)
 # plot the spectra for the input object
 used_specs = metallicity.OneDspecs(oneDspecs, txtf, plot_name, img_format, full_name)
