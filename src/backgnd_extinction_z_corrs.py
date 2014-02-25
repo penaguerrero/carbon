@@ -49,6 +49,8 @@ A_V_list = [0.199, 0.305, 0.209, 0.178, 0.279, 0.077, 0.169, 0.130, 0.119,
             0.042, 0.104, 0.068, 0.047, 0.522, 0.216, 0.161, 0.105, 0.030]
 #             9    10      11      12     13    14      15    16     17
 
+# Desired Angstroms per pixel
+desired_disp_list = [2.4, 8.0, 7.4]
 
 # Object to be analyzed
 object_name = objects_list[object_number]
@@ -85,12 +87,12 @@ for s, tf in zip(specs, text_file_list):
             cont_nuv.append(c)
         elif s == 1:
             wavs_opt.append(w)
-            flxs_opt.append(w)
-            cont_opt.append(w)
+            flxs_opt.append(f)
+            cont_opt.append(c)
         elif s == 2:
             wavs_nir.append(w)
-            flxs_nir.append(w)
-            cont_nir.append(w)
+            flxs_nir.append(f)
+            cont_nir.append(c)
 
 # Check if the continuum becomes negative and if it does add a constant to the fluxes so that it dosen't
 if min(continuum_flxs) < 0.0:
@@ -124,19 +126,19 @@ cont_data.append(nir_cont)
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
-'''
-The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
-G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels.
-'''
-# Rebin the spectra to the following dispersions for grating settings G140L, G230L, G430L, and G750L, respectively
-# Since I am not using G140L, I will remove it from desired_disp_list = [0.9, 2.4, 4.1, 7.4]
-desired_disp_list = [2.4, 4.1, 7.4]
+
+'''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
+G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. '''
+originals = [1.58, 2.73, 4.92]
 
 for d, cd, s in zip(data, cont_data, specs):
+    print d
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
-    rebinned_arr = spectrum.rebin_spec2disp(desired_dispersion, d)
-    rebinned_cont = spectrum.rebin_spec2disp(desired_dispersion, cd)
+    #rebinned_arr = spectrum.rebin_spec2disp(desired_dispersion, d)
+    #rebinned_cont = spectrum.rebin_spec2disp(desired_dispersion, cd)
+    rebinned_arr = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], d)
+    rebinned_cont = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], cd)
     
     #print '    *** Wavelengths corrected for redshift.'
     w_corr = rebinned_arr[0] / (1+float(z))
@@ -149,8 +151,10 @@ for d, cd, s in zip(data, cont_data, specs):
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
     object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=False, faintObj=faintObj)
+    print 'This are the lines in the ', spectrum_region[s]
     print ''
-
+    raw_input('    press enter to continue...')
+    
     # Determine the corresponding E(B-V) value for each object
     ebv = A_B_list[object_number] - A_V_list[object_number]
     
