@@ -1,4 +1,4 @@
-import numpy
+#import numpy
 import os
 from science import spectrum
 
@@ -18,9 +18,9 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # 1) Select a number from objects_list, i = :
 object_number = 12
-object_name = objects_list[object_number]
+
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
+specs = [1,2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -29,16 +29,16 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
 order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 350
+window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = False
+plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
 text_table = True
@@ -48,6 +48,8 @@ Halpha_width = 35.
 
 
 ############################################################################################################################################
+
+object_name = objects_list[object_number]
 
 # Path of the text files of wavelengths and fluxes for the objects. 
 # This works as long as the folder structure is always the same. This file is assumed to be in
