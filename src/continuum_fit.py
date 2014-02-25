@@ -20,7 +20,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1,2]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -41,7 +41,7 @@ window = 550
 plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = True
+text_table = False
 
 # Set width of Halpha in order to properly correct for reddening
 Halpha_width = 35.
@@ -96,7 +96,7 @@ for d, s in zip(data, specs):
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
     splot_text = False
-    part_of_spec = 'nir'
+    part_of_spec = 'opt'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
