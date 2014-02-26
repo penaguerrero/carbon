@@ -44,7 +44,7 @@ plot = True
 text_table = False
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 35.
+#Halpha_width = 40.
 
 
 ############################################################################################################################################
