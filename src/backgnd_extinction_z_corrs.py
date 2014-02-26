@@ -20,10 +20,10 @@ object_number = 12
 faintObj = False  
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 35.
+Halpha_width = 40.
 
 # Write the text file with line info?
-text_table = False
+text_table = True
 
 
 ############################################################################################################################################
@@ -95,19 +95,30 @@ for s, tf in zip(specs, text_file_list):
             cont_nir.append(c)
 
 # Check if the continuum becomes negative and if it does add a constant to the fluxes so that it dosen't
+'''
 if min(continuum_flxs) < 0.0:
     constant = numpy.fabs(min(continuum_flxs)) + numpy.fabs(min(continuum_flxs))*0.1  
     print 'Adding a constant to the flux so that the continuum does not become negative. Constant = ', constant
     for f, c in zip(flxs_nuv, cont_nuv):
-        f = f + constant
-        c = c + constant
+        new_f = f + constant
+        new_c = c + constant
+        idx = flxs_nuv.index(f)
+        flxs_nuv[idx] = new_f
+        cont_nuv[idx] = new_c
     for f, c in zip(flxs_opt, cont_opt):
-        f = f + constant
-        c = c + constant
+        new_f = f + constant
+        new_c = c + constant
+        idx = flxs_opt.index(f)
+        flxs_opt[idx] = new_f
+        cont_opt[idx] = new_c
     for f, c in zip(flxs_nir, cont_nir):
-        f = f + constant
-        c = c + constant
-
+        new_f = f + constant
+        new_c = c + constant
+        print c, new_c
+        idx = flxs_nir.index(f)
+        flxs_nir[idx] = new_f
+        cont_nir[idx] = new_c
+'''
 # Gather the info into a list of numpy arrays
 nuv = numpy.array([wavs_nuv, flxs_nuv])
 opt = numpy.array([wavs_opt, flxs_opt])
@@ -132,7 +143,6 @@ G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. ''
 originals = [1.58, 2.73, 4.92]
 
 for d, cd, s in zip(data, cont_data, specs):
-    print d
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
     #rebinned_arr = spectrum.rebin_spec2disp(desired_dispersion, d)
@@ -153,7 +163,7 @@ for d, cd, s in zip(data, cont_data, specs):
     object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=False, faintObj=faintObj)
     print 'This are the lines in the ', spectrum_region[s]
     print ''
-    raw_input('    press enter to continue...')
+    #raw_input('    press enter to continue...')
     
     # Determine the corresponding E(B-V) value for each object
     ebv = A_B_list[object_number] - A_V_list[object_number]
