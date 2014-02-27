@@ -347,127 +347,84 @@ class OneDspecs:
         pass
 
 
-class BasicOps(object):
+class BasicOps:
     '''
     This class gathers all the basic operations after we have the 1D spectra. These operations are:
     - reddening correction
-    - finding local continuum
+    - redshift correction
+    - underlying stellar absorption correction
     - line intensity measurement, equivalent widths, and FWHM
     '''
-    def __init__(self, wf_used_specs):
-        self.wf_used_specs = wf_used_specs
-        self.n = 0.999721
-        self.w_air = []
-        self.w_vac = []
-        self.w_theo = []
-        self.w_obs = []
-        self.w_findz = [3727, 4861.33, 4958.91, 5006.84]
-        #self.wf_usedspecs = []  # list of wavelengths and fluxes arrays of used spectra
-        self.z = 0.0
-        self.convert_wair2vacuum()
-        self.wavs_flxs_usedspecs(wf_used_specs)
-        self.find_z()
-        self.correct_for_z()
-        self.find_lines()
-        self.determine_line_info()
-           
-    '''
-    def convert_wair2vacuum(self, w_air):
-        print('By defaulf the value of the refraction index is n=0.999721') 
-        print('    n was taken from NIST, using 1-n=lambda(vac)/lambda(air)-1')
-        print('Do you want to use another value of n? If yes type it, else enter.')
-        q = raw_input()
-        if q != 0.0:
-            n = float(q)
-        else:
-            n = self.n
-        for wa in w_air:
-            if wa > 2900.:
-                wv = wa * (2 - n)
-        return(wv)
-    '''
-    def wavs_flxs_usedspecs(self, wf_used_specs):
-        '''
-        This function does 2 things:
-        1) punts in ONE 2D array the arrays of wvelength and flux for each spectrum
-        2) creates the list that contains all those 2D arrays for the 3 used spectra (i.e. 3 pairs of wavs and flxs),
-            this is the list that is returned.
-        '''
-        #for pair in wf_used_specs:
-        #    w = pair[0]
-        #    f = pair[1]
-            
-            
-    def find_z(self, wf_used_specs):
-        '''
-        This function corrects the observed wavelength for redshift. It uses the result from function wavs_flxs_usedspecs.
-        '''
-        print('List wavelengths to use for reddening correction.')
-        print('To use default (3727, 4861.33, 4958.91, 5006.84) press enter')
-        list_findz = raw_input()
-        w_findz = []
-        if list_findz != 0:
-            for item in list_findz:
-                w = float(item)
-                w_findz.append(w)
-        else:
-            w_findz = self.w_findz
-        # Find these wavelengths in the spectrum
-        # Plot the optical part
-        fig = pyplot.figure(1, figsize=(10, 10))
-        for wf in wf_used_specs:
-            # wf is the pair of wavelength and flux arrays for each one of the selected spectra
-            print 'Indicate where are the followig lines:'
-            print(w_findz)
-            x = len(w_findz)
-            w_findz_in_obs = fig.ginput(x, timeout=-1)
-            fig.plot(wf[0], wf[1])
-            pyplot.draw()
-            print(type(w_findz_in_obs))
-            
-        
-        '''
-        wz = [] # this is the list of the wavelengths in the spec that are closest to 
-        for w in w_findz:
-                
-            nearest_w = spectrum.find_nearest(, w)
-                
-            
-        
-        
-        zs = []
-        wf_OBS = self.wavs_flxs_usedspecs
-        for wobs in w_fidzOBS:
-            # Now find z
-            for wtheo in w_findz:
-                z = (wobs/wtheo) - 1.0
-                zs.append(z)
-        self.z = sum(zs)/len(zs)
-        return(self.z)
-        '''
-    def correct_for_z(self):
-        pass
+    def __init__(self, wavelengths, fluxes, av, ebv, z):
+        self.bckgnd_and_red_corr_flux = []
+        self.w_corr = []
+        self.red_corr_data = []
+        self.background_corr(wavelengths, fluxes, av, ebv)
+        self.correct4z(wavelengths, z)
     
-    '''
-    def reddening_correction(self, w_air):
-        for wobs in w_HST:
-            if wobs < 2900.0:
-                wobs = self.convert_wair2vacuum(wobs)
-                self.w_vac.append(wobs)
-            else:
-                pass
-        for wtheo in self.w_vac:
-            self.z = (wobs/wtheo) - 1
-        return(self.z)
-    '''
+    def red_corr(self, wavs, R_V):
+        """
+        FUNCTION TAKEN FROM PYNEB : reddening law CCM89
+        Cardelli 1989
+        """
+        x = 1e4 / numpy.asarray([wavs]) # inv microns
+        a = numpy.zeros_like(x)
+        b = numpy.zeros_like(x)
+        
+        tt = (x > 0.3) & (x <= 1.1)
+        a[tt] = 0.574 * x[tt] ** 1.61 
+        b[tt] = -0.527 * x[tt] ** 1.61
     
-    def find_lines(self):
-        pass
-    def determine_line_info(self):
-        '''
-        This method determines the line intensity, its EW, and its FWHM.
-        '''
-        pass
+        tt = (x > 1.1) & (x <= 3.3)
+        yg = x[tt] - 1.82
+        a[tt] = (1. + 0.17699 * yg - 0.50447 * yg ** 2. - 0.02427 * yg ** 3. + 0.72085 * yg ** 4. + 
+                 0.01979 * yg ** 5. - 0.7753 * yg ** 6. + 0.32999 * yg ** 7.)
+        b[tt] = (0. + 1.41338 * yg + 2.28305 * yg ** 2. + 1.07233 * yg ** 3. - 5.38434 * yg ** 4. - 
+                 0.622510 * yg ** 5. + 5.3026 * yg ** 6. - 2.09002 * yg ** 7.)
+        
+        tt = (x > 3.3) & (x <= 5.9)
+        a[tt] = 1.752 - 0.316 * x[tt] - 0.104 / ((x[tt] - 4.67) ** 2. + 0.341)
+        b[tt] = -3.090 + 1.825 * x[tt] + 1.206 / ((x[tt] - 4.62) ** 2 + 0.263)
+        
+        tt = (x > 5.9) & (x <= 8.0)
+        a[tt] = (1.752 - 0.316 * x[tt] - 0.104 / ((x[tt] - 4.67) ** 2. + 0.341) - 
+                 0.04473 * (x[tt] - 5.9) ** 2. - 0.009779 * (x[tt] - 5.9) ** 3.)
+        b[tt] = (-3.090 + 1.825 * x[tt] + 1.206 / ((x[tt] - 4.62) ** 2. + 0.263) + 
+                 0.2130 * (x[tt] - 5.9) ** 2. + 0.1207 * (x[tt] - 5.9) ** 3.)
+        
+        tt = (x > 8.0) & (x < 10.0)
+        a[tt] = (-1.073 - 0.628 * (x[tt] - 8) + 0.137 * (x[tt] - 8) ** 2. - 
+                 0.070 * (x[tt] - 8) ** 3.)
+        b[tt] = (13.670 + 4.257 * (x[tt] - 8) - 0.420 * (x[tt] - 8) ** 2. + 
+                 0.374 * (x[tt] - 8) ** 3.)
+        
+        Xx = R_V * a + b
+        return numpy.squeeze(Xx)
+
+    def background_and_red_corr(self, wavelengths, fluxes, av, ebv):
+        # This function corrects for background reddening and extinction with the Cardelli 1989 law
+        bckgnd_and_red_corr_flux = []
+        Rv = av / ebv
+        Xx = self.red_corr(wavelengths, Rv)
+        for wav, flx, x in zip(wavelengths, fluxes, Xx):
+            corr_flx = x * flx
+            print wav, flx, corr_flx
+            bckgnd_and_red_corr_flux.append(corr_flx)
+        self.bckgnd_and_red_corr_flux = bckgnd_and_red_corr_flux
+    
+    def correct4z(self, wavelengths, z):
+        w_corr = []
+        for w in wavelengths:
+            w_c = w / ( 1 + z )
+            w_corr.append(w_c)
+        self.w_corr = w_corr
+
+    def return_output(self):
+        w_corr = self.bacground_corr_flux
+        bckgnd_and_red_corr_flux = self.bckgnd_and_red_corr_flux
+        red_corr_data = numpy.array([w_corr, bckgnd_and_red_corr_flux])
+        return red_corr_data
+
     
 class Corrections2optical:
     def underlying_abs_corr(self):
