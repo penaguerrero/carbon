@@ -1,6 +1,7 @@
 import numpy
 import os
 import pyneb as pn 
+import metallicity
 from science import spectrum
 
 ############################################################################################################################################
@@ -23,7 +24,7 @@ faintObj = False
 Halpha_width = 40.
 
 # Write the text file with line info?
-text_table = True
+create_txt = True
 
 
 ############################################################################################################################################
@@ -160,14 +161,29 @@ for d, cd, s in zip(data, cont_data, specs):
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
-    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=False, faintObj=faintObj)
+    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, lineinfo_text_file, Halpha_width=Halpha_width, 
+                                                 text_table=create_txt, vacuum=False, faintObj=faintObj, err_cont_fit=None)
     print 'This are the lines in the ', spectrum_region[s]
     print ''
     #raw_input('    press enter to continue...')
     
-    # Determine the corresponding E(B-V) value for each object
-    ebv = A_B_list[object_number] - A_V_list[object_number]
-    
+# Gather all the *_lineinfo.txt files into a single file with the name defined below    
+add_str = "_lineinfo"
+text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
+# Define the file name for for all the lines
+name_out_file = os.path.join(results4object_path, object_name+"_linesNUV2NIR.txt")
+
+# Read the observed lines from the table of lines_info.txt and normalize to Hbeta
+cols_in_file = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt)
+catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
+
+# Determine the corresponding E(B-V) value for each object
+av = A_V_list[object_number]
+ebv = A_B_list[object_number] - av
+wavelengths = rebinned_arr[0]
+fluxes = rebinned_arr[1]
+test = metallicity.BasicOps(wavelengths, fluxes, av, ebv, z)
+
 
 print 'Code finished!'
 
