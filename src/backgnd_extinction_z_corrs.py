@@ -26,6 +26,17 @@ Halpha_width = 40.
 # Write the text file with line info?
 create_txt = True
 
+# Set theoretical Halpha/Hbeta ratio
+I_theo_HaHb = 2.86 
+
+# Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
+# for HII region type objects typical values are 2.0-4.0 
+EWabsHbeta = 1.0
+
+# Set value for extinction
+# for HII region type objects there is no restriction to max but values MUST be positive
+C_Hbeta = 0.32
+
 
 ############################################################################################################################################
 
@@ -182,8 +193,22 @@ av = A_V_list[object_number]
 ebv = A_B_list[object_number] - av
 wavelengths = rebinned_arr[0]
 fluxes = rebinned_arr[1]
-test = metallicity.BasicOps(wavelengths, fluxes, av, ebv, z)
-
+#test = metallicity.BasicOps(wavelengths, fluxes, av, ebv, z)
+# Define a reddening correction object
+RC = pn.RedCorr()
+# List the available laws
+#RC.printLaws()
+# Plot the available laws
+#RC.plot(laws='all')
+#plt.show()
+# Choose the one we intend to use 
+#RC.law = 'S 79 H 83'
+#RC.law = 'CCM 89'
+# or define a new one
+#RC.UserFunction = my_X
+#RC.law = 'user'
+law = 'CCM 89'
+norm_lines, norm_Idered, I_dered_norCorUndAbs = metallicity.BasicOps(law, catalog_wavelength, observed_wavelength, I_theo_HaHb, EWabsHbeta, C_Hbeta, continuum, flux, av, ebv, z)
 
 print 'Code finished!'
 
