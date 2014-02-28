@@ -191,10 +191,8 @@ catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden,
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
 ebv = A_B_list[object_number] - av
-wavelengths = rebinned_arr[0]
-fluxes = rebinned_arr[1]
-#test = metallicity.BasicOps(wavelengths, fluxes, av, ebv, z)
-# Define a reddening correction object
+
+# Do reddening correction 
 RC = pn.RedCorr()
 # List the available laws
 #RC.printLaws()
@@ -208,7 +206,9 @@ RC = pn.RedCorr()
 #RC.UserFunction = my_X
 #RC.law = 'user'
 law = 'CCM 89'
-norm_lines, norm_Idered, I_dered_norCorUndAbs = metallicity.BasicOps(law, catalog_wavelength, observed_wavelength, I_theo_HaHb, EWabsHbeta, C_Hbeta, continuum, flux, av, ebv, z)
+cHbeta = 0.434*C_Hbeta
+normfluxes, Idered, I_dered_norCorUndAbs = metallicity.BasicOps(law, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, z, ebv)
+flambdas = metallicity.find_flambdas(cHbeta, I_dered_norCorUndAbs, normfluxes)
 
 print 'Code finished!'
 
