@@ -34,7 +34,7 @@ def normalize_lines(rounded_catalog_wavelength, element, ion, forbidden,
     norm_intensities = []
     EW_lines = []
     calc_cont = []
-    for i in range(len(flux)):
+    for i in range(0, len(flux)):
         catalog_lines.append(rounded_catalog_wavelength[i])
         element_lines.append(element[i])
         ion_lines.append(ion[i])
@@ -50,12 +50,30 @@ def normalize_lines(rounded_catalog_wavelength, element, ion, forbidden,
     return (catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, 
             how_forbidden_lines, normfluxes, calc_cont, norm_intensities, EW_lines)    
 
-def find_flambdas(cHbeta, I_dered_norCorUndAbs, normfluxes):
+def find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes):
     # Finding the f_lambda values
+    all_flambdas = []
+    for Icor, Iobs, w in zip(I_dered_norCorUndAbs, normfluxes, catalog_wavelength):
+        if Iobs < 0.0:   # this is to avoid nan values
+            all_flambdas.append(0.0)
+        else:
+            f12 = (numpy.log10(Icor) - numpy.log10(Iobs)) / cHbeta
+            all_flambdas.append(f12)
+    # remove the zeros in order to interpolate
+    wavs = []
+    pos_flambdas = []
+    for w, f in zip(catalog_wavelength, all_flambdas):
+        if f != 0.0:
+            wavs.append(w)
+            pos_flambdas.append(f)
+    # now replace the 0.0 for interpolated values
     flambdas = []
-    for Icor, Iobs in zip(I_dered_norCorUndAbs, normfluxes):
-        f12 = (numpy.log10(Icor) - numpy.log10(Iobs)) / cHbeta
-        flambdas.append(f12)
+    for w, f in zip(catalog_wavelength, all_flambdas):
+        if f is 0.0:
+            newf = numpy.interp(w, wavs, pos_flambdas)
+            flambdas.append(newf)
+        else:
+            flambdas.append(f)
     return flambdas
 
 
@@ -401,8 +419,24 @@ class BasicOps:
     - underlying stellar absorption correction
     - line intensity measurement, equivalent widths, and FWHM
     '''
-    def __init__(self, law, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, z, ebv=None):
-        self.law = law
+    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv):
+        if not isinstance(redlaw, str):
+            print 'redlaw should be a string, got ', type(redlaw)
+        if not isinstance(cols_in_file, list):
+            print 'cols_in_file should be a list, got ', type(cols_in_file)
+        if not isinstance(I_theo_HaHb, float):
+            print 'I_theo_HaHb should be a float, got ', type(I_theo_HaHb)
+        if not isinstance(EWabsHbeta, float):
+            print 'EWabsHbeta should be a float, got ', type(EWabsHbeta)
+        if not isinstance(EWabsHbeta, float):
+            print 'EWabsHbeta should be a float, got ', type(EWabsHbeta)
+        if not isinstance(cHbeta, float):
+            print 'cHbeta should be a float, got ', type(cHbeta)
+        if not isinstance(av, float):
+            print 'av should be a float, got ', type(av)
+        if not isinstance(ebv, float):
+            print 'ebv should be a float, got ', type(ebv)
+        self.redlaw = redlaw
         # Variables in cols_in_file: catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW
         self.catalog_wavelength = cols_in_file[0]
         self.observed_wavelength = cols_in_file[1]
@@ -419,9 +453,11 @@ class BasicOps:
         self.cHbeta = cHbeta
         self.corr_undelyingAbs_EWs = []
         self.intensities_corr_undelyingAbs = []
-        self.underlyingAbsCorr()
-        self.Halpha2Hbeta_dered(av, ebv)
-
+        self.normfluxes = []
+        self.Idered = []
+        self.I_dered_norCorUndAbs = []
+        self.av = av
+        self.ebv = ebv
 
     def underlyingAbsCorr(self):
         catalog_wavelength = self.catalog_wavelength
@@ -456,10 +492,10 @@ class BasicOps:
             I = EWabsLine * EWabsHbeta * cont + flx
             corr_intensities.append(I)
         self.intensities_corr_undelyingAbs = corr_intensities
-
+    
     def Halpha2Hbeta_dered(self, av, ebv):
-        ''' Function to dered and obtain the Halpha/Hbeta ratio nicely printed along with the unreddend values to compare. '''
-        law = self.law
+        ### Function to dered and obtain the Halpha/Hbeta ratio nicely printed along with the unreddend values to compare.
+        redlaw = self.redlaw
         cHbeta = self.cHbeta
         I_theo_HaHb = self.I_theo_HaHb
         catalog_wavelength = self.catalog_wavelength
@@ -480,14 +516,17 @@ class BasicOps:
         # Intensities are already corrected for underlying absorption and are also normalized to Hbeta.
         Idered = []
         I_dered_norCorUndAbs = []
-        for w, nF, nI in zip(catalog_lines, normfluxes, norm_intensities):    
-            # Obtain the reddening corrected intensities based on the given law and c(Hb)
-            if ebv != None:
-                rv = av / ebv
-                RC = pn.RedCorr(E_BV=ebv, R_V=rv, law=law, cHbeta=cHbeta)
-            else:
-                RC = pn.RedCorr(law=law, cHbeta=cHbeta)
+        # Define a reddening correction object
+        RC = pn.RedCorr()
+        # Obtain the reddening corrected intensities based on the given law and c(Hb)
+        if ebv != 0.0:
+            rv = av / ebv
+            RC = pn.RedCorr(E_BV=ebv, R_V=rv, law=redlaw, cHbeta=cHbeta)
+        else:
+            RC = pn.RedCorr(law=redlaw, cHbeta=cHbeta)
+        for w, nF, nI in zip(catalog_lines, normfluxes, norm_intensities):   
             I_dered = nI * RC.getCorrHb(w)
+            #print nI, RC.getCorrHb(w) , I_dered                                            # ********
             Idered.append(I_dered)
             # Obtain the reddening corrected intensities WITHOUT the correction due to 
             # underlying absorption based on the given law and c(Hb)
@@ -505,13 +544,20 @@ class BasicOps:
         print ''
         print 'cHbeta = %0.5f' % cHbeta
         print ' Intensities corrected for reddening and underlying absorption.'
-        print '            Using', law, '                   Normalized fluxes before extinction correction'
+        print '            Using', redlaw, '                   Normalized fluxes before extinction correction'
         print catalog_lines[Halpha_idx], '    ', I_Halpha, '                  ', Halpha
         print catalog_lines[Hbeta_idx], '    ', I_Hbeta, '                          ', Hbeta
         print 'theoretical ratio Ha/Hb = %0.3f' % (I_theo_HaHb)
         print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
-        return normfluxes, Idered, I_dered_norCorUndAbs
-
+        self.Idered = Idered
+        self.I_dered_norCorUndAbs = I_dered_norCorUndAbs
+        self.normfluxes = normfluxes
+        return self.normfluxes, self.Idered, self.I_dered_norCorUndAbs
+    
+    def do_ops(self):
+        self.underlyingAbsCorr()
+        return_values = self.Halpha2Hbeta_dered(self.av, self.ebv)
+        return return_values
 
     
 class CollisionalExcitationCorr():
