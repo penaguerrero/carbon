@@ -24,21 +24,24 @@ faintObj = False
 Halpha_width = 40.
 
 # Write the text file with line info?
-create_txt = True
+create_txt = False
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
 
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 1.0
+EWabsHbeta = 2.0
 
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 0.32
+C_Hbeta = 1.48
 
 
 ############################################################################################################################################
+
+# Found values of EWabsHbeta and C_Hbeta
+combos_list = [[2.0, 1.48]]
 
 
 # corresponding redshifts
@@ -193,8 +196,7 @@ av = A_V_list[object_number]
 ebv = A_B_list[object_number] - av
 
 # Do reddening correction 
-RC = pn.RedCorr()
-# List the available laws
+# List the available laws in pyneb
 #RC.printLaws()
 # Plot the available laws
 #RC.plot(laws='all')
@@ -205,10 +207,11 @@ RC = pn.RedCorr()
 # or define a new one
 #RC.UserFunction = my_X
 #RC.law = 'user'
-law = 'CCM 89'
+redlaw = 'CCM 89'
 cHbeta = 0.434*C_Hbeta
-normfluxes, Idered, I_dered_norCorUndAbs = metallicity.BasicOps(law, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, z, ebv)
-flambdas = metallicity.find_flambdas(cHbeta, I_dered_norCorUndAbs, normfluxes)
+kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv)
+normfluxes, Idered, I_dered_norCorUndAbs = kk.do_ops()
+flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
 
 print 'Code finished!'
 
