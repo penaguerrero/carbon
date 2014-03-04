@@ -15,34 +15,40 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 12
+object_number = 1
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
-faintObj = False  
+faintObj = False
 
 # Set width of Halpha in order to properly correct for reddening
-Halpha_width = 40.
+Halpha_width = 27.
 
 # Write the text file with line info?
-create_txt = False
+create_txt = True
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
-
-# Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
-# for HII region type objects typical values are 2.0-4.0 
-EWabsHbeta = 2.0
-
-# Set value for extinction
-# for HII region type objects there is no restriction to max but values MUST be positive
-C_Hbeta = 1.48
 
 
 ############################################################################################################################################
 
 # Found values of EWabsHbeta and C_Hbeta
-combos_list = [[2.0, 1.48]]
+combos_list = [[1.0, 3.68], [], [], [], [], [], [], [],
+               [], [], [], [], [2.0, 1.21], [], [], [] ,[]]
+combo = combos_list[object_number]
+# Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
+# for HII region type objects typical values are 2.0-4.0 
+#EWabsHbeta = 1.0
+EWabsHbeta = combo[0]
+# Set value for extinction
+# for HII region type objects there is no restriction to max but values MUST be positive
+#C_Hbeta = 3.68
+C_Hbeta = combo[1]
 
+# Desired Angstroms per pixel
+desired_disp_listoflists = [[2.5, 10.0, 10.0],[2.0,], [], [], [], [], [], [], [], [],
+                            [] ,[], [3.0, 8.0, 12.0], [], [], [], [], []]
+desired_disp_list = desired_disp_listoflists[object_number]
 
 # corresponding redshifts
 # from observations
@@ -63,9 +69,6 @@ A_B_list = [0.259, 0.397, 0.272, 0.231, 0.364, 0.101, 0.221, 0.170, 0.155,
 A_V_list = [0.199, 0.305, 0.209, 0.178, 0.279, 0.077, 0.169, 0.130, 0.119, 
             0.042, 0.104, 0.068, 0.047, 0.522, 0.216, 0.161, 0.105, 0.030]
 #             9    10      11      12     13    14      15    16     17
-
-# Desired Angstroms per pixel
-desired_disp_list = [2.4, 8.0, 7.4]
 
 # Object to be analyzed
 object_name = objects_list[object_number]
