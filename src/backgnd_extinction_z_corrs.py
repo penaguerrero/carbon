@@ -15,13 +15,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 1
-
-# use this option if object is VERY faint and want to use thinner widths for emission lines
-faintObj = False
-
-# Set width of Halpha in order to properly correct for reddening
-Halpha_width = 27.
+object_number = 2
 
 # Write the text file with line info?
 create_txt = True
@@ -32,30 +26,38 @@ I_theo_HaHb = 2.86
 
 ############################################################################################################################################
 
+# Used values of Halpha_width in order to properly correct for reddening
+Halpha_width_list = [40., 28., 28., 25., 33., 22., 25., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 35.]
+Halpha_width = Halpha_width_list[object_number]
+
 # Found values of EWabsHbeta and C_Hbeta
-combos_list = [[1.0, 3.68], [], [], [], [], [], [], [],
-               [], [], [], [], [2.0, 1.21], [], [], [] ,[]]
+combos_list = [[2.0, 2.43], [], [2.0, 1.05], [], [], [], [], [],
+               [], [], [], [], [2.0, 1.6], [], [], [] ,[]]
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
-#EWabsHbeta = 1.0
 EWabsHbeta = combo[0]
 # Set value for extinction
 # for HII region type objects there is no restriction to max but values MUST be positive
-#C_Hbeta = 3.68
 C_Hbeta = combo[1]
 
 # Desired Angstroms per pixel
-desired_disp_listoflists = [[2.5, 10.0, 10.0],[2.0,], [], [], [], [], [], [], [], [],
-                            [] ,[], [3.0, 8.0, 12.0], [], [], [], [], []]
+desired_disp_listoflists = [[2.5, 8.0, 8.0],[2.0, 8.0, 8.0], [2.0, 5.0, 10.0], [1.0, 1.0, 1.0], [], [], [], [], [], [],
+                            [] ,[], [3.0, 8.0, 8.0], [], [], [], [], []]
 desired_disp_list = desired_disp_listoflists[object_number]
+
+# use this option if object is VERY faint and want to use thinner widths for emission lines
+faintObj_list = [False, True, True, False, True, False, False, False, 
+                 False, False, False, False, False, True, False, False]
+faintObj = faintObj_list[object_number]
 
 # corresponding redshifts
 # from observations
 #             0        1        2        3         4         5        6        7         8
-z_list = [0.01985, 0.019113, 0.02877, 0.01354, 0.002695, 0.021371, 0.01348, 0.01201, 0.05842,
+z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.021371, 0.01348, 0.01201, 0.05842,
           0.046240, 0.013642, 0.002010, 0.0076, 0.01763, 0.010641, 0.032989, 0.04678, 0.002031]
 #             9       10        11       12        13       14       15       16       17
+# iras08339=1 had a z of phase 2 of 0.019113 
 # tol9=14 is found to have a much different z than that of phase2.... previous value = 0.01195
 # taken from phase 2 document
 
