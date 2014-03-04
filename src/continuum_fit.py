@@ -17,10 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 12
+object_number = 1
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [1]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -29,13 +29,13 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 2
+sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 1
+order = 2
 
 # 6) What is the width of the window to use to find local continuum?
-window = 550
+window = 300
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -43,11 +43,14 @@ plot = True
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
 text_table = False
 
-# Set width of Halpha in order to properly correct for reddening
-#Halpha_width = 40.
+# Want to correct for redshift?
+correct_redshift = False
 
 
 ############################################################################################################################################
+
+# Set width of Halpha in order to properly correct for reddening
+#Halpha_width = 40.
 
 object_name = objects_list[object_number]
 
@@ -74,12 +77,31 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
+z_list = [0.01985, 0.01595, 0.02877, 0.01354, 0.002695, 0.021371, 0.01348, 0.01201, 0.05842,
+          0.046240, 0.013642, 0.002010, 0.0076, 0.01763, 0.010641, 0.032989, 0.04678, 0.002031]
+# original z for iras08339
+
+'''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
+G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. '''
+originals = [1.58, 2.73, 4.92]
+rebin = True
+desired_disp_list = [2.0, 10.0, 10.0]
+factor = 1000.0
+
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
     
+    if rebin == True:
+        #rebinned_arr = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], d)
+        rebin_factor = (factor, 1)
+        rebinned_arr = spectrum.rebin(d, rebin_factor)
+
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
-    z = 0.0  # this is non-important because we are NOT correcting for redshift
-    object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=window, plot=plot, z_correct=False, normalize=normalize)
+    if correct_redshift == True:
+        z = z_list[object_number]
+    else:
+        z = 0.0  # this is non-important because we are NOT correcting for redshift
+    object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=window, plot=plot, z_correct=correct_redshift, normalize=normalize)
     wavs, fluxs = object_spectra
     _, cont_fluxs = fitted_continuum
 
