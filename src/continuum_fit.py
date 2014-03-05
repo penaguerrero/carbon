@@ -17,10 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 3
+object_number = 5
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -35,16 +35,16 @@ sigmas_away = 3
 order = 2
 
 # 6) What is the width of the window to use to find local continuum?
-window = 300
+window = 500
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quiasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
+correct_redshift = False
 rebin = False
 
 ############################################################################################################################################
@@ -77,14 +77,14 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
-z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.021371, 0.01348, 0.01201, 0.05842,
+z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.024076, 0.01348, 0.01201, 0.05842,
           0.046240, 0.013642, 0.002010, 0.0076, 0.01763, 0.010641, 0.032989, 0.04678, 0.002031]
-# original phase 2 z for iras08339 0.019113
+# original phase 2 z for iras08339 0.019113, mrk960 0.021371
 
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
 G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. '''
 originals = [1.58, 2.73, 4.92]
-desired_disp_list = [2.0, 8.0, 5.0]
+desired_disp_list = [2.5, 8.0, 10.0]
 
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
