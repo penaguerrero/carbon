@@ -15,7 +15,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 2
+object_number = 5
 
 # Write the text file with line info?
 create_txt = True
@@ -31,7 +31,7 @@ Halpha_width_list = [40., 28., 28., 25., 33., 22., 25., 40., 35., 27., 27., 30.,
 Halpha_width = Halpha_width_list[object_number]
 
 # Found values of EWabsHbeta and C_Hbeta
-combos_list = [[2.0, 2.43], [], [2.0, 1.05], [], [], [], [], [],
+combos_list = [[2.0, 2.43], [2.0, 2.0], [2.0, 1.05], [2.0, 1.2], [2.5, 4.8], [0.01, 0.001], [], [],
                [], [], [], [], [2.0, 1.6], [], [], [] ,[]]
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -42,8 +42,10 @@ EWabsHbeta = combo[0]
 C_Hbeta = combo[1]
 
 # Desired Angstroms per pixel
-desired_disp_listoflists = [[2.5, 8.0, 8.0],[2.0, 8.0, 8.0], [2.0, 5.0, 10.0], [1.0, 1.0, 1.0], [], [], [], [], [], [],
-                            [] ,[], [3.0, 8.0, 8.0], [], [], [], [], []]
+# Mrk 1087: 2.0, 8.0, 8.0
+desired_disp_listoflists = [[2.5, 8.0, 8.0], [1.0, 1.0, 1.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 5.0, 6.0], 
+                            [], [], [], [], [] ,[],
+                            [3.0, 8.0, 8.0], [], [], [], [], []]
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
