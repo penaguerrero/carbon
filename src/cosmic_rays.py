@@ -23,9 +23,9 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 17
+object_number = 5
 # choose the region to correct: opt=1  or  nir=2
-region = 2
+region = 0
 
 # paremeters for contrast in plotted image
 #vmin = -20
@@ -44,7 +44,7 @@ sigclip = 10.0
 sigfrac = 0.5
 objlim = 5.0
 # number of maximum iterations, suggested=4
-maxiter = 4
+maxiter = 1
 
 # Do you want to see the rotation angle of the slit in the 2d spectra?
 rotate = True
