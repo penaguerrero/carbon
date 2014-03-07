@@ -15,7 +15,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 1
 
 # Write the text file with line info?
 create_txt = False
@@ -209,6 +209,7 @@ catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden,
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
 ebv = A_B_list[object_number] - av
+print 'This is the E(B-V) = ', ebv
 
 # Do reddening correction 
 # List the available laws in pyneb
