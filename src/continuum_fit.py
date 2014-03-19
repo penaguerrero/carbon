@@ -38,10 +38,10 @@ order = 1
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quiasi-final spectrum?  (i.e. correct for redshift and rebin)
 correct_redshift = False
@@ -112,6 +112,7 @@ for d, s in zip(data, specs):
             new_file_name = object_name+spectrum_region[s]+"_normalized.txt"
         file_name = os.path.join(results4object_path, new_file_name)
         txt = open(file_name, 'w+')
+        print >> txt, 'Percentage Error in continuum fitting  =', err_cont_fit
         print >> txt, '{:<10} {:>30} {:>35}'.format('Wavelength [A]', 'Flux [ergs/s/cm$^2$/$\AA$]', 'Continuum [ergs/s/cm$^2$/$\AA$]')
         for w, f, c in zip(wavs, fluxs, cont_fluxs):
             print >> txt, '{:<7.3f} {:>25.5e} {:>32.5e}'.format(w, f, c)
@@ -129,6 +130,15 @@ for d, s in zip(data, specs):
             fout.write('{:<4.5f} {:>20.10e}\n'.format(w, f))
         fout.close()
 
+    
+c = 3.0e5 #km/s
+z = z_list[object_number]
+velocity = c * z
+print 'v = c * z = 3e5 * %0.5f = %0.3f' % (z, velocity)
+H0 = 75#67.8 #+-0.77 km/sec/Mpc (from Planck mission)
+distance = velocity / H0
+print 'Estimated distance assuming H0 = %f:   d[Mpc] = %0.3f' % (H0, distance)
+    
     
 print 'Code finished!'
 
