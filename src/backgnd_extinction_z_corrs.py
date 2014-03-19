@@ -201,8 +201,11 @@ text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_s
 name_out_file = os.path.join(results4object_path, object_name+"_linesNUV2NIR.txt")
 
 # Read the observed lines from the table of lines_info.txt and normalize to Hbeta
-cols_in_file, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt, err_cont_fit=True)
+add_str = "_lineerrs"
+errs_files, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
+cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt, err_cont_fit=True, errs_files=errs_files)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
+err_flux, err_EW = flxEW_errs
 
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
@@ -223,7 +226,7 @@ print 'This is the E(B-V) = ', ebv
 #RC.law = 'user'
 redlaw = 'CCM 89'
 cHbeta = 0.434*C_Hbeta
-kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv)
+kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs = kk.do_ops()
 flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
 
