@@ -20,7 +20,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 17
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -32,10 +32,10 @@ normalize = False
 sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 1
+order = 7
 
 # 6) What is the width of the window to use to find local continuum?
-window = 550
+window = 50
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = False
