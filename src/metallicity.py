@@ -5,6 +5,7 @@ import string
 import copy
 import pyneb as pn
 import PIL.Image as Image
+from uncertainties import unumpy
 from science import spectrum
 from matplotlib import pyplot
 
