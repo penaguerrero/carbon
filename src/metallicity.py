@@ -420,7 +420,7 @@ class BasicOps:
     - underlying stellar absorption correction
     - line intensity measurement, equivalent widths, and FWHM
     '''
-    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv):
+    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=None):
         if not isinstance(redlaw, str):
             print 'redlaw should be a string, got ', type(redlaw)
         if not isinstance(cols_in_file, list):
