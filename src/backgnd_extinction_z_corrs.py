@@ -3,6 +3,7 @@ import os
 import pyneb as pn 
 import metallicity
 from science import spectrum
+from uncertainties import unumpy
 
 ############################################################################################################################################
 
@@ -15,10 +16,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 1
+object_number = 17
 
 # Write the text file with line info?
-create_txt = False
+create_txt = True
 
 # Set theoretical Halpha/Hbeta ratio
 I_theo_HaHb = 2.86 
@@ -110,8 +111,9 @@ wavs_nir = []
 flxs_nir = []
 cont_nir = []
 continuum_flxs = []
+all_err_cont_fit =[]
 for s, tf in zip(specs, text_file_list): 
-    wavs, flxs, cont_flxs = numpy.loadtxt(tf, skiprows=1, unpack=True)
+    wavs, flxs, cont_flxs = numpy.loadtxt(tf, skiprows=2, unpack=True)
     for w, f, c in zip(wavs, flxs, cont_flxs):
         continuum_flxs.append(c)
         if s == 0:
@@ -126,32 +128,10 @@ for s, tf in zip(specs, text_file_list):
             wavs_nir.append(w)
             flxs_nir.append(f)
             cont_nir.append(c)
-
-# Check if the continuum becomes negative and if it does add a constant to the fluxes so that it dosen't
-'''
-if min(continuum_flxs) < 0.0:
-    constant = numpy.fabs(min(continuum_flxs)) + numpy.fabs(min(continuum_flxs))*0.1  
-    print 'Adding a constant to the flux so that the continuum does not become negative. Constant = ', constant
-    for f, c in zip(flxs_nuv, cont_nuv):
-        new_f = f + constant
-        new_c = c + constant
-        idx = flxs_nuv.index(f)
-        flxs_nuv[idx] = new_f
-        cont_nuv[idx] = new_c
-    for f, c in zip(flxs_opt, cont_opt):
-        new_f = f + constant
-        new_c = c + constant
-        idx = flxs_opt.index(f)
-        flxs_opt[idx] = new_f
-        cont_opt[idx] = new_c
-    for f, c in zip(flxs_nir, cont_nir):
-        new_f = f + constant
-        new_c = c + constant
-        print c, new_c
-        idx = flxs_nir.index(f)
-        flxs_nir[idx] = new_f
-        cont_nir[idx] = new_c
-'''
+    # get error of the continuum
+    err_cont_fit = spectrum.get_err_cont_fit(tf)
+    all_err_cont_fit.append(err_cont_fit)    
+    
 # Gather the info into a list of numpy arrays
 nuv = numpy.array([wavs_nuv, flxs_nuv])
 opt = numpy.array([wavs_opt, flxs_opt])
@@ -171,6 +151,9 @@ cont_data.append(nir_cont)
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
+# This is the error in the flux obtained by STIS, according to the Data Handbook the typical accuracies for 
+# spectroscopic l mode is about 2%, 5%, and 5% for NUV, opt, and NIR - tables 4.1 and 4.2
+err_stis_list = [0.015, 0.05, 0.05]
 
 for d, cd, s in zip(data, cont_data, specs):
     # Rebin the spectra to the corresponding dispersion
@@ -182,20 +165,35 @@ for d, cd, s in zip(data, cont_data, specs):
     
     #print '    *** Wavelengths corrected for redshift.'
     w_corr = rebinned_arr[0] / (1+float(z))
-    # rebinned and z-corrected data
     object_spectra = numpy.array([w_corr, rebinned_arr[1]]) 
     contum_spectra = numpy.array([w_corr, rebinned_cont[1]]) 
-    
+        
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
-    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, lineinfo_text_file, Halpha_width=Halpha_width, 
-                                                 text_table=create_txt, vacuum=False, faintObj=faintObj, err_cont_fit=None)
+    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=create_txt, 
+                                                 vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, err_continuum=all_err_cont_fit[s])
+    # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     print 'This are the lines in the ', spectrum_region[s]
+    err_continuum = all_err_cont_fit[s] / 100.
+    err_stis = err_stis_list[s]
+    err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
+                                                                             err_instrument=err_stis, err_continuum=err_continuum)
+    make_text_file_errors = True
+    if make_text_file_errors:
+        err_file = os.path.join(results4object_path, object_name+"_lineerrs"+spectrum_region[s]+".txt")
+        errf = open(err_file, 'w+')
+        print >> errf, '{:<12} {:>8} {:>15} {:>7} {:>15} {:>14} {:>5} {:>9} {:>8} {:>5}'.format('Wavelength', 'Flux', 'Flux err', '% err', 'Continuum', 'Continuum err', '% err', 'EW', 'EW err', '% err')
+        for w, f, ef, c, ec, ew, eew in zip(object_lines_info[0], object_lines_info[3], err_fluxes, object_lines_info[4], err_continuum, object_lines_info[5], err_ews):
+            efp = (ef * 100.) / numpy.abs(f)
+            ecp = (ec * 100.) / numpy.abs(c)
+            eewp = (eew * 100.) / numpy.abs(ew)
+            print >> errf, '{:<10.2f} {:>14.5e} {:>12.5e} {:>6.1f} {:>16.5e} {:>12.5e} {:>6.1f} {:>10.2f} {:>6.2f} {:>6.1f}'.format(w, f, ef, efp, c, ec, ecp, ew, eew, eewp)
+        errf.close()
     print ''
     #raw_input('    press enter to continue...')
-    
+
 # Gather all the *_lineinfo.txt files into a single file with the name defined below    
 add_str = "_lineinfo"
 text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
@@ -203,7 +201,7 @@ text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_s
 name_out_file = os.path.join(results4object_path, object_name+"_linesNUV2NIR.txt")
 
 # Read the observed lines from the table of lines_info.txt and normalize to Hbeta
-cols_in_file = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt)
+cols_in_file, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt, err_cont_fit=True)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 
 # Determine the corresponding E(B-V) value for each object
