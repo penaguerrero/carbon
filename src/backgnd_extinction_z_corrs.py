@@ -28,13 +28,13 @@ I_theo_HaHb = 2.86
 ############################################################################################################################################
 
 # Used values of Halpha_width in order to properly correct for reddening
-Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 35.]
+Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 30.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Found values of EWabsHbeta and C_Hbeta
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.55], [2.0, 1.5], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [2.0, 2.6]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.55], [2.0, 1.5], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [1.0, 0.71]]
 #                   9            10*          11           12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -56,13 +56,13 @@ or3 = originals[2]
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
                             [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [2.5, 6.0, 9.0] ,[2.0, 8.0, 8.0],
-                            [3.0, 8.0, 8.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 3.0, 5.0]]
+                            [3.0, 8.0, 8.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
 #                                    12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 faintObj_list = [False, True, True, False, True, True, False, False, False, 
-                 False, False, True, False, True, False, False, False, False]
+                 False, False, True, False, True, False, False, False, True]
 faintObj = faintObj_list[object_number]
 
 # corresponding redshifts
@@ -229,6 +229,11 @@ cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs = kk.do_ops()
 flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
+flux_with_errs = unumpy.uarray(flux)
+EW_with_err = unumpy.uarray(EW)
+cols_in_file_with_errs = [catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux_with_errs, continuum, EW_with_err]
+kk = metallicity.BasicOps(redlaw, cols_in_file_with_errs, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
+normfluxes_with_errs, Idered_with_errs, I_dered_norCorUndAbs_with_errs = kk.do_ops()
 
 print 'Code finished!'
 
