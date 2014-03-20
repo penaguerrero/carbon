@@ -459,6 +459,10 @@ class BasicOps:
         self.I_dered_norCorUndAbs = []
         self.av = av
         self.ebv = ebv
+        # If dealing with uncertainties is desired, do_errs will be different than None
+        self.errs_list = None
+        if do_errs != None:
+            self.errs_list = do_errs
 
     def underlyingAbsCorr(self):
         catalog_wavelength = self.catalog_wavelength
@@ -548,17 +552,51 @@ class BasicOps:
         print '            Using', redlaw, '                   Normalized fluxes before extinction correction'
         print catalog_lines[Halpha_idx], '    ', I_Halpha, '                  ', Halpha
         print catalog_lines[Hbeta_idx], '    ', I_Hbeta, '                          ', Hbeta
-        print 'theoretical ratio Ha/Hb = %0.3f' % (I_theo_HaHb)
+        print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
         #print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
-        print '      observed Ha/Hb =', I_obs_HaHb, '           raw Ha/Hb =', raw_ratio
+        print '      observed Ha/Hb =', numpy.round(I_obs_HaHb, decimals=2), '           raw Ha/Hb =', numpy.round(raw_ratio, decimals=2)
         self.Idered = Idered
         self.I_dered_norCorUndAbs = I_dered_norCorUndAbs
         self.normfluxes = normfluxes
         return self.normfluxes, self.Idered, self.I_dered_norCorUndAbs
     
+    def get_uncertainties(self):
+        errs_Flx, errs_EW, cont_errs = self.errs_list
+        errs_Idered = []
+        # Find observed Hbeta 
+        Hbeta_idx = self.catalog_wavelength.index(4861.330)
+        Hbeta = self.flux[Hbeta_idx]
+        err_Hbeta = errs_Flx[Hbeta_idx]
+        for w, F, I, nF, eF, eC in zip(self.catalog_wavelength, self.flux, self.Idered, self.normfluxes, errs_Flx, cont_errs):
+            # Assuming that the errors are gaussian (which should be a good enough approximation for STIS)
+            ''' the error of Flux/Hbeta is calculated using: 
+            F(5007) = X +- deltaX
+            F(Hbeta) = Y +- deltaY
+            R = F(5007) / F(Hbeta) = X/Y
+            deltaR**2 = (partial derivative of R with respect to X * deltaY)**2 + (partial derivative of R with respect to Y * deltaX)**2
+            partial derivative of R with respect to X = 1/Y = R * 1/X
+            partial derivative of R with respect to Y = X/Y * 1/Y = R * 1/Y
+            deltaR**2 = R**2 ( (deltaY/X)**2 + (deltaX/Y)**2 ) 
+            '''
+            tot_err_nF = numpy.abs(nF) * numpy.sqrt((err_Hbeta/Hbeta)*(err_Hbeta/Hbeta) + (eF/F)*(eF/F) )#+ eC*eC )
+            perc_tot_err_nF = (tot_err_nF * 100.) / numpy.abs(nF)
+            RC = pn.RedCorr()
+            # Obtain the reddening corrected intensities based on the given law and c(Hb)
+            if self.ebv != 0.0:
+                rv = self.av / self.ebv
+                RC = pn.RedCorr(E_BV=self.ebv, R_V=rv, law=self.redlaw, cHbeta=self.cHbeta)
+            else:
+                RC = pn.RedCorr(law=self.redlaw, cHbeta=self.cHbeta)
+            err_I_dered = tot_err_nF * RC.getCorrHb(w)
+            perc_err_I_dered = (err_I_dered * 100.) / numpy.abs(I)
+            #print w, err_Hbeta, eF, Hbeta, eC, nF, tot_err_nF
+            print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', I, ' err=', err_I_dered, ' err%=', perc_err_I_dered
+    
     def do_ops(self):
         self.underlyingAbsCorr()
         return_values = self.Halpha2Hbeta_dered(self.av, self.ebv)
+        if self.errs_list != None:
+            self.get_uncertainties()
         return return_values
 
     
