@@ -549,7 +549,8 @@ class BasicOps:
         print catalog_lines[Halpha_idx], '    ', I_Halpha, '                  ', Halpha
         print catalog_lines[Hbeta_idx], '    ', I_Hbeta, '                          ', Hbeta
         print 'theoretical ratio Ha/Hb = %0.3f' % (I_theo_HaHb)
-        print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
+        #print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
+        print '      observed Ha/Hb =', I_obs_HaHb, '           raw Ha/Hb =', raw_ratio
         self.Idered = Idered
         self.I_dered_norCorUndAbs = I_dered_norCorUndAbs
         self.normfluxes = normfluxes
