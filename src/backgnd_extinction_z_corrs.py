@@ -1,9 +1,9 @@
 import numpy
 import os
-import pyneb as pn 
+#import pyneb as pn 
 import metallicity
 from science import spectrum
-from uncertainties import unumpy
+#from uncertainties import unumpy
 
 ############################################################################################################################################
 
@@ -171,15 +171,17 @@ for d, cd, s in zip(data, cont_data, specs):
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
-    # Now obtain the continuum and equivalent widths
-    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=create_txt, 
-                                                 vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, err_continuum=all_err_cont_fit[s])
-    # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
-    print 'This are the lines in the ', spectrum_region[s]
     err_continuum = all_err_cont_fit[s] / 100.
     err_stis = err_stis_list[s]
+    err_lists = [err_stis, err_continuum]
+    # Now obtain the continuum and equivalent widths
+    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=False, 
+                                                 vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, do_errs=err_lists)
+    # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
+    print 'This are the lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
                                                                              err_instrument=err_stis, err_continuum=err_continuum)
+    
     make_text_file_errors = True
     if make_text_file_errors:
         err_file = os.path.join(results4object_path, object_name+"_lineerrs"+spectrum_region[s]+".txt")
@@ -205,7 +207,7 @@ add_str = "_lineerrs"
 errs_files, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
 cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt, err_cont_fit=True, errs_files=errs_files)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
-err_flux, err_EW = flxEW_errs
+err_flux, err_EW, cont_errs = flxEW_errs
 
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
@@ -229,11 +231,8 @@ cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs = kk.do_ops()
 flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
-flux_with_errs = unumpy.uarray(flux)
-EW_with_err = unumpy.uarray(EW)
-cols_in_file_with_errs = [catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux_with_errs, continuum, EW_with_err]
-kk = metallicity.BasicOps(redlaw, cols_in_file_with_errs, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
-normfluxes_with_errs, Idered_with_errs, I_dered_norCorUndAbs_with_errs = kk.do_ops()
+# Get the intensity uncertainties
+
 
 print 'Code finished!'
 
