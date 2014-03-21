@@ -563,6 +563,7 @@ class BasicOps:
     def get_uncertainties(self):
         errs_Flx, errs_EW, cont_errs = self.errs_list
         errs_Idered = []
+        perc_errs_I_dered = []
         # Find observed Hbeta 
         Hbeta_idx = self.catalog_wavelength.index(4861.330)
         Hbeta = self.flux[Hbeta_idx]
@@ -578,7 +579,7 @@ class BasicOps:
             partial derivative of R with respect to Y = X/Y * 1/Y = R * 1/Y
             deltaR**2 = R**2 ( (deltaY/X)**2 + (deltaX/Y)**2 ) 
             '''
-            tot_err_nF = numpy.abs(nF) * numpy.sqrt((err_Hbeta/Hbeta)*(err_Hbeta/Hbeta) + (eF/F)*(eF/F) )#+ eC*eC )
+            tot_err_nF = numpy.abs(nF) * numpy.sqrt((err_Hbeta/Hbeta)*(err_Hbeta/Hbeta) + (eF/F)*(eF/F) )#+ (eC/C)*(eC/C) )
             perc_tot_err_nF = (tot_err_nF * 100.) / numpy.abs(nF)
             RC = pn.RedCorr()
             # Obtain the reddening corrected intensities based on the given law and c(Hb)
@@ -587,10 +588,12 @@ class BasicOps:
                 RC = pn.RedCorr(E_BV=self.ebv, R_V=rv, law=self.redlaw, cHbeta=self.cHbeta)
             else:
                 RC = pn.RedCorr(law=self.redlaw, cHbeta=self.cHbeta)
-            err_I_dered = tot_err_nF * RC.getCorrHb(w)
-            perc_err_I_dered = (err_I_dered * 100.) / numpy.abs(I)
-            #print w, err_Hbeta, eF, Hbeta, eC, nF, tot_err_nF
-            print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', I, ' err=', err_I_dered, ' err%=', perc_err_I_dered
+            errIdered = tot_err_nF * numpy.abs(RC.getCorrHb(w))
+            errs_Idered.append(errIdered)
+            perc_errIdered = (errIdered * 100.) / numpy.abs(I)
+            perc_errs_I_dered.append(perc_errIdered)
+            print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', I, ' err=', errIdered, ' err%=', perc_errIdered
+        print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
     
     def do_ops(self):
         self.underlyingAbsCorr()
