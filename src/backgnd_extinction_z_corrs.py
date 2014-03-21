@@ -181,7 +181,14 @@ for d, cd, s in zip(data, cont_data, specs):
     print 'This are the lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
                                                                              err_instrument=err_stis, err_continuum=err_continuum)
-    
+    '''
+    print '{:<12} {:>8} {:>15} {:>7} {:>15} {:>14} {:>5} {:>9} {:>8} {:>5}'.format('Wavelength', 'Flux', 'Flux err', '% err', 'Continuum', 'Continuum err', '% err', 'EW', 'EW err', '% err')
+    for w, f, ef, c, ec, ew, eew in zip(object_lines_info[0], object_lines_info[3], object_lines_info[6], object_lines_info[4], err_continuum, object_lines_info[5], object_lines_info[7]):
+        efp = (ef * 100.) / numpy.abs(f)
+        ecp = (ec * 100.) / numpy.abs(c)
+        eewp = (eew * 100.) / numpy.abs(ew)
+        print '{:<10.2f} {:>14.5e} {:>12.5e} {:>6.1f} {:>16.5e} {:>12.5e} {:>6.1f} {:>10.2f} {:>6.2f} {:>6.1f}'.format(w, f, ef, efp, c, ec, ecp, ew, eew, eewp)
+    '''
     make_text_file_errors = True
     if make_text_file_errors:
         err_file = os.path.join(results4object_path, object_name+"_lineerrs"+spectrum_region[s]+".txt")
@@ -229,10 +236,16 @@ print 'This is the E(B-V) = ', ebv
 redlaw = 'CCM 89'
 cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
-normfluxes, Idered, I_dered_norCorUndAbs = kk.do_ops()
+normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
 flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
-# Get the intensity uncertainties
-
+# Writhe the results with errors
+RedCor_file = os.path.join(results4object_path, object_name+"_RedCor.txt")
+RedCor_file = open(RedCor_file, 'w+')
+print >> RedCor_file, '{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
+for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW):
+    eewp = (eew * 100.) / numpy.abs(ew)
+    print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
+RedCor_file.close()
 
 print 'Code finished!'
 
