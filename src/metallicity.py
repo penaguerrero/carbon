@@ -564,6 +564,8 @@ class BasicOps:
         errs_Flx, errs_EW, cont_errs = self.errs_list
         errs_Idered = []
         perc_errs_I_dered = []
+        errs_normfluxes = []
+        perc_errs_normfluxes = []
         # Find observed Hbeta 
         Hbeta_idx = self.catalog_wavelength.index(4861.330)
         Hbeta = self.flux[Hbeta_idx]
@@ -580,7 +582,9 @@ class BasicOps:
             deltaR**2 = R**2 ( (deltaY/X)**2 + (deltaX/Y)**2 ) 
             '''
             tot_err_nF = numpy.abs(nF) * numpy.sqrt((err_Hbeta/Hbeta)*(err_Hbeta/Hbeta) + (eF/F)*(eF/F) )#+ (eC/C)*(eC/C) )
+            errs_normfluxes.append(tot_err_nF)
             perc_tot_err_nF = (tot_err_nF * 100.) / numpy.abs(nF)
+            perc_errs_normfluxes.append(perc_tot_err_nF)
             RC = pn.RedCorr()
             # Obtain the reddening corrected intensities based on the given law and c(Hb)
             if self.ebv != 0.0:
@@ -592,15 +596,18 @@ class BasicOps:
             errs_Idered.append(errIdered)
             perc_errIdered = (errIdered * 100.) / numpy.abs(I)
             perc_errs_I_dered.append(perc_errIdered)
-            print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', I, ' err=', errIdered, ' err%=', perc_errIdered
-        print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
+            #print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', I, ' err=', errIdered, ' err%=', perc_errIdered
+        #print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
+        return errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
     
     def do_ops(self):
         self.underlyingAbsCorr()
-        return_values = self.Halpha2Hbeta_dered(self.av, self.ebv)
+        normfluxes, Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(self.av, self.ebv)
         if self.errs_list != None:
-            self.get_uncertainties()
-        return return_values
+            errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = self.get_uncertainties()
+            return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
+        else:
+            return normfluxes, Idered, I_dered_norCorUndAbs
 
     
 class CollisionalExcitationCorr():
