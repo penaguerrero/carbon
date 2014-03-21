@@ -175,7 +175,7 @@ for d, cd, s in zip(data, cont_data, specs):
     err_stis = err_stis_list[s]
     err_lists = [err_stis, err_continuum]
     # Now obtain the continuum and equivalent widths
-    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=False, 
+    object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=create_txt, 
                                                  vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, do_errs=err_lists)
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     print 'This are the lines in the ', spectrum_region[s]
