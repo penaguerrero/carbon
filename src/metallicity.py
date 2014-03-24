@@ -137,7 +137,7 @@ class OneDspecs:
         for spec in self.oneDspecs:
             s = pyfits.open(spec)
             s.info()
-            print('This will be spectruum number %i' % self.counter)            
+            print('This will be spectrum number %i' % self.counter)            
             # read the data and store the wavelengths and fluxes
             t = s['sci'].data
             self.specs.append(repr(self.counter)+'='+spec+'_'+repr('sci'))
@@ -641,113 +641,127 @@ class BasicOps:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
-class CollisionalExcitationCorr(BasicOps):
-    def __init__(self, basicops_info, tfile1stRedCor, verbose=False):
-        redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs = basicops_info
-        BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
-        self.tfile1stRedCor = tfile1stRedCor
+class CollisionalExcitationCorr:
+    def __init__(self, object_name, cHbeta, case, verbose=False):
+        # Inputs:
+        self.object_name = object_name
+        self.cHbeta = cHbeta
+        self.case = case                        # this is the Case used through out the class
+        self.verbose = verbose                  # if True print midpoints in order to know what is the code working on
+        # Variables defined in the class
         self.lines_pyneb_matches = []
     
-    def writeRedCorrFile(self, tfile1stRedCor, verbose):
-        catalog_lines = self.catalog_lines
-        element_lines = self.element_lines
-        ion_lines = self.ion_lines
-        norm_Idered = self.norm_Idered
-        absolute_Iuncert = self.absolute_Iuncert
-        tf = open(tfile1stRedCor, 'w+')
+    def writeRedCorrFile(self):
+        ''' This function writes a text file in a pyneb readable format... Necessary to find the temperatures and densities. '''
+        object_name = self.object_name
+        verbose = self.verbose
+        input_file = object_name+'_RedCor.txt'
+        path_object = '../results/'+object_name
+        path_inputfile = os.path.join(path_object, input_file)
+        # define the columns to be filled when reading the file
+        self.wavelength = []
+        self.flambda = []
+        self.element = []
+        self.ion = []
+        self.forbidden = []
+        self.howforb = []
+        self.flux = []
+        self.errflux = []
+        self.percerrflx = []
+        self.intensity = []
+        self.errinten = []
+        self.percerrinten = []
+        self.ew = []
+        self.errew = []
+        self.percerrew = []
+        cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+        # Read the info from the text file that contains IDs, dered info, and errors (this is the object_redCor.txt)
+        cols_in_file = spectrum.readlines_from_lineinfo(path_inputfile, cols_in_file)
+        self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
+        tf = open(self.pynebIDstxt, 'w+')
         if verbose == True:
-            print ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
-            print 'For  cHbeta = %0.3f' % BasicOps.cHbeta
-        lines_pyneb_matches = []
-        for cw, el, io, Ic, er in zip(catalog_lines, element_lines, ion_lines, norm_Idered, absolute_Iuncert):
-            cw = int(cw)
-            cw = str(cw)
+            print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
+            print 'For  cHbeta = %0.3f' % self.cHbeta
+        for w, el, io, Ic, er in zip(self.wavelength, self.element, self.ion, self.intensity, self.errinten):
+            intw = int(numpy.round(w, decimals=0))
+            cw = str(intw)
             el = str(el)
             io = str(io)
             wavid = cw+'A'
             pynebid = el+io
-            #print 'pynebid =', pynebid, '    wavid =', wavid
+            if verbose == True:
+                print 'pynebid =', pynebid, '    wavid =', wavid
             lineID = pynebid + '_' + wavid
             matching_line = [cw, Ic, er]
             if pynebid in pn.LINE_LABEL_LIST:
                 if wavid in pn.LINE_LABEL_LIST[pynebid]:
-                    print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(lineID, Ic, er))
-                    lines_pyneb_matches.append(matching_line)
+                    print >> tf, '{:<15} {:>15.3f} {:>15.3f}'.format(lineID, Ic, er)
+                    self.lines_pyneb_matches.append(matching_line)
                 else:
                     pynebid = el+io+'_'+wavid+'+'
                     if pynebid in pn.BLEND_LIST:
-                        print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(pynebid, Ic, er))
-                        lines_pyneb_matches.append(matching_line)
+                        print >> tf, '{:<15} {:>15.3f} {:>15.3f}'.format(pynebid, Ic, er)
+                        self.lines_pyneb_matches.append(matching_line)
                     else:
                         continue
         tf.close()
-        print 'File   %s   writen!' % tfile1stRedCor
-        print 'got to the end of the function'
-        self.lines_pyneb_matches = lines_pyneb_matches
+        print 'Pyneb IDs found!  Lines written in file  %s' % self.pynebIDstxt
+        return self.lines_pyneb_matches 
 
     def get_temps(self):
-        tfile1stRedCor = self.tfile1stRedCor
         # Determine first approximation of temperatures and densities
-        # OBSERVATIONS
         # Define an Observation object and assign it to name 'obs'
         obs = pn.Observation()
         # read data from file created specifically for pyneb reading
-        obs.readData(tfile1stRedCor, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
+        obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
         # Intensities
-        #print 'len(lines_pyneb_matches)', len(lines_pyneb_matches)
         for line in obs.lines:
-            iline = line.corrIntens
-            for matching_line in self.lines_pyneb_matches:
-                if matching_line[0] in line.label:
-                    #print 'found it!', matching_line[0]
-                    #print line.wave
-                    #print line.corrIntens
-                    #iline = line.corrIntens
-                    if line.wave == 4363:
-                        I1 = line.corrIntens
-                        print '4363 has an intensity of', I1[0]
-                    elif line.wave == 5007:
-                        I2 = line.corrIntens
-                        print '5007 has an intensity of', I2[0]
-                    elif line.wave == 3726:
-                        IO21 = line.corrIntens
-                        print '3726 has an intensity of', IO21[0]
-                    elif line.wave == 3729:
-                        IO22 = line.corrIntens
-                        print '3729 has an intensity of', IO22[0]
-                    elif line.wave == 6312:
-                        IS31 = line.corrIntens
-                        print '6312 has an intensity of', IS31[0]
-                    elif line.wave == 9069:
-                        IS32 = line.corrIntens
-                        print '9069 has an intensity of', IS32[0]
-                    elif line.wave == 9531:
-                        IS33 = line.corrIntens
-                        print '9531 has an intensity of', IS33[0]
-                    elif line.wave == 5518:
-                        ICl31 = line.corrIntens
-                        print '5518 has an intensity of', ICl31[0]
-                    elif line.wave == 5538:
-                        ICl32 = line.corrIntens
-                        print '5538 has an intensity of', ICl32[0]
-        # Define all atoms to make calculations
-        all_atoms = pn.getAtomDict()
+            if self.verbose == True:            
+                print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
+            if line.wave == 4363:
+                I1 = line.corrIntens
+                print '4363 has an intensity of', I1[0]
+            elif line.wave == 5007:
+                I2 = line.corrIntens
+                print '5007 has an intensity of', I2[0]
+            elif line.wave == 3726:
+                IO21 = line.corrIntens
+                print '3726 has an intensity of', IO21[0]
+            elif line.wave == 3729:
+                IO22 = line.corrIntens
+                print '3729 has an intensity of', IO22[0]
+            elif line.wave == 6312:
+                IS31 = line.corrIntens
+                print '6312 has an intensity of', IS31[0]
+            elif line.wave == 9069:
+                IS32 = line.corrIntens
+                print '9069 has an intensity of', IS32[0]
+            elif line.wave == 9531:
+                IS33 = line.corrIntens
+                print '9531 has an intensity of', IS33[0]
+            elif line.wave == 5518:
+                ICl31 = line.corrIntens
+                print '5518 has an intensity of', ICl31[0]
+            elif line.wave == 5538:
+                ICl32 = line.corrIntens
+                print '5538 has an intensity of', ICl32[0]
         # simultaneously compute temperature and density from pairs of line ratios
         # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
         diags = pn.Diagnostics()   # Instantiate the Diagnostics class
         diags.getAllDiags()  # see what Diagnostics exist
         # temperature determination from an intensity ratio
         # explore some specific atom in the atoms collection
+        self.TO3 = 0.0
         try:
             O3 = pn.Atom("O", "3")
             O3ratio = I1[0] / I2[0]
             print 'ratio of O3 = ', O3ratio
-            TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
-            print '  First estimation of temperature of O3 = ', TO3 
+            self.TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
+            print '  First estimation of temperature of O3 = ', self.TO3 
             O2 = pn.Atom("O", "2")
             O2ratio = IO22[0] / IO21[0]
             print 'ratio of O2 = ', O2ratio
-            denO2 = O2.getTemDen(O2ratio, tem=TO3, wave1=3729, wave2=3726) 
+            denO2 = O2.getTemDen(O2ratio, tem=self.TO3, wave1=3729, wave2=3726) 
             print '   First estimation of density of O2 = ', denO2
             S3 = pn.Atom("S", "3")
             S3ratio = IS31[0] / (IS32[0]) 
@@ -756,28 +770,29 @@ class CollisionalExcitationCorr(BasicOps):
             print '   First estimation of temperature of S3 = ', TS3 
             Cl3 = pn.Atom("Cl", "3")
             Cl3ratio = ICl32[0] / (ICl31[0]) 
-            dCl3 = Cl3.getTemDen(S3ratio, temp=TO3, wave1=5538, wave2=5518)
+            dCl3 = Cl3.getTemDen(S3ratio, temp=self.TO3, wave1=5538, wave2=5518)
             print '   First estimation of density of Cl3 = ', dCl3
-        except:
+        except Exception as e:
             (NameError,),e
         ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
-        I4986 = 0.0
-        I4987 = 0.0
-        I4658 = 0.0
-        for w, i in zip(catalog_lines, norm_Idered):
-            if int(w) == 4986:
-                I4986 = i
-            elif int(w) == 4987:
-                I4987 = i
-            elif int(w) == 4658:
-                I4658 = i
-        if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
-            log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(TO3-4))) / (0.66 - 0.18*(numpy.log10(TO3-4))) )
-            Fe3den = 10**(log_Fe3den)
-            print 'Density measured from [Fe3] lines:', Fe3den
-        else:
-            print 'No [Fe3] density available.'
-        
+        if self.TO3 != 0.0:
+            I4986 = 0.0
+            I4987 = 0.0
+            I4658 = 0.0
+            for w, i in zip(self.wavelength, self.intensity):
+                if int(w) == 4986:
+                    I4986 = i
+                elif int(w) == 4987:
+                    I4987 = i
+                elif int(w) == 4658:
+                    I4658 = i
+            if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
+                log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(self.TO3-4))) / (0.66 - 0.18*(numpy.log10(self.TO3-4))) )
+                Fe3den = 10**(log_Fe3den)
+                print 'Density measured from [Fe3] lines:', Fe3den
+            else:
+                print 'No [Fe3] density available.'
+
         # Simultaneously determine temps and densities
         try:
             tem_N2, den_tmp = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', obs=obs)
@@ -790,9 +805,11 @@ class CollisionalExcitationCorr(BasicOps):
             print 'den_S2: ', den_S2
             print 'tem_O3: ', tem_O3
             print 'den_Ar4: ', den_Ar4
-        except:
+        except Exception as e:
             (NameError,),e
         '''
+        # Define all atoms to make calculations
+        all_atoms = pn.getAtomDict()
         # Alternate way of computing T(OIII)
         if tem_O3 == 'NA':
             tem_O3 = all_atoms['O3'].getTemDen(i5007/i4363, den=100., wave1=5007, wave2=4363)
@@ -819,12 +836,12 @@ class CollisionalExcitationCorr(BasicOps):
         # If the [O II] temperature was not obtained directly from observations, get an estimate
         ### Get temperature of OII from OIII. 
         # Using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
-        TO2pei = 2430. + TO3 * (1.031 - TO3/54350.)
-        print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', TO2pei
-        print ' * for comparison, Temperature of [O III] = ', TO3
+        self.TO2pei = 2430. + self.TO3 * (1.031 - self.TO3/54350.)
+        print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', self.TO2pei
+        print ' * for comparison, Temperature of [O III] = ', self.TO3
         # Using equation of Garnett, D. R. 1992, AJ, 103, 1330
-        TO2gar = 0.7 * TO3 + 3000.
-        print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
+        self.TO2gar = 0.7 * self.TO3 + 3000.
+        print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
         
     def corr_ColExcit(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, verbose=False):
         '''
@@ -1046,6 +1063,7 @@ class CollisionalExcitationCorr(BasicOps):
         
     def perform_colexcit_corr(self):
         lines_pyneb_matches = self.writeRedCorrFile()
+        self.get_temps()
         return lines_pyneb_matches
 
 class UseTemdenAbund():
