@@ -51,6 +51,37 @@ def normalize_lines(rounded_catalog_wavelength, element, ion, forbidden,
     return (catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, 
             how_forbidden_lines, normfluxes, calc_cont, norm_intensities, EW_lines)    
 
+def find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
+                        how_forbidden, observed_wavelength, flux, intensities, EW, continuum):
+    Hb_idx = rounded_catalog_wavelength.index(4861.0)
+    catalog_emission_lines = []
+    element_emission_lines = []
+    ion_emission_lines = []
+    forbidden_emission_lines = []
+    how_forbidden_emission_lines = []
+    wavs_emission_lines = []
+    positive_normfluxes = []
+    positive_norm_intensities = []
+    EW_emission_lines = []
+    pos_calc_cont = []
+    for i in range(len(flux)):
+        if flux[i] > 0.00000:
+            catalog_emission_lines.append(rounded_catalog_wavelength[i])
+            element_emission_lines.append(element[i])
+            ion_emission_lines.append(ion[i])
+            forbidden_emission_lines.append(forbidden[i])
+            how_forbidden_emission_lines.append(how_forbidden[i])
+            wavs_emission_lines.append(observed_wavelength[i])
+            norm_flux = flux[i] / flux[Hb_idx] * 100.
+            positive_normfluxes.append(norm_flux)
+            normI = intensities[i] / intensities[Hb_idx] * 100.
+            positive_norm_intensities.append(normI)
+            EW_emission_lines.append(EW[i])
+            pos_calc_cont.append(continuum[i])
+    #print '  ***  There are ', len(positive_norm_intensities), ' emission lines in this object!'
+    return (catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
+            how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines)
+
 def find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes):
     # Finding the f_lambda values
     all_flambdas = []
@@ -610,9 +641,412 @@ class BasicOps:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
-class CollisionalExcitationCorr():
-    def collisional_excit_corr(self):
-        pass
+class CollisionalExcitationCorr(BasicOps):
+    def __init__(self, basicops_info, tfile1stRedCor, verbose=False):
+        redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs = basicops_info
+        BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
+        self.tfile1stRedCor = tfile1stRedCor
+        self.lines_pyneb_matches = []
+    
+    def writeRedCorrFile(self, tfile1stRedCor, verbose):
+        catalog_lines = self.catalog_lines
+        element_lines = self.element_lines
+        ion_lines = self.ion_lines
+        norm_Idered = self.norm_Idered
+        absolute_Iuncert = self.absolute_Iuncert
+        tf = open(tfile1stRedCor, 'w+')
+        if verbose == True:
+            print ('{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error'))
+            print 'For  cHbeta = %0.3f' % BasicOps.cHbeta
+        lines_pyneb_matches = []
+        for cw, el, io, Ic, er in zip(catalog_lines, element_lines, ion_lines, norm_Idered, absolute_Iuncert):
+            cw = int(cw)
+            cw = str(cw)
+            el = str(el)
+            io = str(io)
+            wavid = cw+'A'
+            pynebid = el+io
+            #print 'pynebid =', pynebid, '    wavid =', wavid
+            lineID = pynebid + '_' + wavid
+            matching_line = [cw, Ic, er]
+            if pynebid in pn.LINE_LABEL_LIST:
+                if wavid in pn.LINE_LABEL_LIST[pynebid]:
+                    print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(lineID, Ic, er))
+                    lines_pyneb_matches.append(matching_line)
+                else:
+                    pynebid = el+io+'_'+wavid+'+'
+                    if pynebid in pn.BLEND_LIST:
+                        print >> tf,  ('{:<15} {:>15.3f} {:>15.3f}'.format(pynebid, Ic, er))
+                        lines_pyneb_matches.append(matching_line)
+                    else:
+                        continue
+        tf.close()
+        print 'File   %s   writen!' % tfile1stRedCor
+        print 'got to the end of the function'
+        self.lines_pyneb_matches = lines_pyneb_matches
+
+    def get_temps(self):
+        tfile1stRedCor = self.tfile1stRedCor
+        # Determine first approximation of temperatures and densities
+        # OBSERVATIONS
+        # Define an Observation object and assign it to name 'obs'
+        obs = pn.Observation()
+        # read data from file created specifically for pyneb reading
+        obs.readData(tfile1stRedCor, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
+        # Intensities
+        #print 'len(lines_pyneb_matches)', len(lines_pyneb_matches)
+        for line in obs.lines:
+            iline = line.corrIntens
+            for matching_line in self.lines_pyneb_matches:
+                if matching_line[0] in line.label:
+                    #print 'found it!', matching_line[0]
+                    #print line.wave
+                    #print line.corrIntens
+                    #iline = line.corrIntens
+                    if line.wave == 4363:
+                        I1 = line.corrIntens
+                        print '4363 has an intensity of', I1[0]
+                    elif line.wave == 5007:
+                        I2 = line.corrIntens
+                        print '5007 has an intensity of', I2[0]
+                    elif line.wave == 3726:
+                        IO21 = line.corrIntens
+                        print '3726 has an intensity of', IO21[0]
+                    elif line.wave == 3729:
+                        IO22 = line.corrIntens
+                        print '3729 has an intensity of', IO22[0]
+                    elif line.wave == 6312:
+                        IS31 = line.corrIntens
+                        print '6312 has an intensity of', IS31[0]
+                    elif line.wave == 9069:
+                        IS32 = line.corrIntens
+                        print '9069 has an intensity of', IS32[0]
+                    elif line.wave == 9531:
+                        IS33 = line.corrIntens
+                        print '9531 has an intensity of', IS33[0]
+                    elif line.wave == 5518:
+                        ICl31 = line.corrIntens
+                        print '5518 has an intensity of', ICl31[0]
+                    elif line.wave == 5538:
+                        ICl32 = line.corrIntens
+                        print '5538 has an intensity of', ICl32[0]
+        # Define all atoms to make calculations
+        all_atoms = pn.getAtomDict()
+        # simultaneously compute temperature and density from pairs of line ratios
+        # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
+        diags = pn.Diagnostics()   # Instantiate the Diagnostics class
+        diags.getAllDiags()  # see what Diagnostics exist
+        # temperature determination from an intensity ratio
+        # explore some specific atom in the atoms collection
+        try:
+            O3 = pn.Atom("O", "3")
+            O3ratio = I1[0] / I2[0]
+            print 'ratio of O3 = ', O3ratio
+            TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
+            print '  First estimation of temperature of O3 = ', TO3 
+            O2 = pn.Atom("O", "2")
+            O2ratio = IO22[0] / IO21[0]
+            print 'ratio of O2 = ', O2ratio
+            denO2 = O2.getTemDen(O2ratio, tem=TO3, wave1=3729, wave2=3726) 
+            print '   First estimation of density of O2 = ', denO2
+            S3 = pn.Atom("S", "3")
+            S3ratio = IS31[0] / (IS32[0]) 
+            print 'ratio of S3 = ', S3ratio
+            TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9532)
+            print '   First estimation of temperature of S3 = ', TS3 
+            Cl3 = pn.Atom("Cl", "3")
+            Cl3ratio = ICl32[0] / (ICl31[0]) 
+            dCl3 = Cl3.getTemDen(S3ratio, temp=TO3, wave1=5538, wave2=5518)
+            print '   First estimation of density of Cl3 = ', dCl3
+        except:
+            (NameError,),e
+        ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
+        I4986 = 0.0
+        I4987 = 0.0
+        I4658 = 0.0
+        for w, i in zip(catalog_lines, norm_Idered):
+            if int(w) == 4986:
+                I4986 = i
+            elif int(w) == 4987:
+                I4987 = i
+            elif int(w) == 4658:
+                I4658 = i
+        if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
+            log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(TO3-4))) / (0.66 - 0.18*(numpy.log10(TO3-4))) )
+            Fe3den = 10**(log_Fe3den)
+            print 'Density measured from [Fe3] lines:', Fe3den
+        else:
+            print 'No [Fe3] density available.'
+        
+        # Simultaneously determine temps and densities
+        try:
+            tem_N2, den_tmp = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', obs=obs)
+            tem_Ar3, den_S2 = diags.getCrossTemDen('[ArIII] 5192/7300+', '[SII] 6731/6716', obs=obs)
+            tem_O3, den_Cl3 = diags.getCrossTemDen('[OIII] 4363/5007', '[ClIII] 5538/5518', obs=obs)
+            tem_O3, den_Ar4 = diags.getCrossTemDen('[OIII] 4363/5007', '[ArIV] 4740/4711', obs=obs)
+            tem_O3, den_O2 = diags.getCrossTemDen('[OIII] 4363/5007', '[OII] 3926/3929', obs=obs)
+            # Printout of physical conditions
+            print 'den_O2: ', den_O2
+            print 'den_S2: ', den_S2
+            print 'tem_O3: ', tem_O3
+            print 'den_Ar4: ', den_Ar4
+        except:
+            (NameError,),e
+        '''
+        # Alternate way of computing T(OIII)
+        if tem_O3 == 'NA':
+            tem_O3 = all_atoms['O3'].getTemDen(i5007/i4363, den=100., wave1=5007, wave2=4363)
+        # Include in diags the relevant line ratios
+        diags.addDiag([
+                        ## temperatures
+                        #'[NII] 5755/6548',
+                        '[OII] 7320/3737+',
+                        '[OIII] 4363/5007',
+                        '[ArIII] 5192/7136',
+                        '[ArIII] 5192/7300+',
+                        '[ArIV] 7230+/4720+',
+                        #'[SIII] 6312/9532',
+                        ## densities
+                        #'[NI] 5198/5200',
+                        #'[OII] 3729/3736',
+                        '[ArIV] 4740/4711',
+                        #'[SII] 4072+/6725+',
+                        '[SII] 6731/6716',
+                        ])
+        '''
+        ### Second iteration of extinction correction: Collisional Excitation
+        ### Following analysis presented in Pena-Guerrero, Peimbert, Peimbert, Ruiz (2012, ApJ, 746, 115) & Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39).
+        # If the [O II] temperature was not obtained directly from observations, get an estimate
+        ### Get temperature of OII from OIII. 
+        # Using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
+        TO2pei = 2430. + TO3 * (1.031 - TO3/54350.)
+        print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', TO2pei
+        print ' * for comparison, Temperature of [O III] = ', TO3
+        # Using equation of Garnett, D. R. 1992, AJ, 103, 1330
+        TO2gar = 0.7 * TO3 + 3000.
+        print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', TO2gar
+        
+    def corr_ColExcit(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, verbose=False):
+        '''
+        This function is the second iteration of reddening correction. It fits the observed H lines given to the theoretical
+        ones found with INTRAT by Storey & Hummer (1995).
+        # Idered = first iteration of reddening correction
+        # Hlines = list of the hydrogen wavelengths to look for (typically from Halpha to H12).
+        # theoCE = theoretical hydrogen intensities corrected for collisional excitation.
+        '''
+        ### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
+        # Table 1
+        # Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
+        TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400]
+        xalpha = [0.011, 0.037, 0.033, 0.086, 0.070]
+        #xbeta = [0.007, 0.027, 0.021, 0.066, 0.053]
+        # x_lambda = I_col/I_tot
+        # now do the interpolation according to the [OII] temperature
+        xL = []
+        xalpha_interp = numpy.interp(TO2gar, TeOII, xalpha)
+        xL.append(xalpha_interp)
+        xbeta = xalpha_interp * 0.67
+        xL.append(xbeta)
+        L = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
+        for l in L:
+            xl = xalpha_interp / ( 2**((l-2.0)/3.0) )
+            xL.append(xl)
+        # For the following hydrogen lines recalculate the intensity correcting for collisional exitation
+        norm_IcorrCE = [] #intensities corrected for collisional excitation
+        obs_ratios = []
+        found_Hlines = []
+        for w, el, I in zip(catalog_lines, element_lines, Idered):
+            for h, l in zip(Hlines, xL):
+                if (w == h) and (el == 'H'):
+                    found_Hlines.append(h)
+                    newI = I * (1-l)
+                    normI = newI/100.
+                    if verbose == True:
+                        print w, 'before', I, '  after collisionally excited corrected', newI, '  ratio2Hbeta', normI
+                    norm_IcorrCE.append(newI)
+                    obs_ratios.append(normI)
+                    if w == 4102:
+                        norm_H6theo = normI
+        return norm_IcorrCE, obs_ratios, found_Hlines, norm_H6theo
+    
+    def find_Chi_of_CE(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert, verbose=False):
+        # Correct for collisional excitation
+        IcorrCE, obs_ratios, found_Hlines, norm_H6theo = self.corr_ColExcit(TO2gar, catalog_lines, element_lines, Idered, Hlines)
+        # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them 
+        # with the theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
+        uncert = []
+        for H, Ic, obsr in zip(found_Hlines, IcorrCE, obs_ratios):
+            idx = Hlines.index(H)
+            if H in catalog_lines:
+                H_index = catalog_lines.index(H)
+                u = (1 - (obsr / theoCE[idx])) * 100.0 / percent_Iuncert[H_index]
+                I = Idered[H_index]
+                if verbose == True:
+                    print H, 'theo_ratio =', theoCE[idx], 'obs_ratio', obsr, '   Icorr =', Ic, '   Idered = ', I#, '   percent_Iuncert[H_index]=', percent_Iuncert[H_index]
+                    print '   error de excitacion colisional = ', u 
+                uncert.append(u)
+        # In order to find the best combination of C_Hbeta and EWabsHbeta determine chi squared
+        sqs = []
+        for u in uncert:
+            nu = u * u
+            sqs.append(nu)
+        Chi_sq = sum(sqs)
+        return Chi_sq, norm_H6theo
+        
+    def redcor2(self, I_theo_HaHb, theoCE, Hlines, TO2gar, Idered, C_Hbeta, EWabsHbeta, catalog_lines, corr_undelyingAbs_EWs, 
+                rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, 
+                intensities, EW, continuum, all_err_cont_fit, em_lines=False):
+        number_iterations = 14 #this number must be even
+        EWabsHbeta_increase = 0.1
+        C_Hbeta_increase = 0.01
+        Chi_sq_models = []
+        EWabsHbeta_values = []
+        EWabsHbeta_values.append(EWabsHbeta)
+        C_Hbeta_values = []
+        C_Hbeta_values.append(C_Hbeta)
+        Halpha_idx = catalog_lines.index(6563.)
+        Hbeta_idx = catalog_lines.index(4861.)
+        H6_idx = catalog_lines.index(4102)
+        dif_TheoObs_H6Hb_values = []
+        # Find the faintest detected emission line: get rid of negative fluxes
+        if em_lines:
+            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+        else:
+            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = normalize_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
+        I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
+        # Determine uncertainties
+        percent_Iuncert, _, _ = BasicOps.get_uncertainties(catalog_lines, normfluxes, all_err_cont_fit)
+        Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+        Chi_sq_models.append(Chi_sq)
+        dif_TheoObs_H6Hb = numpy.fabs(I_theo_H6Hb - I_obs_H6Hb) 
+        dif_TheoObs_H6Hb_values.append(dif_TheoObs_H6Hb)
+        I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+        print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+        diff_HaHb_values = []
+        diff_HaHb = numpy.fabs(I_theo_HaHb - I_obs_HaHb)
+        diff_HaHb_values.append(diff_HaHb)
+        # First, variate EWabsHbeta with C_Hbeta fixed
+        for EWabsHbeta_iterations in range(0, number_iterations):
+            print 'EWabsHbeta_iterations', EWabsHbeta_iterations
+            if I_theo_HaHb < I_obs_HaHb:
+                EWabsHbeta = EWabsHbeta + EWabsHbeta_increase
+            elif I_theo_HaHb > I_obs_HaHb:
+                EWabsHbeta = EWabsHbeta - EWabsHbeta_increase
+                if EWabsHbeta < 0.0:
+                    EWabsHbeta = 0.00001
+            EWabsHbeta_values.append(EWabsHbeta)
+            intensities = BasicOps.underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux)
+            # Find the faintest detected emission line: get rid of negative fluxes
+            if em_lines:
+                catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+            else:
+                catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = normalize_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
+            # Determine uncertainties
+            percent_Iuncert, _, _ = BasicOps.get_uncertainties(catalog_lines, normfluxes, all_err_cont_fit)
+            # Dered again and find the Chi_squared of that model
+            cHbeta = 0.434*C_Hbeta
+            Idered, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_lines, normfluxes, norm_intensities)
+            I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+            Chi_sq_models.append(Chi_sq)
+            dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
+            dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
+            I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+            print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+            diff_HaHb = numpy.fabs(I_theo_HaHb - I_obs_HaHb)
+            diff_HaHb_values.append(diff_HaHb)
+            EWabsHbeta_iterations = EWabsHbeta_iterations + 1
+        # Second, variate C_Hbeta with EWabsHbeta fixed
+        EWabsHbeta = EWabsHbeta_values[0]
+        for C_Hbeta_iterations in range(0, number_iterations):
+            print 'C_Hbeta_iterations =', C_Hbeta_iterations
+            if I_theo_HaHb < I_obs_HaHb:
+                C_Hbeta = C_Hbeta + C_Hbeta_increase
+            elif I_theo_HaHb > I_obs_HaHb:
+                C_Hbeta = C_Hbeta - C_Hbeta_increase
+                if C_Hbeta < 0.0:
+                    C_Hbeta = 0.00001            
+            C_Hbeta_values.append(C_Hbeta)
+            cHbeta = 0.434*C_Hbeta
+            intensities = BasicOps.underlyingAbsCorr(EWabsHbeta_values[0], corr_undelyingAbs_EWs, continuum, flux)
+            # Find the faintest detected emission line: get rid of negative fluxes
+            if em_lines:
+                catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+            else:
+                catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = normalize_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
+            percent_Iuncert, _, _ = BasicOps.get_uncertainties(catalog_lines, normfluxes, all_err_cont_fit)
+            # Dered again and find the Chi_squared of that model
+            Idered, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_lines, normfluxes, norm_intensities)
+            I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+            Chi_sq_models.append(Chi_sq)
+            dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
+            dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
+            I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+            print ' ***    I_theo_HaHb =',I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+            diff_HaHb = numpy.fabs(I_theo_HaHb - I_obs_HaHb)
+            diff_HaHb_values.append(diff_HaHb)
+            C_Hbeta_iterations = C_Hbeta_iterations + 1
+        # With all 41 models find the one that has the smallest Chi_sq
+        #print 'Chi_sq_models:', Chi_sq_models
+        minChi = min(Chi_sq_models)
+        minChi_idx = Chi_sq_models.index(minChi)
+        #print 'minChi', minChi, 'minChi_idx', minChi_idx
+        # Now find the model that has the closest observed Hdelta/Hbeta ratio to the theoretical one
+        min_dif_TheoObs_H6Hb = min(dif_TheoObs_H6Hb_values)
+        min_dif_TheoObs_H6Hb_idx = dif_TheoObs_H6Hb_values.index(min_dif_TheoObs_H6Hb)
+        #print ' min_dif_TheoObs_H6Hb = ', min_dif_TheoObs_H6Hb, '   min_dif_TheoObs_HaHb_idx', min_dif_TheoObs_H6Hb_idx
+        # Calculate the final dereddend values but keep in mind that model 0 is the first reddening iteration, 
+        # if there were number_iterations = 10
+        # model 5 through 9 is where EWabsHbeta varied and C_Hbeta was fixed at model 0, and
+        # model 10 though 14 is where C_Hbeta varied and EWabsHbeta was fixed at model 0.
+        #print 'LENGTHS OF CHbeta, EWabsHbeta, and diff_HaHb_values lists: ', len(C_Hbeta_values), len(EWabsHbeta_values), len(diff_HaHb_values)
+        if minChi_idx == min_dif_TheoObs_H6Hb_idx:
+            print 'min indeces are the same!'
+        tolerance = 0.005
+        if (I_obs_HaHb < I_theo_HaHb+tolerance) and (I_obs_HaHb > I_theo_HaHb-tolerance):
+            print ' VALUE WITHIN TOLERANCE!'
+            EWabsHbeta = EWabsHbeta_values[0]
+            C_Hbeta = C_Hbeta_values[minChi_idx - number_iterations]
+        elif (I_obs_HaHb > I_theo_HaHb+tolerance) or (I_obs_HaHb < I_theo_HaHb-tolerance):
+            print ' VALUE STILL FAR... LOOKING FOR ALTERNATIVE...'
+            min_diff_HaHb = min(diff_HaHb_values)
+            min_diff_HaHb_idx = diff_HaHb_values.index(min_diff_HaHb)
+            if min_diff_HaHb_idx >= number_iterations:
+                idx = min_diff_HaHb_idx - number_iterations
+                EWabsHbeta = EWabsHbeta_values[0]
+                C_Hbeta = C_Hbeta_values[idx]
+            else:
+                EWabsHbeta = EWabsHbeta_values[min_diff_HaHb_idx]
+                C_Hbeta = C_Hbeta_values[0]
+        #print 'Chi_sq_models', Chi_sq_models
+        #print 'dif_TheoObs_H6Hb_values', dif_TheoObs_H6Hb_values
+        cHbeta = 0.434*C_Hbeta
+        intensities = BasicOps.underlyingAbsCorr(EWabsHbeta, corr_undelyingAbs_EWs, continuum, flux)
+        # Find the faintest detected emission line: get rid of negative fluxes
+        if em_lines:
+            catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, normfluxes, calc_cont, norm_intensities, EW_lines = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+        else:
+            catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, normfluxes, calc_cont, norm_intensities, EW_lines = normalize_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
+        lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, normfluxes, calc_cont, norm_intensities, EW_lines]
+        # Dered again and find the Chi_squared of that model
+        norm_Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_lines, normfluxes, norm_intensities)
+        flambdas = find_flambdas(cHbeta, I_dered_norCorUndAbs, normfluxes)
+        dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
+        # Determine uncertainties    
+        percent_Iuncert, absolute_Iuncert, S2N = BasicOps.get_uncertainties(catalog_lines, normfluxes, all_err_cont_fit)
+        uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
+        I_obs_HaHb = norm_Idered[Halpha_idx] / norm_Idered[Hbeta_idx]
+        print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
+        print''
+        print 'First iteration of reddening correction:   EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta_values[0], C_Hbeta_values[0])
+        print '    The best combination was:              EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta, C_Hbeta)
+        print '                                                     this means cHbeta = %0.3f' % (cHbeta)
+        return (lines_info, dereddening_info, uncertainties_info)
+        
+    def perform_colexcit_corr(self):
+        lines_pyneb_matches = self.writeRedCorrFile()
+        return lines_pyneb_matches
 
 class UseTemdenAbund():
     def do_temden(self):
