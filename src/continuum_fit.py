@@ -44,7 +44,7 @@ plot = True
 text_table = False
 
 # Want to see the quiasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
+correct_redshift = False
 rebin = True
 
 ############################################################################################################################################
@@ -120,8 +120,8 @@ for d, s in zip(data, specs):
 
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
-    splot_text = False
-    part_of_spec = 'nir'
+    splot_text = True
+    part_of_spec = 'opt'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
