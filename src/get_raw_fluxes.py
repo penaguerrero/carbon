@@ -178,7 +178,7 @@ for d, s in zip(data, specs):
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
     splot_text = False
-    part_of_spec = 'nir'
+    part_of_spec = 'opt'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
@@ -191,7 +191,7 @@ for d, s in zip(data, specs):
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
     # Now obtain the continuum and equivalent widths
-    faintObj = True  # --> use this option if object is VERY faint and want to use thiner widths for emission lines
+    faintObj = False  # --> use this option if object is VERY faint and want to use thiner widths for emission lines
     object_lines_info = spectrum.find_lines_info(object_spectra, fitted_continuum, err_cont_fit, lineinfo_text_file, Halpha_width=Halpha_width, text_table=text_table, vacuum=vacuum, faintObj=faintObj)
     print ''
     
