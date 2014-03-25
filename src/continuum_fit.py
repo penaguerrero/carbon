@@ -17,10 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 17
+object_number = 12
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -29,23 +29,23 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
 order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 250
+window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quiasi-final spectrum?  (i.e. correct for redshift and rebin)
 correct_redshift = False
-rebin = True
+rebin = False
 
 ############################################################################################################################################
 
@@ -120,8 +120,8 @@ for d, s in zip(data, specs):
 
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
-    splot_text = True
-    part_of_spec = 'opt'
+    splot_text = False
+    part_of_spec = 'nir'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
