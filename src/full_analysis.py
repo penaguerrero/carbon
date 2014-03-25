@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 12
 
 # Write the text file with line info?
 create_txt = True
@@ -34,13 +34,13 @@ case = 'B'
 ############################################################################################################################################
 
 # Used values of Halpha_width in order to properly correct for reddening
-Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 30.]
+Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 36.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Found values of EWabsHbeta and C_Hbeta
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.55], [2.0, 1.5], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [1.0, 0.71]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 1.32], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
 #                   9            10*          11           12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -61,15 +61,16 @@ or3 = originals[2]
 #                                    0              1                 2                 3              4                5
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
-                            [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [2.5, 6.0, 9.0] ,[2.0, 8.0, 8.0],
-                            [3.0, 8.0, 8.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
-# or1, or2, or3
+                            [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0] ,[2.0, 8.0, 8.0],
+                            [2.0, 4.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
 #                                    12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
+#                  0      1     2     3      4     5     6      7      8
 faintObj_list = [False, True, True, False, True, True, False, False, False, 
                  False, False, True, False, True, False, False, False, True]
+#                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
 
 # corresponding redshifts
@@ -183,7 +184,7 @@ for d, cd, s in zip(data, cont_data, specs):
     err_lists = [err_stis, err_continuum]
     # Now obtain the continuum and equivalent widths
     object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width=Halpha_width, text_table=create_txt, 
-                                                 vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, do_errs=None)
+                                                 vacuum=False, faintObj=faintObj, linesinfo_file_name=lineinfo_text_file, do_errs=err_lists)
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     print 'There are ', len(object_lines_info[0]), ' lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
@@ -208,7 +209,7 @@ for d, cd, s in zip(data, cont_data, specs):
             print >> errf, '{:<10.2f} {:>14.5e} {:>12.5e} {:>6.1f} {:>16.5e} {:>12.5e} {:>6.1f} {:>10.2f} {:>6.2f} {:>6.1f}'.format(w, f, ef, efp, c, ec, ecp, ew, eew, eewp)
         errf.close()
     print ''
-    raw_input('    press enter to continue...')
+    #raw_input('    press enter to continue...')
 
 # Gather all the *_lineinfo.txt files into a single file with the name defined below    
 add_str = "_lineinfo"
