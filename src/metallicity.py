@@ -8,7 +8,7 @@ import PIL.Image as Image
 from uncertainties import unumpy
 from science import spectrum
 from matplotlib import pyplot
-
+ 
 
 '''
 This program contains various classes that together determine the object's metallicity.
