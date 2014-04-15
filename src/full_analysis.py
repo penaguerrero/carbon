@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 12
 
 # Write the text file with line info?
 create_txt = True
@@ -25,7 +25,7 @@ create_txt = True
 I_theo_HaHb = 2.86 
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
-first_redcorr = False
+first_redcorr = True
 
 # Choose case
 case = 'B'
@@ -40,7 +40,7 @@ Halpha_width = Halpha_width_list[object_number]
 # Found values of EWabsHbeta and C_Hbeta
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 1.32], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 0.93], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
 #                   9            10*          11           12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -61,9 +61,9 @@ or3 = originals[2]
 #                                    0              1                 2                 3              4                5
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
-                            [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0] ,[2.0, 8.0, 8.0],
-                            [2.0, 4.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
-#                                    12             13                14               15              16               17                            
+                            [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
+                            [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
+#                                  12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
@@ -77,7 +77,7 @@ faintObj = faintObj_list[object_number]
 # from observations
 #             0        1        2        3         4         5        6        7         8
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
-          0.046240, 0.013642, 0.002010, 0.0076, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
+          0.046240, 0.013642, 0.002010, 0.0073, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
 #             9       10        11       12        13       14       15       16       17
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
 # tol9=14 is found to have a much different z than that of phase2.... previous value = 0.01195
@@ -241,7 +241,7 @@ print 'This is the E(B-V) = ', ebv
 # or define a new one
 #RC.UserFunction = my_X
 #RC.law = 'user'
-redlaw = 'CCM 89'
+redlaw = 'S 79 H 83'
 cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
