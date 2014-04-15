@@ -552,17 +552,17 @@ class BasicOps:
         # Intensities are already corrected for underlying absorption and are also normalized to Hbeta.
         Idered = []
         I_dered_norCorUndAbs = []
-        # Define a reddening correction object
-        RC = pn.RedCorr()
         # Obtain the reddening corrected intensities based on the given law and c(Hb)
         if ebv != 0.0:
             rv = av / ebv
+            # Define a reddening correction object
             RC = pn.RedCorr(E_BV=ebv, R_V=rv, law=redlaw, cHbeta=cHbeta)
         else:
+            # Define a reddening correction object
             RC = pn.RedCorr(law=redlaw, cHbeta=cHbeta)
         for w, nF, nI in zip(catalog_lines, normfluxes, norm_intensities):   
             I_dered = nI * RC.getCorrHb(w)
-            #print nI, RC.getCorrHb(w) , I_dered                                            # ********
+            print w, nI, RC.getCorrHb(w) , I_dered                                            # ********
             Idered.append(I_dered)
             # Obtain the reddening corrected intensities WITHOUT the correction due to 
             # underlying absorption based on the given law and c(Hb)
