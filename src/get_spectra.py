@@ -17,7 +17,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10         11         12         13       14        15         16         17
 
 ''' CHOOSE THE OBJECT NUMBER '''
-object_number = 15
+object_number = 12
 
 ''' Choose the expected extension of the spectra. '''
 img_format = '.eps'
