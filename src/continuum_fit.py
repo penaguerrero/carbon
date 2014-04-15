@@ -20,7 +20,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [1]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -38,7 +38,7 @@ order = 1
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = False
+plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
 text_table = True
@@ -67,9 +67,9 @@ results4object_path = os.path.join(full_results_path, object_name)
 add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # alternative for when files have been corrected in splot
-#altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
-#f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
+##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
+##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
 #altern = '../results/tol9/tol9_opt21_fix.txt'
 #w, f = numpy.loadtxt(altern, unpack=True)
 #data = [numpy.array([w,f])]
@@ -78,7 +78,7 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
-          0.046240, 0.013642, 0.002010, 0.0076, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
+          0.046240, 0.013642, 0.002010, 0.0073, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
 
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
