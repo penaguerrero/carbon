@@ -82,10 +82,10 @@ def find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
     return (catalog_emission_lines, wavs_emission_lines, element_emission_lines, ion_emission_lines, forbidden_emission_lines, 
             how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines)
 
-def find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes):
+def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
     # Finding the f_lambda values
     all_flambdas = []
-    for Icor, Iobs, w in zip(I_dered_norCorUndAbs, normfluxes, catalog_wavelength):
+    for Icor, Iobs, w in zip(I_dered_noCorUndAbs, normfluxes, catalog_wavelength):
         if Iobs < 0.0:   # this is to avoid nan values
             all_flambdas.append(0.0)
         else:
@@ -551,23 +551,35 @@ class BasicOps:
         # Normalized fluxes are the raw flux normalized to Hbeta. 
         # Intensities are already corrected for underlying absorption and are also normalized to Hbeta.
         Idered = []
-        I_dered_norCorUndAbs = []
-        # Obtain the reddening corrected intensities based on the given law and c(Hb)
+        I_dered_noCorUndAbs = []
+        # Print all available extinction laws
+        #pn.RedCorr().printLaws()
+        # or define a new one
+        #RC.UserFunction = my_X
+        #RC.law = 'user'
+        # Plot the available laws
+        #RC.plot(laws='all')
+        #pyplot.show()
         if ebv != 0.0:
             rv = av / ebv
             # Define a reddening correction object
-            RC = pn.RedCorr(E_BV=ebv, R_V=rv, law=redlaw, cHbeta=cHbeta)
+            RC = pn.RedCorr(E_BV=ebv, R_V=rv, law=redlaw)
+            # The relation between cHbeta and E(B-V) is:   E(B-V) = 0.61 * cHbeta + 0.024 * cHbeta ** 2.
+            # Once one of the two parameters is defined, the other is directly obtained by:
+            cHbeta = RC.cHbeta
+            print 'THIS IS THE PYNEB OBTAINED C_Hbeta =', cHbeta/0.434
         else:
-            # Define a reddening correction object
+            # Obtain the reddening corrected intensities based on the given law and c(Hb)
             RC = pn.RedCorr(law=redlaw, cHbeta=cHbeta)
         for w, nF, nI in zip(catalog_lines, normfluxes, norm_intensities):   
             I_dered = nI * RC.getCorrHb(w)
-            print w, nI, RC.getCorrHb(w) , I_dered                                            # ********
             Idered.append(I_dered)
             # Obtain the reddening corrected intensities WITHOUT the correction due to 
             # underlying absorption based on the given law and c(Hb)
             IdnUA = nF * RC.getCorrHb(w)
-            I_dered_norCorUndAbs.append(IdnUA)
+            I_dered_noCorUndAbs.append(IdnUA)
+            #print w, 'norm_Flux=', nI, '  dered_factor=',RC.getCorrHb(w) , ' dered_I=', I_dered
+            #print '   FluxCorUndAbs', nF, '  I_dered_norCoUndAbs=', IdnUA
         # Find observed Halpha/Hbeta ratio
         Halpha_idx = catalog_lines.index(6563)
         Hbeta_idx = catalog_lines.index(4861)
@@ -587,7 +599,7 @@ class BasicOps:
         #print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
         print '      observed Ha/Hb =', numpy.round(I_obs_HaHb, decimals=2), '           raw Ha/Hb =', numpy.round(raw_ratio, decimals=2)
         self.Idered = Idered
-        self.I_dered_norCorUndAbs = I_dered_norCorUndAbs
+        self.I_dered_norCorUndAbs = I_dered_noCorUndAbs
         self.normfluxes = normfluxes
         return self.normfluxes, self.Idered, self.I_dered_norCorUndAbs
     
