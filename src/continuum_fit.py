@@ -70,6 +70,7 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
+#altern = '../results/sbs1319/sbs1319_optspec_corr.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
 #w, f = numpy.loadtxt(altern, unpack=True)
 #data = [numpy.array([w,f])]
@@ -120,8 +121,8 @@ for d, s in zip(data, specs):
 
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
-    splot_text = False
-    part_of_spec = 'nir'
+    splot_text = True
+    part_of_spec = 'opt'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
