@@ -21,15 +21,14 @@ object_number = 12
 # Write the text file with line info?
 create_txt = True
 
-# Set theoretical Halpha/Hbeta ratio
-I_theo_HaHb = 2.86 
-
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
-first_redcorr = True
+first_redcorr = False
 
 # Choose case
 case = 'B'
 
+# Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
+use_Chbeta = False
 
 ############################################################################################################################################
 
@@ -37,11 +36,14 @@ case = 'B'
 Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 36.]
 Halpha_width = Halpha_width_list[object_number]
 
-# Found values of EWabsHbeta and C_Hbeta
+# Set theoretical Halpha/Hbeta ratio
+I_theo_HaHb = 2.86 
+
+# Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 0.93], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
-#                   9            10*          11           12          13          14          15            16          17 
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 0.05], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
+#                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
@@ -63,7 +65,7 @@ desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], 
                             #        6              7                 8                9               10               11
                             [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
                             [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [2.0, 4.0, 5.0]]
-#                                  12             13                14               15              16               17                            
+#                                 12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
@@ -225,23 +227,20 @@ catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden,
 err_flux, err_EW, cont_errs = flxEW_errs
 
 # Determine the corresponding E(B-V) value for each object
-av = A_V_list[object_number]
-ebv = A_B_list[object_number] - av
-print 'This is the E(B-V) = ', ebv
+if use_Chbeta:
+    ebv=0.0
+else:
+    av = A_V_list[object_number]
+    ebv = A_B_list[object_number] - av
+    print 'This is the E(B-V) = ', ebv
 
 # Do reddening correction 
-# List the available laws in pyneb
-#RC.printLaws()
-# Plot the available laws
-#RC.plot(laws='all')
-#plt.show()
 # Choose the one we intend to use 
-#RC.law = 'S 79 H 83'
-#RC.law = 'CCM 89'
-# or define a new one
-#RC.UserFunction = my_X
-#RC.law = 'user'
-redlaw = 'S 79 H 83'
+#redlaw= 'S 79 H 83'   ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
+#redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
+#redlaw = 'oD 94'      ## O'Donnell 1994, ApJ, 422, 1580
+#redlaw = 'LMC G 03'   ## Gordon et al. (2003, ApJ, 594,279)
+redlaw = 'B 07'       ## Blagrave et al 2007, ApJ, 655, 299
 cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
