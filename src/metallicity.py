@@ -730,7 +730,15 @@ class CollisionalExcitationCorr:
         for line in obs.lines:
             if self.verbose == True:            
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
-            if line.wave == 4363:
+            # Nitrogen
+            if line.wave == 5755:         # N 2
+                I_5755 = line.corrIntens                      
+            elif line.wave == 6548:
+                I_6548 = line.corrIntens            
+            elif line.wave == 6584:
+                I_6584 = line.corrIntens            
+            # Oxygen 2 and 3
+            elif line.wave == 4363:
                 I1 = line.corrIntens
                 print '4363 has an intensity of', I1[0]
             elif line.wave == 5007:
@@ -742,7 +750,51 @@ class CollisionalExcitationCorr:
             elif line.wave == 3729:
                 IO22 = line.corrIntens
                 print '3729 has an intensity of', IO22[0]
-            elif line.wave == 6312:
+            elif line.label == 'O2_7325+':
+                I_7325 = line.corrIntens
+            # Neon
+            elif line.wave == 2975:         # Ne 5
+                I_2975 = line.corrIntens            
+            elif line.wave == 3346:
+                I_3346 = line.corrIntens            
+            elif line.wave == 3426:
+                I_3426 = line.corrIntens            
+            elif line.wave == 3342:         # Ne 3
+                I_3342 = line.corrIntens            
+            elif line.wave == 3869:
+                I_3869 = line.corrIntens            
+            elif line.wave == 3969:
+                I_3969 = line.corrIntens   
+            # Sodium
+            elif line.wave == 2569:         # Na 6
+                I_2569 = line.corrIntens                        
+            elif line.wave == 2871:
+                I_2871 = line.corrIntens                      
+            elif line.wave == 2970:
+                I_2970 = line.corrIntens                   
+            elif line.wave == 2805:         # Na 4
+                I_2805 = line.corrIntens                        
+            elif line.wave == 3242:
+                I_3242 = line.corrIntens                      
+            elif line.wave == 3362:
+                I_3362 = line.corrIntens  
+            # Magnesium
+            elif line.wave == 2418:         # Mg 5
+                I_2418 = line.corrIntens                               
+            elif line.wave == 2783:
+                I_2783 = line.corrIntens  
+            elif line.wave == 2928:
+                I_2928 = line.corrIntens  
+            # Sulphur
+            elif line.wave == 4068:         # S 2
+                I_4068 = line.corrIntens                               
+            elif line.wave == 4076:
+                I_4076 = line.corrIntens  
+            elif line.wave == 6716:
+                I_6716 = line.corrIntens  
+            elif line.wave == 6731:
+                I_6731 = line.corrIntens  
+            elif line.wave == 6312:         # S 3
                 IS31 = line.corrIntens
                 print '6312 has an intensity of', IS31[0]
             elif line.wave == 9069:
@@ -751,12 +803,49 @@ class CollisionalExcitationCorr:
             elif line.wave == 9531:
                 IS33 = line.corrIntens
                 print '9531 has an intensity of', IS33[0]
-            elif line.wave == 5518:
+            # Chlorine
+            elif line.wave == 5518:         # Cl 3
                 ICl31 = line.corrIntens
                 print '5518 has an intensity of', ICl31[0]
             elif line.wave == 5538:
                 ICl32 = line.corrIntens
                 print '5538 has an intensity of', ICl32[0]
+            # Argon
+            elif line.wave == 4626:         # Ar 5
+                I_4626= line.corrIntens                               
+            elif line.wave == 6435:
+                I_6435 = line.corrIntens  
+            elif line.wave == 7006:
+                I_7006 = line.corrIntens  
+            #elif line.wave == 2854:         # Ar 4
+            #    I_2854= line.corrIntens                               
+            elif line.wave == 2868:
+                I_2868 = line.corrIntens  
+            #elif line.wave == 4711:
+            #    I_4711 = line.corrIntens  
+            elif line.wave == 4740:
+                I_4740 = line.corrIntens  
+            elif line.wave == 5192:         # Ar 3
+                I_5192= line.corrIntens                               
+            elif line.wave == 7136:
+                I_7136 = line.corrIntens  
+            elif line.wave == 7751:
+                I_7751 = line.corrIntens  
+            # Potasium
+            elif line.wave == 2515:         # K 5
+                I_2515= line.corrIntens                               
+            elif line.wave == 2495:
+                I_2495 = line.corrIntens  
+            elif line.wave == 4123:
+                I_4123 = line.corrIntens  
+            elif line.wave == 4163:
+                I_4163 = line.corrIntens  
+            elif line.wave == 4511:         # K 4
+                I_4511= line.corrIntens                               
+            elif line.wave == 6102:
+                I_6102 = line.corrIntens  
+            elif line.wave == 6796:
+                I_6796 = line.corrIntens  
         # simultaneously compute temperature and density from pairs of line ratios
         # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
         diags = pn.Diagnostics()   # Instantiate the Diagnostics class
@@ -765,24 +854,79 @@ class CollisionalExcitationCorr:
         # explore some specific atom in the atoms collection
         self.TO3 = 0.0
         try:
+            # TEMPERATURES
+            N2 = pn.Atom("N", "2")
+            tem_diag_N2 = '(L(6548)+L(6584)) / L(5755) '
+            temN2 = N2.getTemDen((I_6548 + I_6584)/I_5755, den=100.0, to_eval=tem_diag_N2) 
+            print '   First estimation of temperature of N2 = ', temN2
+
             O3 = pn.Atom("O", "3")
             O3ratio = I1[0] / I2[0]
             print 'ratio of O3 = ', O3ratio
             self.TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
             print '  First estimation of temperature of O3 = ', self.TO3 
+            
             O2 = pn.Atom("O", "2")
-            O2ratio = IO22[0] / IO21[0]
-            print 'ratio of O2 = ', O2ratio
-            denO2 = O2.getTemDen(O2ratio, tem=self.TO3, wave1=3729, wave2=3726) 
-            print '   First estimation of density of O2 = ', denO2
+            tem_diag_O2 = '(L(3726)+L(3729)) / (L(7318) + L(7319) + L(7329) + L(7330))'
+            temO2 = O2.getTemDen((IO22[0]+IO21[0])/I_7325, den=100.0, to_eval=tem_diag_O2) 
+            print '   First estimation of temperature of O2 = ', temO2
+
+            Ne5 = pn.Atom("Ne", "5")
+            tem_diag_Ne5 = '(L(3426)+L(3346)) / L(2975) '
+            temNe5 = Ne5.getTemDen((I_3426 + I_3346)/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
+            print '   First estimation of temperature of Ne5 = ', temNe5
+
+            Ne3 = pn.Atom("Ne", "3")
+            tem_diag_Ne3 = '(L(3869)+L(3969)) / L(3342) '
+            temNe3 = Ne3.getTemDen((I_3869 + I_3969)/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
+            print '   First estimation of temperature of Ne3 = ', temNe3
+
+            Na6 = pn.Atom("Na", "6")
+            tem_diag_Na6 = '(L(2871)+L(2970)) / L(2569) '
+            temNa6 = Na6.getTemDen((I_2871 + I_2970)/I_2569, den=100.0, to_eval=tem_diag_Na6) 
+            print '   First estimation of temperature of Na6 = ', temNa6
+
+            Na4 = pn.Atom("Na", "4")
+            tem_diag_Na4 = '(L(3242)+L(3362)) / L(2805) '
+            temNa4 = Na4.getTemDen((I_3242 + I_3362)/I_2805, den=100.0, to_eval=tem_diag_Na4) 
+            print '   First estimation of temperature of Na4 = ', temNa4
+
+            Mg5 = pn.Atom("Mg", "5")
+            tem_diag_Mg5 = '(L(2783)+L(2928)) / L(2418) '
+            temMg5 = Mg5.getTemDen((I_2783 + I_2928)/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
+            print '   First estimation of temperature of Mg5 = ', temMg5
+
             S3 = pn.Atom("S", "3")
             S3ratio = IS31[0] / (IS32[0]) 
             print 'ratio of S3 = ', S3ratio
             TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9532)
             print '   First estimation of temperature of S3 = ', TS3 
+            
+            S2 = pn.Atom("S", "2")
+            tem_diag_S2 = '(L(6716)+L(6731)) / L(4076) '    # Not using 4068 because is too weak
+            temS2 = S2.getTemDen((I_6716 + I_6731)/I_4076, den=100.0, to_eval=tem_diag_S2) 
+            print '   First estimation of temperature of S2 = ', temS2
+
+            Ar4 = pn.Atom("Ar", "4")    # not using 4711 and 2854 because they are VERY likely to be blended
+            tem_diag_Ar4 = 'L(4740) / L(2868) '
+            temAr4 = Ar4.getTemDen(I_4740/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
+            print '   First estimation of temperature of Ar4 = ', temAr4
+            
+            K5 = pn.Atom("K", "5")
+            tem_diag_K5 = '(L(4123)+L(4163)) / (L(2515) + L(2495))'
+            temK5 = K5.getTemDen((I_4123 + I_4163)/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
+            print '   First estimation of temperature of K5 = ', temK5
+
+            # DENSITIES
+            O2 = pn.Atom("O", "2")
+            O2ratio = IO22[0] / IO21[0]
+            print 'ratio of O2 = ', O2ratio
+            denO2 = O2.getTemDen(O2ratio, tem=10000.0, wave1=3729, wave2=3726) 
+            print '   First estimation of density of O2 = ', denO2
+            
             Cl3 = pn.Atom("Cl", "3")
             Cl3ratio = ICl32[0] / (ICl31[0]) 
-            dCl3 = Cl3.getTemDen(S3ratio, temp=self.TO3, wave1=5538, wave2=5518)
+            dCl3 = Cl3.getTemDen(S3ratio, temp=10000.0, wave1=5538, wave2=5518)
             print '   First estimation of density of Cl3 = ', dCl3
         except Exception as e:
             (NameError,),e
