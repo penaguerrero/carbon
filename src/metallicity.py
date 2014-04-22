@@ -494,6 +494,10 @@ class BasicOps:
         self.errs_list = None
         if do_errs != None:
             self.errs_list = do_errs
+        # Adopt IRAF atomic data set
+        pn.atomicData.getPredefinedDataFileDict()
+        #pn.atomicData.printDirForAllFiles()        # this prints all the paths for all the atomic data files
+        #pn.atomicData.setDataFileDict('IRAF_09')
 
     def underlyingAbsCorr(self):
         catalog_wavelength = self.catalog_wavelength
@@ -559,7 +563,7 @@ class BasicOps:
         #RC.law = 'user'
         # Plot the available laws
         #RC.plot(laws='all')
-        #pyplot.show()
+        #pyplot.show()        
         if ebv != 0.0:
             rv = av / ebv
             # Define a reddening correction object
@@ -653,7 +657,7 @@ class BasicOps:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
-class CollisionalExcitationCorr:
+class AdvancedOps:
     def __init__(self, object_name, cHbeta, case, verbose=False):
         # Inputs:
         self.object_name = object_name
@@ -720,7 +724,7 @@ class CollisionalExcitationCorr:
         print 'Pyneb IDs found!  Lines written in file  %s' % self.pynebIDstxt
         return self.lines_pyneb_matches 
 
-    def get_temps(self):
+    def get_tempsdens(self):
         # Determine first approximation of temperatures and densities
         # Define an Observation object and assign it to name 'obs'
         obs = pn.Observation()
@@ -730,26 +734,43 @@ class CollisionalExcitationCorr:
         for line in obs.lines:
             if self.verbose == True:            
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
+            # Carbon
+            if line.wave == 1907:           # C 3
+                I_1907 = line.corrIntens
+            elif line.wave == 1909:
+                I_1909 = line.corrIntens 
+            elif line.wave == 2326:         # C 2
+                I_2326 = line.corrIntens
+            elif line.wave == 2328:
+                I_2328 = line.corrIntens 
             # Nitrogen
-            if line.wave == 5755:         # N 2
+            elif line.wave == 1749:         # N 3
+                I_1749 = line.corrIntens                      
+            elif line.wave == 1752:
+                I_1752 = line.corrIntens            
+            elif line.wave == 5755:         # N 2
                 I_5755 = line.corrIntens                      
             elif line.wave == 6548:
                 I_6548 = line.corrIntens            
             elif line.wave == 6584:
                 I_6584 = line.corrIntens            
+            elif line.wave == 5198:         # N 1
+                I_5198 = line.corrIntens                      
+            elif line.wave == 5200:
+                I_5200 = line.corrIntens                      
             # Oxygen 2 and 3
             elif line.wave == 4363:
-                I1 = line.corrIntens
-                print '4363 has an intensity of', I1[0]
+                I_4363 = line.corrIntens
+                print '4363 has an intensity of', I_4363
             elif line.wave == 5007:
-                I2 = line.corrIntens
-                print '5007 has an intensity of', I2[0]
+                I_5007 = line.corrIntens
+                print '5007 has an intensity of', I_5007
             elif line.wave == 3726:
-                IO21 = line.corrIntens
-                print '3726 has an intensity of', IO21[0]
+                I_3726 = line.corrIntens
+                print '3726 has an intensity of', I_3726
             elif line.wave == 3729:
-                IO22 = line.corrIntens
-                print '3729 has an intensity of', IO22[0]
+                I_3729 = line.corrIntens
+                print '3729 has an intensity of', I_3729
             elif line.label == 'O2_7325+':
                 I_7325 = line.corrIntens
                 print '3725 has an intensity of', I_7325
@@ -760,12 +781,30 @@ class CollisionalExcitationCorr:
                 I_3346 = line.corrIntens            
             elif line.wave == 3426:
                 I_3426 = line.corrIntens            
+            elif line.wave == 2423:         # Ne 4
+                I_2423 = line.corrIntens            
+            elif line.wave == 2425:
+                I_2425 = line.corrIntens            
             elif line.wave == 3342:         # Ne 3
                 I_3342 = line.corrIntens            
             elif line.wave == 3869:
                 I_3869 = line.corrIntens            
             elif line.wave == 3969:
                 I_3969 = line.corrIntens   
+            # Aluminum
+            elif line.wave == 2661:         # Al 2
+                I_2661 = line.corrIntens            
+            elif line.wave == 2670:
+                I_2670 = line.corrIntens            
+            # Silicon
+            elif line.wave == 1883:         # Si 3
+                I_1883 = line.corrIntens            
+            elif line.wave == 1892:
+                I_1892 = line.corrIntens            
+            elif line.wave == 2335:         # Si 2
+                I_2335 = line.corrIntens            
+            elif line.wave == 2345:
+                I_2345 = line.corrIntens            
             # Sodium
             elif line.wave == 2569:         # Na 6
                 I_2569 = line.corrIntens                        
@@ -796,21 +835,21 @@ class CollisionalExcitationCorr:
             elif line.wave == 6731:
                 I_6731 = line.corrIntens  
             elif line.wave == 6312:         # S 3
-                IS31 = line.corrIntens
-                print '6312 has an intensity of', IS31[0]
+                I_6312 = line.corrIntens
+                print '6312 has an intensity of', I_6312
             elif line.wave == 9069:
-                IS32 = line.corrIntens
-                print '9069 has an intensity of', IS32[0]
+                I_9069 = line.corrIntens
+                print '9069 has an intensity of', I_9069
             elif line.wave == 9531:
-                IS33 = line.corrIntens
-                print '9531 has an intensity of', IS33[0]
+                I_9531 = line.corrIntens
+                print '9531 has an intensity of', I_9531
             # Chlorine
             elif line.wave == 5518:         # Cl 3
-                ICl31 = line.corrIntens
-                print '5518 has an intensity of', ICl31[0]
+                I_5518 = line.corrIntens
+                print '5518 has an intensity of', I_5518
             elif line.wave == 5538:
-                ICl32 = line.corrIntens
-                print '5538 has an intensity of', ICl32[0]
+                I_5538 = line.corrIntens
+                print '5538 has an intensity of', I_5538
             # Argon
             elif line.wave == 4626:         # Ar 5
                 I_4626= line.corrIntens                               
@@ -841,6 +880,10 @@ class CollisionalExcitationCorr:
                 I_4123 = line.corrIntens  
             elif line.wave == 4163:
                 I_4163 = line.corrIntens  
+            elif line.wave == 6223:
+                I_6223 = line.corrIntens
+            elif line.wave == 6349:
+                I_6349 = line.corrIntens
             elif line.wave == 4511:         # K 4
                 I_4511= line.corrIntens                               
             elif line.wave == 6102:
@@ -854,128 +897,204 @@ class CollisionalExcitationCorr:
         # temperature determination from an intensity ratio
         # explore some specific atom in the atoms collection
         # TEMPERATURES
+        print ' \n *** FIRST estimations of TEMPERATURES:'
+        print '   {:<8} {:<25} {:<12} {:<3}'.format('Ion', 'Line Ratio', 'Ioniz Zone', ''), 'Temperature [K]'
         try:
             O3 = pn.Atom("O", "3")
-            O3ratio = I1[0] / I2[0]
-            print 'ratio of O3 = ', O3ratio
+            O3ratio = I_4363 / I_5007
+            #print 'ratio of O3 = ', O3ratio
             self.TO3 = O3.getTemDen(O3ratio, den=100., wave1=4363, wave2=5007)
-            print '  First estimation of temperature of O3 = ', self.TO3 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 3]','4363/5007', 'Medium','='), self.TO3
+            #O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
         except Exception as e:
             (NameError,),e
-            self.TO3 = 0.0
         try:
             N2 = pn.Atom("N", "2")
             tem_diag_N2 = '(L(6548)+L(6584)) / L(5755) '
             temN2 = N2.getTemDen((I_6548 + I_6584)/I_5755, den=100.0, to_eval=tem_diag_N2) 
-            print '   First estimation of temperature of N2 = ', temN2
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[N 2]','(6548+6584)/5755', 'Medium','='), temN2
         except Exception as e:
             (NameError,),e
         try:
             O2 = pn.Atom("O", "2")
             tem_diag_O2 = '(L(3726)+L(3729)) / (L(7318) + L(7319) + L(7329) + L(7330))'
-            temO2 = O2.getTemDen((IO22[0]+IO21[0])/I_7325, den=100.0, to_eval=tem_diag_O2) 
-            print '   First estimation of temperature of O2 = ', temO2
+            temO2 = O2.getTemDen((I_3726 + I_3729)/I_7325, den=100.0, to_eval=tem_diag_O2) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 2]','3727/7325', 'Low','='), temO2
         except Exception as e:
             (NameError,),e
         try:
             Ne5 = pn.Atom("Ne", "5")
             tem_diag_Ne5 = '(L(3426)+L(3346)) / L(2975) '
             temNe5 = Ne5.getTemDen((I_3426 + I_3346)/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
-            print '   First estimation of temperature of Ne5 = ', temNe5
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 5]','(3426+L3346)/2975', 'High','='), temNe5
         except Exception as e:
             (NameError,),e
         try:
             Ne3 = pn.Atom("Ne", "3")
             tem_diag_Ne3 = '(L(3869)+L(3969)) / L(3342) '
             temNe3 = Ne3.getTemDen((I_3869 + I_3969)/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
-            print '   First estimation of temperature of Ne3 = ', temNe3
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 3]','(3869+3969)/3342', 'High','='), temNe3
         except Exception as e:
             (NameError,),e
         try:
             Na6 = pn.Atom("Na", "6")
             tem_diag_Na6 = '(L(2871)+L(2970)) / L(2569) '
             temNa6 = Na6.getTemDen((I_2871 + I_2970)/I_2569, den=100.0, to_eval=tem_diag_Na6) 
-            print '   First estimation of temperature of Na6 = ', temNa6
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 6]','(2871+2970)/2569', 'High','='), temNa6
         except Exception as e:
             (NameError,),e
         try:
             Na4 = pn.Atom("Na", "4")
             tem_diag_Na4 = '(L(3242)+L(3362)) / L(2805) '
             temNa4 = Na4.getTemDen((I_3242 + I_3362)/I_2805, den=100.0, to_eval=tem_diag_Na4) 
-            print '   First estimation of temperature of Na4 = ', temNa4
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 4]','(3242+3362)/2805', 'Medium','='), temNa4
         except Exception as e:
             (NameError,),e
         try:
             Mg5 = pn.Atom("Mg", "5")
             tem_diag_Mg5 = '(L(2783)+L(2928)) / L(2418) '
             temMg5 = Mg5.getTemDen((I_2783 + I_2928)/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
-            print '   First estimation of temperature of Mg5 = ', temMg5
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Mg 5]','(2783+2928)/2418', 'High','='), temMg5
         except Exception as e:
             (NameError,),e
         try:
             S3 = pn.Atom("S", "3")
-            S3ratio = IS31[0] / (IS32[0]) 
-            print 'ratio of S3 = ', S3ratio
-            TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9532)
-            print '   First estimation of temperature of S3 = ', TS3 
+            S3ratio = I_6312 / I_9531 
+            #print 'ratio of S3 = ', S3ratio
+            TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 3]','6312/9531', 'High','='), TS3
         except Exception as e:
             (NameError,),e
         try:
             S2 = pn.Atom("S", "2")
             tem_diag_S2 = '(L(6716)+L(6731)) / L(4076) '    # Not using 4068 because is too weak
             temS2 = S2.getTemDen((I_6716 + I_6731)/I_4076, den=100.0, to_eval=tem_diag_S2) 
-            print '   First estimation of temperature of S2 = ', temS2
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 2]','(6716+6731)/4076', 'Medium','='), temS2
         except Exception as e:
             (NameError,),e
         try:
             Ar5 = pn.Atom("Ar", "5")
             tem_diag_Ar5 = '(L(6435) + L(7006)) / L(4626) '
             temAr5 = Ar5.getTemDen((I_6435 + I_7006)/I_4626, den=100.0, to_eval=tem_diag_Ar5) 
-            print '   First estimation of temperature of Ar5 = ', temAr5
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 5]','(6435+7006)/4626', 'High','='), temAr5
         except Exception as e:
             (NameError,),e
-
+        try:
             Ar4 = pn.Atom("Ar", "4")    # not using 4711 and 2854 because they are VERY likely to be blended
             tem_diag_Ar4 = 'L(4740) / L(2868) '
             temAr4 = Ar4.getTemDen(I_4740/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
-            print '   First estimation of temperature of Ar4 = ', temAr4
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 4]','4740/2868', 'High','='), temAr4
+        except Exception as e:
+            (NameError,),e
         try:
             Ar3 = pn.Atom("Ar", "3")
             tem_diag_Ar3 = '(L(7136) + L(7751)) / L(5192) '
             temAr3 = Ar3.getTemDen((I_7136 + I_7751)/I_5192, den=100.0, to_eval=tem_diag_Ar3) 
-            print '   First estimation of temperature of Ar3 = ', temAr3
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 3]','(7136+7751)/5192', 'Medium','='), temAr3
         except Exception as e:
             (NameError,),e
-
+        try:
             K5 = pn.Atom("K", "5")
             tem_diag_K5 = '(L(4123)+L(4163)) / (L(2515) + L(2495))'
             temK5 = K5.getTemDen((I_4123 + I_4163)/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
-            print '   First estimation of temperature of K5 = ', temK5
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 5]','(4123+4163)/(2515+2495)', 'High','='), temK5
+        except Exception as e:
+            (NameError,),e
         try:
             K4 = pn.Atom("K", "4")
             tem_diag_K4 = '(L(6102)+L(6796)) / L(4511)'
             temK4 = K4.getTemDen((I_6102 + I_6796)/I_4511, den=100.0, to_eval=tem_diag_K4) 
-            print '   First estimation of temperature of K4 = ', temK4
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 4]','(6102+6796)/4511', 'High','='), temK4
         except Exception as e:
             (NameError,),e
+            
         # DENSITIES
+        print ' \n *** FIRST estimations of DENSITIES:'
+        print '   {:<8} {:<12} {:<10} {:<3}'.format('Ion', 'Line Ratio', 'Ioniz Zone', ''), 'Density [cm^-3]'
         try:
-            O2 = pn.Atom("O", "2")
-            O2ratio = IO22[0] / IO21[0]
-            print 'ratio of O2 = ', O2ratio
-            denO2 = O2.getTemDen(O2ratio, tem=10000.0, wave1=3729, wave2=3726) 
-            print '   First estimation of density of O2 = ', denO2
+            C3 = pn.Atom("C", "3")
+            den_diag_C3 = 'L(1907) / L(1909)'
+            denC3 = C3.getTemDen(I_1907/I_1909, tem=10000.0, to_eval=den_diag_C3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 3]','1907/1909', 'Medium','='), denC3
+        except Exception as e:
+            (NameError,),e        
+        try:
+            C2 = pn.Atom("C", "2")
+            den_diag_C2 = 'L(2326) / L(2328)'
+            denC2 = C2.getTemDen(I_2326/I_2328, tem=10000.0, to_eval=den_diag_C2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 2]','2326/2328', 'Medium','='), denC2
+        except Exception as e:
+            (NameError,),e        
+        try:
+            N3 = pn.Atom("N", "3")
+            den_diag_N3 = 'L(1749) / L(1752)'
+            denN3 = N3.getTemDen(I_1749/I_1752, tem=10000.0, to_eval=den_diag_N3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('N 3]','1749/1752', 'Medium','='), denN3
+        except Exception as e:
+            (NameError,),e        
+        try:
+            N1 = pn.Atom("N", "1")
+            den_diag_N1 = 'L(5198) / L(5200)'
+            denN1 = N1.getTemDen(I_5198/I_5200, tem=10000.0, to_eval=den_diag_N1) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[N 1]','5198/5200', 'Low','='), denN1
+        except Exception as e:
+            (NameError,),e        
+        try:
+            O2ratio = 'L(3729) / L(3726)'
+            denO2 = O2.getTemDen(I_3729 / I_3726, tem=10000.0, to_eval=O2ratio) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[O 2]','3729/3726', 'Medium','='), denO2
         except Exception as e:
             (NameError,),e
+        try:
+            Ne4 = pn.Atom("Ne", "4")
+            den_diag_Ne4 = 'L(2423) / L(2425)'
+            denNe4 = Ne4.getTemDen(I_2423/I_2425, tem=10000.0, to_eval=den_diag_Ne4) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Ne 4]','2423/2425', 'High','='), denNe4
+        except Exception as e:
+            (NameError,),e        
+        try:
+            Al2 = pn.Atom("Al", "2")
+            den_diag_Al2 = 'L(2661) / L(2670)'
+            denAl2 = Al2.getTemDen(I_2661/I_2670, tem=10000.0, to_eval=den_diag_Al2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Al 2]','2661/2670', 'Low','='), denAl2
+        except Exception as e:
+            (NameError,),e        
+        try:
+            Si3 = pn.Atom("Si", "3")
+            den_diag_Si3 = 'L(1883) / L(1892)'
+            denSi3 = Si3.getTemDen(I_1883/I_1892, tem=10000.0, to_eval=den_diag_Si3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('Si 3]','1883/1892', 'Low','='), denSi3
+        except Exception as e:
+            (NameError,),e        
+        try:
+            Si2 = pn.Atom("Si", "2")
+            den_diag_Si2 = 'L(2335) / L(2345)'
+            denSi2 = Si2.getTemDen(I_2335/I_2345, tem=10000.0, to_eval=den_diag_Si2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Si 2]','2335/2345', 'Low','='), denSi2
+        except Exception as e:
+            (NameError,),e        
+        try:
+            den_diag_S2 = 'L(6716) / L(6731)'
+            denS2 = S2.getTemDen(I_6716/I_6731, tem=10000.0, to_eval=den_diag_S2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[S 2]','6716/6731', 'Medium','='), denS2
+        except Exception as e:
+            (NameError,),e        
         try:
             Cl3 = pn.Atom("Cl", "3")
-            Cl3ratio = ICl32[0] / (ICl31[0]) 
-            dCl3 = Cl3.getTemDen(Cl3ratio, temp=10000.0, wave1=5538, wave2=5518)
-            print '   First estimation of density of Cl3 = ', dCl3
+            Cl3ratio = I_5538 / I_5518 
+            dCl3 = Cl3.getTemDen(Cl3ratio, tem=10000.0, wave1=5538, wave2=5518)
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Cl 3]','5538/5518', 'Medium','='), dCl3
         except Exception as e:
             (NameError,),e
+        try:
+            den_diag_K5 = 'L(6223) / L(6349)'
+            denK5 = K5.getTemDen(I_6223/I_6349, tem=10000.0, to_eval=den_diag_K5) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[K 5]','6223/6349', 'High','='), denK5
+        except Exception as e:
+            (NameError,),e
+            
         ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
-        if self.TO3 != 0.0:
+        if self.TO3 is not float('NaN'):
             #if self.TO3 == 0.0:
             I4986 = 0.0
             I4987 = 0.0
@@ -990,55 +1109,17 @@ class CollisionalExcitationCorr:
             if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
                 log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(self.TO3-4))) / (0.66 - 0.18*(numpy.log10(self.TO3-4))) )
                 Fe3den = 10**(log_Fe3den)
-                print 'Density measured from [Fe3] lines:', Fe3den
+                print '   Density measured from [Fe3] lines:', Fe3den
             else:
-                print 'No [Fe3] density available.'
-        '''
-        # Simultaneously determine temps and densities
-        try:
-            tem_N2, den_tmp = diags.getCrossTemDen('[NII] 5755/6548', '[SII] 6731/6716', obs=obs)
-            tem_Ar3, den_S2 = diags.getCrossTemDen('[ArIII] 5192/7300+', '[SII] 6731/6716', obs=obs)
-            tem_O3, den_Cl3 = diags.getCrossTemDen('[OIII] 4363/5007', '[ClIII] 5538/5518', obs=obs)
-            tem_O3, den_Ar4 = diags.getCrossTemDen('[OIII] 4363/5007', '[ArIV] 4740/4711', obs=obs)
-            tem_O3, den_O2 = diags.getCrossTemDen('[OIII] 4363/5007', '[OII] 3926/3929', obs=obs)
-            # Printout of physical conditions
-            print 'den_O2: ', den_O2
-            print 'den_S2: ', den_S2
-            print 'tem_O3: ', tem_O3
-            print 'den_Ar4: ', den_Ar4
-        except Exception as e:
-            (NameError,),e
-        ''
-        # Define all atoms to make calculations
-        all_atoms = pn.getAtomDict()
-        # Alternate way of computing T(OIII)
-        if tem_O3 == 'NA':
-            tem_O3 = all_atoms['O3'].getTemDen(i5007/i4363, den=100., wave1=5007, wave2=4363)
-        # Include in diags the relevant line ratios
-        diags.addDiag([
-                        ## temperatures
-                        #'[NII] 5755/6548',
-                        '[OII] 7320/3737+',
-                        '[OIII] 4363/5007',
-                        '[ArIII] 5192/7136',
-                        '[ArIII] 5192/7300+',
-                        '[ArIV] 7230+/4720+',
-                        #'[SIII] 6312/9532',
-                        ## densities
-                        #'[NI] 5198/5200',
-                        #'[OII] 3729/3736',
-                        '[ArIV] 4740/4711',
-                        #'[SII] 4072+/6725+',
-                        '[SII] 6731/6716',
-                        ])
-        '''
+                print '   No [Fe3] density available.\n'
+
         ### Second iteration of extinction correction: Collisional Excitation
         ### Following analysis presented in Pena-Guerrero, Peimbert, Peimbert, Ruiz (2012, ApJ, 746, 115) & Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39).
         # If the [O II] temperature was not obtained directly from observations, get an estimate
         ### Get temperature of OII from OIII. 
         # Using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
         self.TO2pei = 2430. + self.TO3 * (1.031 - self.TO3/54350.)
-        print 'This is the theoretically obtained temperature of O2 from Peimbert etal 2002 = ', self.TO2pei
+        print 'This is the theoretically obtained temperature of O2 from Peimbert et al. 2002 = ', self.TO2pei
         print ' * for comparison, Temperature of [O III] = ', self.TO3
         # Using equation of Garnett, D. R. 1992, AJ, 103, 1330
         self.TO2gar = 0.7 * self.TO3 + 3000.
@@ -1262,16 +1343,14 @@ class CollisionalExcitationCorr:
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
         return (lines_info, dereddening_info, uncertainties_info)
         
-    def perform_colexcit_corr(self):
-        lines_pyneb_matches = self.writeRedCorrFile()
-        self.get_temps()
-        return lines_pyneb_matches
-
-class UseTemdenAbund():
-    def do_temden(self):
-        pass
     def do_abund(self):
         pass
+
+    def perform_advanced_ops(self):
+        lines_pyneb_matches = self.writeRedCorrFile()
+        self.get_tempsdens()
+        return lines_pyneb_matches
+
 
 class TemperatureStruct():
     def t2_helio(self):
