@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 12
 
 # Write the text file with line info?
 create_txt = True
@@ -260,8 +260,8 @@ if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
-CEcor = metallicity.CollisionalExcitationCorr(object_name, cHbeta, case, verbose=False)
-lines_pyneb_matches = CEcor.perform_colexcit_corr()
+advops = metallicity.AdvancedOps(object_name, cHbeta, case, verbose=False)
+lines_pyneb_matches = advops.perform_advanced_ops()
 
 
 print 'Code finished!'
