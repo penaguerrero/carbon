@@ -260,8 +260,8 @@ if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
-advops = metallicity.AdvancedOps(object_name, cHbeta, case, verbose=False)
-lines_pyneb_matches = advops.perform_advanced_ops()
+advops = metallicity.AdvancedOps(object_name, cHbeta, case, writeouts=False, verbose=False)
+lines_pyneb_matches = advops.perform_advanced_ops(iontotabs=True)
 
 
 print 'Code finished!'
