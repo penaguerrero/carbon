@@ -8,6 +8,7 @@ import PIL.Image as Image
 from uncertainties import unumpy
 from science import spectrum
 from matplotlib import pyplot
+from collections import OrderedDict
  
 
 '''
@@ -667,8 +668,6 @@ class AdvancedOps:
         self.writeouts = writeouts              # write or not text files with outputs (temps, densities, and abundances)
         # Variables defined in the class
         self.lines_pyneb_matches = []
-        self.temperatures = []
-        self.densities = []
     
     def writeRedCorrFile(self):
         ''' This function writes a text file in a pyneb readable format... Necessary to find the temperatures and densities. '''
@@ -727,10 +726,10 @@ class AdvancedOps:
         print 'Pyneb IDs found!  Lines written in file  %s' % self.pynebIDstxt
         return self.lines_pyneb_matches 
 
-    def get_tempsdens_iontotabs(self, iontotabs=True):
+    def get_tempsdens(self):
         ''' 
-        This is a VERY big function that unfortunately cannot be broken... It determines ALL posible temperatures, densities,
-        ionic abundances, and total abundances. The abundance determination can be turned off by setting iontotabs to False.
+        This is a VERY big function that unfortunately cannot be broken... It determines ALL posible temperatures and densities 
+        that are avaiable to veryfy with IRAF. The abundance determination can be turned off by setting iontotabs to False.
         '''
         out_file = self.object_name+'_TempDens.txt'
         path_object = '../results/'+self.object_name
@@ -739,12 +738,12 @@ class AdvancedOps:
             outf = open(fullpath_outfile, 'w+')
         # Determine first approximation of temperatures and densities
         # Define an Observation object and assign it to name 'obs'
-        obs = pn.Observation()
+        self.obs = pn.Observation()
         # read data from file created specifically for pyneb reading
-        obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
+        self.obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
         ###obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows_err_cols', corrected=True)    # this option is not working
         # Intensities
-        for line in obs.lines:
+        for line in self.obs.lines:
             if self.verbose == True:            
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
             # Carbon
@@ -928,183 +927,168 @@ class AdvancedOps:
             print >> outf, '#{:<8} {:<24} {:<14} {:<11} {:<11}'.format('Ion', 'Line Ratio', 'Ioniz Zone', 'Temp/Dens', 'Error')
             print >> outf, '# FIRST estimations of TEMPERATURES:'
         try:
-            O3 = pn.Atom("O", "3")
+            self.O3 = pn.Atom("O", "3")
             tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
             #print 'ratio of O3 = ', (I_4959+I_5007)/I_4363
-            self.TO3 = O3.getTemDen((I_4959+I_5007)/I_4363, den=100., to_eval=tem_diag_O3)
+            self.TO3 = self.O3.getTemDen((I_4959+I_5007)/I_4363, den=100., to_eval=tem_diag_O3)
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 3]','(4959+5007)/4363', 'Medium','='), self.TO3
             if self.writeouts:
                 Terr = numpy.abs(self.TO3[0] - self.TO3[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[O 3]','(4959+5007)/4363', 'Medium', self.TO3[0], Terr)
-            self.temperatures.append(self.T03)
-            #O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
+            #self.O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
         except Exception as e:
             (NameError,),e
         try:
-            N2 = pn.Atom("N", "2")
+            self.N2 = pn.Atom("N", "2")
             tem_diag_N2 = '(L(6548)+L(6584)) / L(5755) '
-            temN2 = N2.getTemDen((I_6548 + I_6584)/I_5755, den=100.0, to_eval=tem_diag_N2) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[N 2]','(6548+6584)/5755', 'Medium','='), temN2
+            self.temN2 = self.N2.getTemDen((I_6548 + I_6584)/I_5755, den=100.0, to_eval=tem_diag_N2) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[N 2]','(6548+6584)/5755', 'Medium','='), self.temN2
             if self.writeouts:
-                Terr = numpy.abs(temN2[0] - temN2[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[N 2]','(6548+6584)/5755', 'Medium', temN2[0], Terr)
-            self.temperatures.append(temN2)
+                Terr = numpy.abs(self.temN2[0] - self.temN2[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[N 2]','(6548+6584)/5755', 'Medium', self.temN2[0], Terr)
         except Exception as e:
             (NameError,),e
         try:
-            O2 = pn.Atom("O", "2")
+            self.O2 = pn.Atom("O", "2")
             tem_diag_O2 = '(L(3726)+L(3729)) / (L(7329) + L(7330))'
-            temO2 = O2.getTemDen(I_3727/I_7330, den=100.0, to_eval=tem_diag_O2) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 2]','3727/7325', 'Low','='), temO2
+            self.temO2 = self.O2.getTemDen(I_3727/I_7330, den=100.0, to_eval=tem_diag_O2) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 2]','3727/7325', 'Low','='), self.temO2
             if self.writeouts:
-                Terr = numpy.abs(temO2[0] - temO2[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[O 2]','3727/7325', 'Low', temO2[0], Terr)
-            self.temperatures.append(temO2)
+                Terr = numpy.abs(self.temO2[0] - self.temO2[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[O 2]','3727/7325', 'Low', self.temO2[0], Terr)
         except Exception as e:
             (NameError,),e
         try:
-            Ne5 = pn.Atom("Ne", "5")
+            self.Ne5 = pn.Atom("Ne", "5")
             tem_diag_Ne5 = '(L(3426)+L(3346)) / L(2975) '
-            temNe5 = Ne5.getTemDen((I_3426 + I_3346)/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 5]','(3426+L3346)/2975', 'High','='), temNe5
+            self.temNe5 = self.Ne5.getTemDen((I_3426 + I_3346)/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 5]','(3426+L3346)/2975', 'High','='), self.temNe5
             if self.writeouts:
-                Te = temNe5
+                Te = self.temNe5
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ne 5]','(3426+L3346)/2975', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Ne3 = pn.Atom("Ne", "3")
+            self.Ne3 = pn.Atom("Ne", "3")
             tem_diag_Ne3 = '(L(3869)+L(3969)) / L(3342) '
-            temNe3 = Ne3.getTemDen((I_3869 + I_3969)/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 3]','(3869+3969)/3342', 'High','='), temNe3
+            self.temNe3 = self.Ne3.getTemDen((I_3869 + I_3969)/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 3]','(3869+3969)/3342', 'High','='), self.temNe3
             if self.writeouts:
-                Te = temNe3
+                Te = self.temNe3
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ne 3]','(3869+3969)/3342', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Na6 = pn.Atom("Na", "6")
+            self.Na6 = pn.Atom("Na", "6")
             tem_diag_Na6 = '(L(2871)+L(2970)) / L(2569) '
-            temNa6 = Na6.getTemDen((I_2871 + I_2970)/I_2569, den=100.0, to_eval=tem_diag_Na6) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 6]','(2871+2970)/2569', 'High','='), temNa6
+            self.temNa6 = self.Na6.getTemDen((I_2871 + I_2970)/I_2569, den=100.0, to_eval=tem_diag_Na6) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 6]','(2871+2970)/2569', 'High','='), self.temNa6
             if self.writeouts:
-                Te = temNa6
+                Te = self.temNa6
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Na 6]','(2871+2970)/2569', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Na4 = pn.Atom("Na", "4")
+            self.Na4 = pn.Atom("Na", "4")
             tem_diag_Na4 = '(L(3242)+L(3362)) / L(2805) '
-            temNa4 = Na4.getTemDen((I_3242 + I_3362)/I_2805, den=100.0, to_eval=tem_diag_Na4) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 4]','(3242+3362)/2805', 'Medium','='), temNa4
+            self.temNa4 = self.Na4.getTemDen((I_3242 + I_3362)/I_2805, den=100.0, to_eval=tem_diag_Na4) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 4]','(3242+3362)/2805', 'Medium','='), self.temNa4
             if self.writeouts:
-                Te = temNa4
+                Te = self.temNa4
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Na 4]','(3242+3362)/2805', 'Medium', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Mg5 = pn.Atom("Mg", "5")
+            self.Mg5 = pn.Atom("Mg", "5")
             tem_diag_Mg5 = '(L(2783)+L(2928)) / L(2418) '
-            temMg5 = Mg5.getTemDen((I_2783 + I_2928)/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Mg 5]','(2783+2928)/2418', 'High','='), temMg5
+            self.temMg5 = self.Mg5.getTemDen((I_2783 + I_2928)/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Mg 5]','(2783+2928)/2418', 'High','='), self.temMg5
             if self.writeouts:
-                Te = temMg5
+                Te = self.temMg5
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Mg 5]','(2783+2928)/2418', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            S3 = pn.Atom("S", "3")
+            self.S3 = pn.Atom("S", "3")
             S3ratio = I_6312 / I_9531 
             #print 'ratio of S3 = ', S3ratio
-            TS3 = S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 3]','6312/9531', 'High','='), TS3
+            self.TS3 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 3]','6312/9531', 'High','='), self.TS3
             if self.writeouts:
-                Te = TS3
+                Te = self.TS3
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[S 3]','6312/9531', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            S2 = pn.Atom("S", "2")
+            self.S2 = pn.Atom("S", "2")
             tem_diag_S2 = '(L(6716)+L(6731)) / L(4076) '    # Not using 4068 because is too weak
-            temS2 = S2.getTemDen((I_6716 + I_6731)/I_4076, den=100.0, to_eval=tem_diag_S2) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 2]','(6716+6731)/4076', 'Low','='), temS2
+            self.temS2 = self.S2.getTemDen((I_6716 + I_6731)/I_4076, den=100.0, to_eval=tem_diag_S2) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 2]','(6716+6731)/4076', 'Low','='), self.temS2
             if self.writeouts:
-                Te = temS2
+                Te = self.temS2
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[S 2]','(6716+6731)/4076', 'Low', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Ar5 = pn.Atom("Ar", "5")
+            self.Ar5 = pn.Atom("Ar", "5")
             tem_diag_Ar5 = '(L(6435) + L(7006)) / L(4626) '
-            temAr5 = Ar5.getTemDen((I_6435 + I_7006)/I_4626, den=100.0, to_eval=tem_diag_Ar5) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 5]','(6435+7006)/4626', 'High','='), temAr5
+            self.temAr5 = self.Ar5.getTemDen((I_6435 + I_7006)/I_4626, den=100.0, to_eval=tem_diag_Ar5) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 5]','(6435+7006)/4626', 'High','='), self.temAr5
             if self.writeouts:
-                Te = temAr5
+                Te = self.temAr5
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ar 5]','(6435+7006)/4626', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Ar4 = pn.Atom("Ar", "4")    # not using 4711 and 2854 because they are VERY likely to be blended
+            self.Ar4 = pn.Atom("Ar", "4")    # not using 4711 and 2854 because they are VERY likely to be blended
             tem_diag_Ar4 = 'L(4740) / L(2868) '
-            temAr4 = Ar4.getTemDen(I_4740/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 4]','4740/2868', 'High','='), temAr4
+            self.temAr4 = self.Ar4.getTemDen(I_4740/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 4]','4740/2868', 'High','='), self.temAr4
             if self.writeouts:
-                Te = temAr4
+                Te = self.temAr4
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ar 4]','4740/2868', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            Ar3 = pn.Atom("Ar", "3")
+            self.Ar3 = pn.Atom("Ar", "3")
             tem_diag_Ar3 = '(L(7136) + L(7751)) / L(5192) '
-            temAr3 = Ar3.getTemDen((I_7136 + I_7751)/I_5192, den=100.0, to_eval=tem_diag_Ar3) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 3]','(7136+7751)/5192', 'Medium','='), temAr3
+            self.temAr3 = self.Ar3.getTemDen((I_7136 + I_7751)/I_5192, den=100.0, to_eval=tem_diag_Ar3) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 3]','(7136+7751)/5192', 'Medium','='), self.temAr3
             if self.writeouts:
-                Te = temAr3
+                Te = self.temAr3
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ar 3]','(7136+7751)/5192', 'Medium', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            K5 = pn.Atom("K", "5")
+            self.K5 = pn.Atom("K", "5")
             tem_diag_K5 = '(L(4123)+L(4163)) / (L(2515) + L(2495))'
-            temK5 = K5.getTemDen((I_4123 + I_4163)/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 5]','(4123+4163)/(2515+2495)', 'High','='), temK5
+            self.temK5 = self.K5.getTemDen((I_4123 + I_4163)/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 5]','(4123+4163)/(2515+2495)', 'High','='), self.temK5
             if self.writeouts:
-                Te = temK5
+                Te = self.temK5
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[K 5]','(4123+4163)/(2515+2495)', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
         try:
-            K4 = pn.Atom("K", "4")
+            self.K4 = pn.Atom("K", "4")
             tem_diag_K4 = '(L(6102)+L(6796)) / L(4511)'
-            temK4 = K4.getTemDen((I_6102 + I_6796)/I_4511, den=100.0, to_eval=tem_diag_K4) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 4]','(6102+6796)/4511', 'High','='), temK4
+            self.temK4 = self.K4.getTemDen((I_6102 + I_6796)/I_4511, den=100.0, to_eval=tem_diag_K4) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 4]','(6102+6796)/4511', 'High','='), self.temK4
             if self.writeouts:
-                Te = temK4
+                Te = self.temK4
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[K 4]','(6102+6796)/4511', 'High', Te[0], Terr)
-            self.temperatures.append(Te)
         except Exception as e:
             (NameError,),e
             
@@ -1116,144 +1100,132 @@ class AdvancedOps:
             print >> outf, '# FIRST estimations of DENSITIES:'
             #print >> outf, '#{:<8} {:<24} {:<14} {:<11} {:<11}'.format('Ion', 'Line Ratio', 'Ioniz Zone', 'Den [cm^-3]', 'Den Err [cm^-3]')
         try:
-            C3 = pn.Atom("C", "3")
+            self.C3 = pn.Atom("C", "3")
             den_diag_C3 = 'L(1907) / L(1909)'
-            denC3 = C3.getTemDen(I_1907/I_1909, tem=10000.0, to_eval=den_diag_C3) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 3]','1907/1909', 'Medium','='), denC3
+            self.denC3 = self.C3.getTemDen(I_1907/I_1909, tem=10000.0, to_eval=den_diag_C3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 3]','1907/1909', 'Medium','='), self.denC3
             if self.writeouts:
-                den = denC3
+                den = self.denC3
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('C 3]','1907/1909', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            C2 = pn.Atom("C", "2")
+            self.C2 = pn.Atom("C", "2")
             den_diag_C2 = 'L(2326) / L(2328)'
-            denC2 = C2.getTemDen(I_2326/I_2328, tem=10000.0, to_eval=den_diag_C2) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 2]','2326/2328', 'Medium','='), denC2
+            self.denC2 = self.C2.getTemDen(I_2326/I_2328, tem=10000.0, to_eval=den_diag_C2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('C 2]','2326/2328', 'Medium','='), self.denC2
             if self.writeouts:
-                den = denC2
+                den = self.denC2
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('C 2]','2326/2328', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            N3 = pn.Atom("N", "3")
+            self.N3 = pn.Atom("N", "3")
             den_diag_N3 = 'L(1749) / L(1752)'
-            denN3 = N3.getTemDen(I_1749/I_1752, tem=10000.0, to_eval=den_diag_N3) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('N 3]','1749/1752', 'Medium','='), denN3
+            self.denN3 = self.N3.getTemDen(I_1749/I_1752, tem=10000.0, to_eval=den_diag_N3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('N 3]','1749/1752', 'Medium','='), self.denN3
             if self.writeouts:
-                den = denN3
+                den = self.denN3
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('N 3]','1749/1752', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            N1 = pn.Atom("N", "1")
+            self.N1 = pn.Atom("N", "1")
             den_diag_N1 = 'L(5198) / L(5200)'
-            denN1 = N1.getTemDen(I_5198/I_5200, tem=10000.0, to_eval=den_diag_N1) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[N 1]','5198/5200', 'Low','='), denN1
+            self.denN1 = self.N1.getTemDen(I_5198/I_5200, tem=10000.0, to_eval=den_diag_N1) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[N 1]','5198/5200', 'Low','='), self.denN1
             if self.writeouts:
-                den = denN1
+                den = self.denN1
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[N 1]','5198/5200', 'Low', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
             O2ratio = 'L(3729) / L(3726)'
-            self.denO2 = O2.getTemDen(I_3729 / I_3726, tem=10000.0, to_eval=O2ratio) 
+            self.denO2 = self.O2.getTemDen(I_3729 / I_3726, tem=10000.0, to_eval=O2ratio) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[O 2]','3729/3726', 'Medium','='), self.denO2
             if self.writeouts:
                 den = self.denO2
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[O 2]','3729/3726', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e
         try:
-            Ne4 = pn.Atom("Ne", "4")
+            self.Ne4 = pn.Atom("Ne", "4")
             den_diag_Ne4 = 'L(2423) / L(2425)'
-            denNe4 = Ne4.getTemDen(I_2423/I_2425, tem=10000.0, to_eval=den_diag_Ne4) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Ne 4]','2423/2425', 'High','='), denNe4
+            self.denNe4 = self.Ne4.getTemDen(I_2423/I_2425, tem=10000.0, to_eval=den_diag_Ne4) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Ne 4]','2423/2425', 'High','='), self.denNe4
             if self.writeouts:
-                den = denNe4
+                den = self.denNe4
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ne 4]','2423/2425', 'High', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            Al2 = pn.Atom("Al", "2")
+            self.Al2 = pn.Atom("Al", "2")
             den_diag_Al2 = 'L(2661) / L(2670)'
-            denAl2 = Al2.getTemDen(I_2661/I_2670, tem=10000.0, to_eval=den_diag_Al2) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Al 2]','2661/2670', 'Low','='), denAl2
+            self.denAl2 = self.Al2.getTemDen(I_2661/I_2670, tem=10000.0, to_eval=den_diag_Al2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Al 2]','2661/2670', 'Low','='), self.denAl2
             if self.writeouts:
-                den = denAl2
+                den = self.denAl2
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Al 2]','2661/2670', 'Low', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            Si3 = pn.Atom("Si", "3")
+            self.Si3 = pn.Atom("Si", "3")
             den_diag_Si3 = 'L(1883) / L(1892)'
-            denSi3 = Si3.getTemDen(I_1883/I_1892, tem=10000.0, to_eval=den_diag_Si3) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('Si 3]','1883/1892', 'Low','='), denSi3
+            self.denSi3 = self.Si3.getTemDen(I_1883/I_1892, tem=10000.0, to_eval=den_diag_Si3) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('Si 3]','1883/1892', 'Low','='), self.denSi3
             if self.writeouts:
-                den = denSi3
+                den = self.denSi3
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('Si 3]','1883/1892', 'Low', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            Si2 = pn.Atom("Si", "2")
+            self.Si2 = pn.Atom("Si", "2")
             den_diag_Si2 = 'L(2335) / L(2345)'
-            denSi2 = Si2.getTemDen(I_2335/I_2345, tem=10000.0, to_eval=den_diag_Si2) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Si 2]','2335/2345', 'Low','='), denSi2
+            self.denSi2 = self.Si2.getTemDen(I_2335/I_2345, tem=10000.0, to_eval=den_diag_Si2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Si 2]','2335/2345', 'Low','='), self.denSi2
             if self.writeouts:
-                den = denSi2
+                den = self.denSi2
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('Si 2]','2335/2345', 'Low', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
             den_diag_S2 = 'L(6716) / L(6731)'
-            denS2 = S2.getTemDen(I_6716/I_6731, tem=10000.0, to_eval=den_diag_S2) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[S 2]','6716/6731', 'Medium','='), denS2
+            self.denS2 = self.S2.getTemDen(I_6716/I_6731, tem=10000.0, to_eval=den_diag_S2) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[S 2]','6716/6731', 'Medium','='), self.denS2
             if self.writeouts:
-                den = denS2
+                den = self.denS2
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[S 2]','6716/6731', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e        
         try:
-            Cl3 = pn.Atom("Cl", "3")
+            self.Cl3 = pn.Atom("Cl", "3")
             Cl3ratio = I_5538 / I_5518 
-            dCl3 = Cl3.getTemDen(Cl3ratio, tem=10000.0, wave1=5538, wave2=5518)
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Cl 3]','5538/5518', 'Medium','='), dCl3
+            self.dCl3 = self.Cl3.getTemDen(Cl3ratio, tem=10000.0, wave1=5538, wave2=5518)
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[Cl 3]','5538/5518', 'Medium','='), self.dCl3
             if self.writeouts:
-                den = dCl3
+                den = self.dCl3
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Cl 3]','5538/5518', 'Medium', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e
         try:
             den_diag_K5 = 'L(6223) / L(6349)'
-            denK5 = K5.getTemDen(I_6223/I_6349, tem=10000.0, to_eval=den_diag_K5) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[K 5]','6223/6349', 'High','='), denK5
+            self.denK5 = self.K5.getTemDen(I_6223/I_6349, tem=10000.0, to_eval=den_diag_K5) 
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[K 5]','6223/6349', 'High','='), self.denK5
             if self.writeouts:
-                den = denK5
+                den = self.denK5
                 Derr = numpy.abs(den[0] - den[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[K 5]','6223/6349', 'High', den[0], Derr)
-            self.densities.append(den)
         except Exception as e:
             (NameError,),e
             
@@ -1274,10 +1246,10 @@ class AdvancedOps:
                 print >> outf, '# Theoretically obtained values'
             if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
                 log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(self.TO3[0]-4))) / (0.66 - 0.18*(numpy.log10(self.TO3[0]-4))) )
-                Fe3den = 10**(log_Fe3den)
-                print '   Density measured from [Fe3] lines:', Fe3den
+                self.Fe3den = 10**(log_Fe3den)
+                print '   Density measured from [Fe3] lines:', self.Fe3den
                 if self.writeouts:
-                    den = Fe3den
+                    den = self.Fe3den
                     Derr = numpy.abs(den[0] - den[1])
                     print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', den[0], Derr)
                 self.densities.append(den)
@@ -1306,42 +1278,142 @@ class AdvancedOps:
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
+        print ''
         
+    def get_iontotabs(self):
         # With the available temperatures determine ionic and total abundances
-        if iontotabs:
-            # Define the high and lo ionization zones temperatures and densities
-            print ''
-            if self.TO3 is not float('NaN'):
-                print 'Temperatures being used for three estimation of abundances:'
-                te_high = self.TO3
-                print 'Te_high (O3) =', te_high
-                print 'Te_med (O2-Garnet92) =', self.TO2gar
-                if TS3 is not float('NaN'):
-                    te_low = TS3
-                    print 'Te_low =', te_low
-                else:
-                    te_low = self.TO3 * 0.8
-                    print ' *** Temperature Calculation Failed for S3! ESTIMATING A LOWER TEMPERATURE ZONE as 80% of TO3 =', TS3, '***'
-            if self.denO2 is not float('NaN'):
-                print 'Densities of O2 being used for calculations...', self.denO2
-                dens = self.denO2
-                print ' *** USING density =', dens, '***'
-                print ''
+        # Define the high and lo ionization zones temperatures and densities
+        if self.TO3 is not float('NaN'):
+            print 'Temperatures being used for three estimation of abundances:'
+            te_high = self.TO3
+            print 'Te_high (O3) =', te_high
+            print 'Te_med (O2-Garnet92) =', self.TO2gar
+            if self.TS3 is not float('NaN'):
+                te_low = self.TS3
+                print 'Te_low =', te_low
             else:
-                dens = 100.0
-                te_high = 10000.0
-                te_low = 8000.0
-                print 'Te[O 3] not available, using default value: 10,000'
-                print 'ne[O 2] not available, using default value: 100'
-            # Write results in text file
-            if self.writeouts:
-                out_file = self.object_name+'_IonicTotAbundances.txt'
-                path_object = '../results/'+self.object_name
-                fullpath_outfile = os.path.join(path_object, out_file)
-                outf = open(fullpath_outfile, 'w+')
-            # Make sure that the temperatures and densities file closes properly
-            if self.writeouts:
-                outf.close()
+                te_low = self.TO3 * 0.8
+                print ' *** Temperature Calculation Failed for S3! ESTIMATING A LOWER TEMPERATURE ZONE as 80% of TO3 =', self.TS3, '***'
+        else:
+            te_high = [10000.0, 10500.0]
+            te_low = [8000.0, 8500.0]
+            print 'Te[O 3] not available, using default values:   te_high=10,000, te_low=8000,  both with an error of 500.0'
+        if self.denO2 is not float('NaN'):
+            print 'Densities of O2 being used for calculations:', self.denO2
+            dens = self.denO2
+        else:
+            dens = [100.0, 25.0]
+            print 'ne[O 2] not available, using default value: 100.0 +- 25.0'
+        print '\n  Calculating abundances.... \n'
+        # Define all atoms to make calculations
+        all_atoms = pn.getAtomDict()
+        #print 'all_atoms', all_atoms
+        ab1_list = []
+        ab2_list = []
+        ab3_list = []
+        line_label_list = []
+        line_I_list = []
+        try:
+            for line in self.obs.lines:
+                if line.atom in all_atoms:
+                    ab1 = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_high, dens, to_eval=line.to_eval)
+                    ab2 = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_low, dens, to_eval=line.to_eval)
+                    ab3 = all_atoms[line.atom].getIonAbundance(line.corrIntens, self.TO2gar, dens, to_eval=line.to_eval)
+                    #print 'ab1: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in (ab1)])
+                    #print 'ab2: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab2)])
+                    #print 'ab3: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab3)])
+                    ab1_list.append(ab1)
+                    ab2_list.append(ab2)
+                    ab3_list.append(ab3)
+                    line_label_list.append(line.label)
+                    line_I_list.append(line.corrIntens)
+                else:
+                    pn.log_.warn('line from %s not used because ion not found' % line.atom, calling='full_analysis.py')
+            pn.log_.timer('Ending full_analysis.py', calling='full_analysis.py')
+        except (RuntimeError, TypeError, NameError):
+            pass
+         
+        # total ionic abundances direct method: with temperature of [O III]
+        atoms_only = []
+        for label in line_label_list:
+            word = label.split("_")[0]
+            atoms_only.append(word)
+        # get only the atoms you found
+        atoms = sorted(set(atoms_only))
+        # create a list per atom
+        atoms_abs = []
+        for a in atoms:
+            a1 = []
+            atoms_abs.append(a1)
+        for a, i in zip(atoms, atoms_abs):
+            for l, ab in zip(atoms_only, ab1_list):
+                if a == l:
+                    #print a
+                    i.append(ab)
+        # calculate the total ionic abundances taking the average of all values of that ion
+        tot_ion_ab = []
+        tot_ion_ab_err = []
+        for a, ab in zip(atoms, atoms_abs):
+            # ab contains the abundance value and the corresponding error, hence ab[0] and ab[1]
+            if len(ab) > 1:
+                #print a, ab
+                avg = sum(ab[0]) / float(len(ab[0]))
+                tot_ion_ab.append(avg)
+                squares = []
+                for e in ab[1]:
+                    e = float(e)
+                    squares.append(e*e)
+                    #print e, e*e
+                err = numpy.sqrt(sum(squares))
+                tot_ion_ab_err.append(err)
+                ionab = avg
+                ionerr = err
+            else:
+                #print a, ab[0]
+                ionab = ab[0][0]
+                ionerr = ab[0][1]
+                tot_ion_ab.append(ionab)
+                tot_ion_ab_err.append(ionerr)
+            #print a, ionab, ionerr
+            # print the results in the file
+        # Write results in text file
+        if self.writeouts:
+            out_file = self.object_name+'_IonicTotAbundances.txt'
+            path_object = '../results/'+self.object_name
+            fullpath_outfile = os.path.join(path_object, out_file)
+            outf = open(fullpath_outfile, 'w+')
+            print >> outf, ('{:<45} {:>10} {:>6}'.format('# Temperature used [K]', 'O3 =', int(self.TO3[0]))+'{:>30} {:>6}'.format('S3 =', int(self.TS3[0]))+
+                            '{:>35} {:>6}'.format('O2-Garnet92 =', int(self.TO2gar[0])))
+            print >> outf, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'ab1', 'ab1_err', 
+                                                                                            'ab2', 'ab2_err', 'ab3', 'ab3_err'))
+            for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab1_list, ab2_list, ab3_list):
+                percent_I = (I[1] * 100.)/I[0]
+                print >> outf, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
+                                                                                                                              ab2[0], ab2[1], ab3[0], ab3[1]))
+            print >> outf, '#####'
+            print >> outf, '# IONIC ABUNDANCES'
+            print >> outf, ('{:<9} {:>15} {:>15}'.format('# Ion', 'abundance', 'error'))
+            for a, ionab, ionerr in zip(atoms, tot_ion_ab, tot_ion_ab_err):
+                print >> outf, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
+    
+        ### TOTAL abundances
+        icf = pn.ICF()
+        icf.getAvailableICFs()
+        icf.printAllICFs(type_=['HII'])
+        #r = icf.getReference('Ial06_22a')
+        #atom_abun = {}
+        atom_abun = OrderedDict()
+        for atom, ionab, err in zip(atoms, tot_ion_ab, tot_ion_ab_err):
+            atom_abun[atom] = ionab
+            #err_str = atom + '_err'
+            #atom_abun[err_str] = err
+        elem_abun = icf.getElemAbundance(atom_abun)#, icf_list=['TPP85'])
+        print elem_abun
+        print elem_abun['Ial06_22a']
+        
+        # Make sure that the temperatures and densities file closes properly
+        if self.writeouts:
+            outf.close()
         
     def corr_ColExcit(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, verbose=False):
         '''
@@ -1564,9 +1636,10 @@ class AdvancedOps:
         return (lines_info, dereddening_info, uncertainties_info)
         
         
-    def perform_advanced_ops(self, iontotabs):
+    def perform_advanced_ops(self):
         lines_pyneb_matches = self.writeRedCorrFile()
-        self.get_tempsdens_iontotabs(iontotabs)
+        self.get_tempsdens()
+        self.get_iontotabs()
         return lines_pyneb_matches
 
 
