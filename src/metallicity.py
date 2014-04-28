@@ -928,9 +928,10 @@ class AdvancedOps:
             print >> outf, '# FIRST estimations of TEMPERATURES:'
         try:
             self.O3 = pn.Atom("O", "3")
-            tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
+            self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
             #print 'ratio of O3 = ', (I_4959+I_5007)/I_4363
-            self.TO3 = self.O3.getTemDen((I_4959+I_5007)/I_4363, den=100., to_eval=tem_diag_O3)
+            self.strongO3 = (I_4959+I_5007)
+            self.TO3 = self.O3.getTemDen(self.strongO3/I_4363, den=100., to_eval=self.tem_diag_O3)
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[O 3]','(4959+5007)/4363', 'Medium','='), self.TO3
             if self.writeouts:
                 Terr = numpy.abs(self.TO3[0] - self.TO3[1])
@@ -941,7 +942,8 @@ class AdvancedOps:
         try:
             self.N2 = pn.Atom("N", "2")
             tem_diag_N2 = '(L(6548)+L(6584)) / L(5755) '
-            self.temN2 = self.N2.getTemDen((I_6548 + I_6584)/I_5755, den=100.0, to_eval=tem_diag_N2) 
+            self.strongN2 = (I_6548 + I_6584)
+            self.temN2 = self.N2.getTemDen(self.strongN2/I_5755, den=100.0, to_eval=tem_diag_N2) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[N 2]','(6548+6584)/5755', 'Medium','='), self.temN2
             if self.writeouts:
                 Terr = numpy.abs(self.temN2[0] - self.temN2[1])
@@ -961,18 +963,20 @@ class AdvancedOps:
         try:
             self.Ne5 = pn.Atom("Ne", "5")
             tem_diag_Ne5 = '(L(3426)+L(3346)) / L(2975) '
-            self.temNe5 = self.Ne5.getTemDen((I_3426 + I_3346)/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
-            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 5]','(3426+L3346)/2975', 'High','='), self.temNe5
+            self.strongNe5 = (I_3426 + I_3346)
+            self.temNe5 = self.Ne5.getTemDen(self.strongNe5/I_2975, den=100.0, to_eval=tem_diag_Ne5) 
+            print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 5]','(3426+3346)/2975', 'High','='), self.temNe5
             if self.writeouts:
                 Te = self.temNe5
                 Terr = numpy.abs(Te[0] - Te[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ne 5]','(3426+L3346)/2975', 'High', Te[0], Terr)
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[Ne 5]','(3426+3346)/2975', 'High', Te[0], Terr)
         except Exception as e:
             (NameError,),e
         try:
             self.Ne3 = pn.Atom("Ne", "3")
             tem_diag_Ne3 = '(L(3869)+L(3969)) / L(3342) '
-            self.temNe3 = self.Ne3.getTemDen((I_3869 + I_3969)/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
+            self.strongNe3 = (I_3869 + I_3969)
+            self.temNe3 = self.Ne3.getTemDen(self.strongNe3/I_3342, den=100.0, to_eval=tem_diag_Ne3) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ne 3]','(3869+3969)/3342', 'High','='), self.temNe3
             if self.writeouts:
                 Te = self.temNe3
@@ -983,7 +987,8 @@ class AdvancedOps:
         try:
             self.Na6 = pn.Atom("Na", "6")
             tem_diag_Na6 = '(L(2871)+L(2970)) / L(2569) '
-            self.temNa6 = self.Na6.getTemDen((I_2871 + I_2970)/I_2569, den=100.0, to_eval=tem_diag_Na6) 
+            self.strongNa6 = (I_2871 + I_2970)
+            self.temNa6 = self.Na6.getTemDen(self.strongNa6/I_2569, den=100.0, to_eval=tem_diag_Na6) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 6]','(2871+2970)/2569', 'High','='), self.temNa6
             if self.writeouts:
                 Te = self.temNa6
@@ -994,7 +999,8 @@ class AdvancedOps:
         try:
             self.Na4 = pn.Atom("Na", "4")
             tem_diag_Na4 = '(L(3242)+L(3362)) / L(2805) '
-            self.temNa4 = self.Na4.getTemDen((I_3242 + I_3362)/I_2805, den=100.0, to_eval=tem_diag_Na4) 
+            self.strongNa4 = (I_3242 + I_3362)
+            self.temNa4 = self.Na4.getTemDen(self.strongNa4/I_2805, den=100.0, to_eval=tem_diag_Na4) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Na 4]','(3242+3362)/2805', 'Medium','='), self.temNa4
             if self.writeouts:
                 Te = self.temNa4
@@ -1005,7 +1011,8 @@ class AdvancedOps:
         try:
             self.Mg5 = pn.Atom("Mg", "5")
             tem_diag_Mg5 = '(L(2783)+L(2928)) / L(2418) '
-            self.temMg5 = self.Mg5.getTemDen((I_2783 + I_2928)/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
+            self.strongMg5 = (I_2783 + I_2928)
+            self.temMg5 = self.Mg5.getTemDen(self.strongMg5/I_2418, den=100.0, to_eval=tem_diag_Mg5) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Mg 5]','(2783+2928)/2418', 'High','='), self.temMg5
             if self.writeouts:
                 Te = self.temMg5
@@ -1016,6 +1023,7 @@ class AdvancedOps:
         try:
             self.S3 = pn.Atom("S", "3")
             S3ratio = I_6312 / I_9531 
+            self.strongS3 = I_9531
             #print 'ratio of S3 = ', S3ratio
             self.TS3 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 3]','6312/9531', 'High','='), self.TS3
@@ -1028,7 +1036,8 @@ class AdvancedOps:
         try:
             self.S2 = pn.Atom("S", "2")
             tem_diag_S2 = '(L(6716)+L(6731)) / L(4076) '    # Not using 4068 because is too weak
-            self.temS2 = self.S2.getTemDen((I_6716 + I_6731)/I_4076, den=100.0, to_eval=tem_diag_S2) 
+            self.strongS2 = (I_6716 + I_6731)
+            self.temS2 = self.S2.getTemDen(self.strongS2/I_4076, den=100.0, to_eval=tem_diag_S2) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[S 2]','(6716+6731)/4076', 'Low','='), self.temS2
             if self.writeouts:
                 Te = self.temS2
@@ -1039,7 +1048,8 @@ class AdvancedOps:
         try:
             self.Ar5 = pn.Atom("Ar", "5")
             tem_diag_Ar5 = '(L(6435) + L(7006)) / L(4626) '
-            self.temAr5 = self.Ar5.getTemDen((I_6435 + I_7006)/I_4626, den=100.0, to_eval=tem_diag_Ar5) 
+            self.strongAr5 = (I_6435)
+            self.temAr5 = self.Ar5.getTemDen((self.strongAr5 + I_7006)/I_4626, den=100.0, to_eval=tem_diag_Ar5) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 5]','(6435+7006)/4626', 'High','='), self.temAr5
             if self.writeouts:
                 Te = self.temAr5
@@ -1050,7 +1060,8 @@ class AdvancedOps:
         try:
             self.Ar4 = pn.Atom("Ar", "4")    # not using 4711 and 2854 because they are VERY likely to be blended
             tem_diag_Ar4 = 'L(4740) / L(2868) '
-            self.temAr4 = self.Ar4.getTemDen(I_4740/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
+            self.strongAr4 = I_4740
+            self.temAr4 = self.Ar4.getTemDen(self.strongAr4/I_2868, den=100.0, to_eval=tem_diag_Ar4) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 4]','4740/2868', 'High','='), self.temAr4
             if self.writeouts:
                 Te = self.temAr4
@@ -1061,7 +1072,8 @@ class AdvancedOps:
         try:
             self.Ar3 = pn.Atom("Ar", "3")
             tem_diag_Ar3 = '(L(7136) + L(7751)) / L(5192) '
-            self.temAr3 = self.Ar3.getTemDen((I_7136 + I_7751)/I_5192, den=100.0, to_eval=tem_diag_Ar3) 
+            self.strongAr3 = (I_7136 + I_7751)
+            self.temAr3 = self.Ar3.getTemDen(self.strongAr3/I_5192, den=100.0, to_eval=tem_diag_Ar3) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[Ar 3]','(7136+7751)/5192', 'Medium','='), self.temAr3
             if self.writeouts:
                 Te = self.temAr3
@@ -1072,7 +1084,8 @@ class AdvancedOps:
         try:
             self.K5 = pn.Atom("K", "5")
             tem_diag_K5 = '(L(4123)+L(4163)) / (L(2515) + L(2495))'
-            self.temK5 = self.K5.getTemDen((I_4123 + I_4163)/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
+            self.strongK5 = (I_4123 + I_4163)
+            self.temK5 = self.K5.getTemDen(self.strongK5/(I_2515 + I_2495), den=100.0, to_eval=tem_diag_K5) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 5]','(4123+4163)/(2515+2495)', 'High','='), self.temK5
             if self.writeouts:
                 Te = self.temK5
@@ -1083,7 +1096,8 @@ class AdvancedOps:
         try:
             self.K4 = pn.Atom("K", "4")
             tem_diag_K4 = '(L(6102)+L(6796)) / L(4511)'
-            self.temK4 = self.K4.getTemDen((I_6102 + I_6796)/I_4511, den=100.0, to_eval=tem_diag_K4) 
+            self.strongK4 = (I_6102 + I_6796)
+            self.temK4 = self.K4.getTemDen(self.strongK4/I_4511, den=100.0, to_eval=tem_diag_K4) 
             print '   {:<8} {:<25} {:<10} {:<3}'.format('[K 4]','(6102+6796)/4511', 'High','='), self.temK4
             if self.writeouts:
                 Te = self.temK4
@@ -1102,6 +1116,7 @@ class AdvancedOps:
         try:
             self.C3 = pn.Atom("C", "3")
             den_diag_C3 = 'L(1907) / L(1909)'
+            self.strongC3 = I_1907
             self.denC3 = self.C3.getTemDen(I_1907/I_1909, tem=10000.0, to_eval=den_diag_C3) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('C 3]','1907/1909', 'Medium','='), self.denC3
             if self.writeouts:
@@ -1113,6 +1128,7 @@ class AdvancedOps:
         try:
             self.C2 = pn.Atom("C", "2")
             den_diag_C2 = 'L(2326) / L(2328)'
+            self.strongC2 = I_2328
             self.denC2 = self.C2.getTemDen(I_2326/I_2328, tem=10000.0, to_eval=den_diag_C2) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('C 2]','2326/2328', 'Medium','='), self.denC2
             if self.writeouts:
@@ -1124,6 +1140,7 @@ class AdvancedOps:
         try:
             self.N3 = pn.Atom("N", "3")
             den_diag_N3 = 'L(1749) / L(1752)'
+            self.strongN3 = I_1752
             self.denN3 = self.N3.getTemDen(I_1749/I_1752, tem=10000.0, to_eval=den_diag_N3) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('N 3]','1749/1752', 'Medium','='), self.denN3
             if self.writeouts:
@@ -1135,6 +1152,7 @@ class AdvancedOps:
         try:
             self.N1 = pn.Atom("N", "1")
             den_diag_N1 = 'L(5198) / L(5200)'
+            self.strongN1 = I_5200
             self.denN1 = self.N1.getTemDen(I_5198/I_5200, tem=10000.0, to_eval=den_diag_N1) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[N 1]','5198/5200', 'Low','='), self.denN1
             if self.writeouts:
@@ -1145,6 +1163,7 @@ class AdvancedOps:
             (NameError,),e        
         try:
             O2ratio = 'L(3729) / L(3726)'
+            self.strongO2 = I_3729
             self.denO2 = self.O2.getTemDen(I_3729 / I_3726, tem=10000.0, to_eval=O2ratio) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[O 2]','3729/3726', 'Medium','='), self.denO2
             if self.writeouts:
@@ -1156,6 +1175,7 @@ class AdvancedOps:
         try:
             self.Ne4 = pn.Atom("Ne", "4")
             den_diag_Ne4 = 'L(2423) / L(2425)'
+            self.strongNe4 = I_2425
             self.denNe4 = self.Ne4.getTemDen(I_2423/I_2425, tem=10000.0, to_eval=den_diag_Ne4) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[Ne 4]','2423/2425', 'High','='), self.denNe4
             if self.writeouts:
@@ -1167,6 +1187,7 @@ class AdvancedOps:
         try:
             self.Al2 = pn.Atom("Al", "2")
             den_diag_Al2 = 'L(2661) / L(2670)'
+            self.strongAl2 = I_2670
             self.denAl2 = self.Al2.getTemDen(I_2661/I_2670, tem=10000.0, to_eval=den_diag_Al2) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[Al 2]','2661/2670', 'Low','='), self.denAl2
             if self.writeouts:
@@ -1178,6 +1199,7 @@ class AdvancedOps:
         try:
             self.Si3 = pn.Atom("Si", "3")
             den_diag_Si3 = 'L(1883) / L(1892)'
+            self.strongSi3 = I_1883
             self.denSi3 = self.Si3.getTemDen(I_1883/I_1892, tem=10000.0, to_eval=den_diag_Si3) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('Si 3]','1883/1892', 'Low','='), self.denSi3
             if self.writeouts:
@@ -1189,6 +1211,7 @@ class AdvancedOps:
         try:
             self.Si2 = pn.Atom("Si", "2")
             den_diag_Si2 = 'L(2335) / L(2345)'
+            self.strongSi2 = I_2335
             self.denSi2 = self.Si2.getTemDen(I_2335/I_2345, tem=10000.0, to_eval=den_diag_Si2) 
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[Si 2]','2335/2345', 'Low','='), self.denSi2
             if self.writeouts:
@@ -1200,16 +1223,17 @@ class AdvancedOps:
         try:
             den_diag_S2 = 'L(6716) / L(6731)'
             self.denS2 = self.S2.getTemDen(I_6716/I_6731, tem=10000.0, to_eval=den_diag_S2) 
-            print '   {:<8} {:<12} {:<10} {:<3}'.format('[S 2]','6716/6731', 'Medium','='), self.denS2
+            print '   {:<8} {:<12} {:<10} {:<3}'.format('[S 2]','6716/6731', 'Low','='), self.denS2
             if self.writeouts:
                 den = self.denS2
                 Derr = numpy.abs(den[0] - den[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[S 2]','6716/6731', 'Medium', den[0], Derr)
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('[S 2]','6716/6731', 'Low', den[0], Derr)
         except Exception as e:
             (NameError,),e        
         try:
             self.Cl3 = pn.Atom("Cl", "3")
             Cl3ratio = I_5538 / I_5518 
+            self.strongCl3 = I_5518
             self.dCl3 = self.Cl3.getTemDen(Cl3ratio, tem=10000.0, wave1=5538, wave2=5518)
             print '   {:<8} {:<12} {:<10} {:<3}'.format('[Cl 3]','5538/5518', 'Medium','='), self.dCl3
             if self.writeouts:
@@ -1254,7 +1278,7 @@ class AdvancedOps:
                     print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<10.2f}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', den[0], Derr)
                 self.densities.append(den)
             else:
-                print '   No [Fe3] density available.\n'
+                print '   {:<8} {:<12} {:<10} {:<3} {:<11} {:<10}'.format('[Fe 3]','Peimbert et al 2012', 'High','=', 'nan', 'nan')
                 if self.writeouts:
                     print >> outf, '{:<8} {:<25} {:<14} {:<11} {:<10}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', 'nan', 'nan')
 
@@ -1283,48 +1307,49 @@ class AdvancedOps:
     def get_iontotabs(self):
         # With the available temperatures determine ionic and total abundances
         # Define the high and lo ionization zones temperatures and densities
+        print 'Temperatures being used for estimation of abundances:'
+        if self.temO2 is not float('NaN'):
+            te_low = self.temO2
+            print 'Te_low =', te_low
+        else:
+            te_low = [9000.0, 9500.0]
+            print 'Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
+            
         if self.TO3 is not float('NaN'):
-            print 'Temperatures being used for three estimation of abundances:'
             te_high = self.TO3
             print 'Te_high (O3) =', te_high
-            print 'Te_med (O2-Garnet92) =', self.TO2gar
-            if self.TS3 is not float('NaN'):
-                te_low = self.TS3
-                print 'Te_low =', te_low
-            else:
-                te_low = self.TO3 * 0.8
-                print ' *** Temperature Calculation Failed for S3! ESTIMATING A LOWER TEMPERATURE ZONE as 80% of TO3 =', self.TS3, '***'
+            # make sure the loz ionization temperature has a lowe temperature than the high one
+            if te_low[0] > te_high[0]:
+                print 'Te_low (O2-Garnet92) =', self.TO2gar
+                te_low = self.TO2gar            
         else:
             te_high = [10000.0, 10500.0]
-            te_low = [8000.0, 8500.0]
-            print 'Te[O 3] not available, using default values:   te_high=10,000, te_low=8000,  both with an error of 500.0'
+            print 'Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
+        
+        print 'Densitiy being used for calculations:'
         if self.denO2 is not float('NaN'):
-            print 'Densities of O2 being used for calculations:', self.denO2
             dens = self.denO2
+            print 'ne[O 2] =', self.denO2
         else:
-            dens = [100.0, 25.0]
-            print 'ne[O 2] not available, using default value: 100.0 +- 25.0'
+            dens = [100.0, 150.0]
+            print 'ne[O 2] not available, using default value: 100.0 +- 50.0'
+            
         print '\n  Calculating abundances.... \n'
         # Define all atoms to make calculations
         all_atoms = pn.getAtomDict()
         #print 'all_atoms', all_atoms
-        ab1_list = []
-        ab2_list = []
-        ab3_list = []
+        # Determine all available abundances -- THIS IS FOR COMPARISON PURPOSES ONLY
+        ab_high_list = []
+        ab_low_list = []
         line_label_list = []
         line_I_list = []
         try:
             for line in self.obs.lines:
                 if line.atom in all_atoms:
-                    ab1 = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_high, dens, to_eval=line.to_eval)
-                    ab2 = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_low, dens, to_eval=line.to_eval)
-                    ab3 = all_atoms[line.atom].getIonAbundance(line.corrIntens, self.TO2gar, dens, to_eval=line.to_eval)
-                    #print 'ab1: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in (ab1)])
-                    #print 'ab2: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab2)])
-                    #print 'ab3: {0:9s}'.format(line.label) + '  '.join(['{0:>20.10e}'.format(t) for t in  (ab3)])
-                    ab1_list.append(ab1)
-                    ab2_list.append(ab2)
-                    ab3_list.append(ab3)
+                    abH = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_high, dens, to_eval=line.to_eval)
+                    abL = all_atoms[line.atom].getIonAbundance(line.corrIntens, te_low, dens, to_eval=line.to_eval)
+                    ab_high_list.append(abH)
+                    ab_low_list.append(abL)
                     line_label_list.append(line.label)
                     line_I_list.append(line.corrIntens)
                 else:
@@ -1333,14 +1358,79 @@ class AdvancedOps:
         except (RuntimeError, TypeError, NameError):
             pass
          
-        # total ionic abundances direct method: with temperature of [O III]
+        # ions of zones of high and medium ionization degree are combined
+        ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca','Fe3', 'K4', 'K5', 'Mg5', 'N1', 'N2', 'N3', 'Ne3','Na4', 'Na6', 
+                   'Ne3', 'Ne5', 'O3', 'S3']
+        ab_low = ['Al2', 'O1', 'O2', 'S2', 'Si2', 'Si3']
+        # create two lists: 1) all atoms list, 2) empty list with all ions to be filled with the total ionic abundances
+        atoms_list = []
+        totabs_ions_list = []
+        for ah in ab_high:
+            atoms_list.append(ah)
+            empty_list_for_ionab_and_error = []
+            totabs_ions_list.append(empty_list_for_ionab_and_error)
+        for al in ab_low:
+            atoms_list.append(al)
+            empty_list_for_ionab_and_error = []
+            totabs_ions_list.append(empty_list_for_ionab_and_error)
+        # sort those atoms alphabetically and from low to high ionization degree
+        sorted_atoms = sorted(set(atoms_list))
+        
+        # Determine abundances only from strong lines and appropriate temperature
+        ionab = self.Al2.getIonAbundance(int_ratio=self.strongAl2, tem=te_low, den=dens, to_eval='L(2670)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('Al2')
+        totabs_ions_list[idx] = ionab
+        
+        ionab = self.Ar3.getIonAbundance(int_ratio=self.strongAr3, tem=te_high, den=dens, to_eval='L(7136) + L(7751)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('Ar3')
+        totabs_ions_list[idx] = ionab
+        ionab = self.Ar4.getIonAbundance(int_ratio=self.strongAr4, tem=te_low, den=dens, to_eval='L(4740)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('Ar4')
+        totabs_ions_list[idx] = ionab
+        ionab = self.Ar5.getIonAbundance(int_ratio=self.strongAr5, tem=te_high, den=dens, to_eval='L(6435)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('Ar5')
+        totabs_ions_list[idx] = ionab
+        
+        ionab = self.C2.getIonAbundance(int_ratio=self.strongC2, tem=te_high, den=dens, to_eval='L(2328)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('C2')
+        totabs_ions_list[idx] = ionab
+        ionab = self.C3.getIonAbundance(int_ratio=self.strongC3, tem=te_high, den=dens, to_eval='L(1907)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('C3')
+        totabs_ions_list[idx] = ionab
+        
+        Ca5 = pn.Atom("Ca", "5")
+        idxca = self.obs.lines.label.index('Ca5_6087A')
+        I_6087 = self.obs.lines.corrIntens[idxca]
+        ionab = Ca5.getIonAbundance(int_ratio=I_6087, tem=te_high, den=dens, to_eval='L(6087)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('Ca5')
+        totabs_ions_list[idx] = ionab
+        print 'I_6087=',I_6087
+        exit()
+
+        abO3 = self.O3.getIonAbundance(int_ratio=self.strongO3, tem=te_high, den=dens, to_eval='L(4959)+L(5007)')
+        # find the corresponding index in sorted_atoms
+        idx = sorted_atoms.index('O3')
+        totabs_ions_list[idx] = abO3
+        
+        for x, y in zip(sorted_atoms, totabs_ions_list):
+            print x, y
+        exit()
+            
         atoms_only = []
+        # create the list of ions according to the existing lines
         for label in line_label_list:
-            word = label.split("_")[0]
-            atoms_only.append(word)
-        # get only the atoms you found
+            ion = label.split("_")[0]
+            atoms_only.append(ion)
+        # sort those atoms alphabetically and from low to high ionization degree
         atoms = sorted(set(atoms_only))
-        # create a list per atom
+        # create a list per atom in order to add the abundances calculated per ion per line
         atoms_abs = []
         for a in atoms:
             a1 = []
@@ -1348,8 +1438,10 @@ class AdvancedOps:
         for a, i in zip(atoms, atoms_abs):
             for l, ab in zip(atoms_only, ab1_list):
                 if a == l:
-                    #print a
-                    i.append(ab)
+                    # make sure to only adding positive abundances
+                    if ab[0] > 0.0:
+                        #print 'a, l, ab', a, l, ab
+                        i.append(ab)
         # calculate the total ionic abundances taking the average of all values of that ion
         tot_ion_ab = []
         tot_ion_ab_err = []
@@ -1357,7 +1449,7 @@ class AdvancedOps:
             # ab contains the abundance value and the corresponding error, hence ab[0] and ab[1]
             if len(ab) > 1:
                 #print a, ab
-                avg = sum(ab[0]) / float(len(ab[0]))
+                avg = sum(ab[0]) #/ float(len(ab[0]))
                 tot_ion_ab.append(avg)
                 squares = []
                 for e in ab[1]:
@@ -1368,10 +1460,15 @@ class AdvancedOps:
                 tot_ion_ab_err.append(err)
                 ionab = avg
                 ionerr = err
-            else:
+            elif (len(ab) == 1) and (numpy.shape(ab) == 2):
                 #print a, ab[0]
                 ionab = ab[0][0]
                 ionerr = ab[0][1]
+                tot_ion_ab.append(ionab)
+                tot_ion_ab_err.append(ionerr)
+            else:
+                ionab = 0.0
+                ionerr = 0.0
                 tot_ion_ab.append(ionab)
                 tot_ion_ab_err.append(ionerr)
             #print a, ionab, ionerr
