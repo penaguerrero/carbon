@@ -1392,9 +1392,11 @@ class AdvancedOps:
                                                                                                                               ab2[0], ab2[1], ab3[0], ab3[1]))
             print >> outf, '#####'
             print >> outf, '# IONIC ABUNDANCES'
-            print >> outf, ('{:<9} {:>15} {:>15}'.format('# Ion', 'abundance', 'error'))
+            print >> outf, ('{:<6} {:>15} {:>12} {:>10} {:>7}'.format('# Ion', 'abundance', 'error', 'LOG abund', 'LOG err'))
             for a, ionab, ionerr in zip(atoms, tot_ion_ab, tot_ion_ab_err):
-                print >> outf, ('{:<9} {:>15.3e} {:>15.3e}'.format(a, ionab, ionerr))
+                logionab = 12 + numpy.log(ionab)
+                erlogionerr = 12 + numpy.log(ionerr)
+                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
     
         ### TOTAL abundances
         icf = pn.ICF()
