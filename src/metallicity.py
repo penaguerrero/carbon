@@ -1326,8 +1326,8 @@ class AdvancedOps:
             if (te_low[0] > te_high[0]) or math.isnan(self.temO2[0]):
                 print 'Te_low (O2-Garnet92) =', self.TO2gar
                 te_low = self.TO2gar
-            else:
-                print 'Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
+        if te_low[0] == 9000.00:
+            print 'Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
             
         if math.isnan(self.TS3[0]):
             te_verylow = [8000.0, 8500.0]
@@ -1394,7 +1394,7 @@ class AdvancedOps:
                              # K4     K5      Mg5     N1      N2      N3      Na4     Na6     Ne3     Ne4     Ne5     
                              '6796', '4163', '2783', '5200', '6548', '1752', '3362', '2970', '3869', '2425', '3346',
                              # O1     O2     O3      S2      S3      Si2     Si3
-                             '6300', '3727', '5007', '6731', '9531', '2345', '1892']
+                             '6300', '3729', '5007', '6731', '9531', '2345', '1892']
         for label in line_label_list:
             for line in strong_lines_list:
                 if line in label:
@@ -1411,12 +1411,13 @@ class AdvancedOps:
         # add a 0.0 where no abundances could be determined
         for ion, ab in zip(sorted_atoms, totabs_ions_list):
             if len(ab)<2:
-                ab = [0.0, 0.0]
+                idx = sorted_atoms.index(ion)
+                totabs_ions_list[idx] = [0.0, 0.0]
                 logab = 0.0
             else:
                 logab = 12+numpy.log10(ab[0])
             print ion, ab, logab
-            
+
         # Write results in text file
         if self.writeouts:
             out_file = self.object_name+'_IonicTotAbundances.txt'
