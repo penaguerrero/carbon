@@ -1,3 +1,5 @@
+from __future__ import division
+
 import os
 import pyfits
 import numpy
@@ -1306,43 +1308,94 @@ class AdvancedOps:
             outf.close()
         print ''
         
-    def get_iontotabs(self):
-        # With the available temperatures determine ionic and total abundances
+    def get_iontotabs(self, forceTeH=None, forceNe=None):
+        ''' With the available temperatures determine ionic and total abundances
+        forceTeH = specific high ionization region temperature to be used to determine abundances.
+                    It can be either one value or a list of value and error.
+        forceNe = specific density to be used 
+                    It can be either one value or a list of value and error.
+        '''
         # Define the high and lo ionization zones temperatures and densities
         print 'Temperatures being used for estimation of abundances:'
-        if math.isnan(self.temO2[0]):
-            te_low = [9000.000, 9500.0]
+        if (forceTeH != None):
+            if type(forceTeH) is not list:
+                # error is not defined, use a default value of 25% of the given temperature
+                perr = 0.25
+                teH = forceTeH
+                teHerr = teH + (teH * perr)
+                teL = forceTeH * 0.9         # 90% of the high temperature
+                teVL = forceTeH * 0.8        # 80% of the high temperature
+            else:
+                teH = forceTeH[0]
+                # error is defined, determine the percentage to make it absolute error
+                if forceTeH[1] < forceTeH[0]:
+                    abserr = forceTeH[1]
+                else:
+                    abserr = forceTeH[1] - teH
+                perr = (abserr * 1.0) / teH
+                teHerr = teH + abserr
+                teL = forceTeH[0] * 0.9         # 90% of the high temperature
+                teVL = forceTeH[0] * 0.8        # 80% of the high temperature
+            te_high = [teH, teHerr]
+            teLerr = teL + (teL*perr)
+            te_low = [teL, teLerr]
+            teVLerr = teVL + (teVL * perr)
+            te_verylow = [teVL, teVLerr]
+            print '   High ionization degree temperature forced to be:      ', te_high[0], '+-', te_high[1]-te_high[0]
+            print '   Low ionization degree temperature    =   Te_high*0.9: ', te_low[0], '+-', te_low[1]-te_low[0]
+            print '   Very Low ionization degree temperature = Te_high*0.8: ', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
+            print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr), '%'
         else:
-            te_low = self.temO2
-            print 'Te_low (O2) =', te_low
-            
-        if math.isnan(self.TO3[0]):
-            te_high = [10000.0, 10500.0]
-            print 'Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
-        else:
-            te_high = self.TO3
-            print 'Te_high (O3) =', te_high
-            # make sure the loz ionization temperature has a lowe temperature than the high one
-            if (te_low[0] > te_high[0]) or math.isnan(self.temO2[0]):
-                print 'Te_low (O2-Garnet92) =', self.TO2gar
-                te_low = self.TO2gar
-        if te_low[0] == 9000.00:
-            print 'Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
-            
-        if math.isnan(self.TS3[0]):
-            te_verylow = [8000.0, 8500.0]
-        else:
-            te_verylow = self.TS3
+            if math.isnan(self.temO2[0]):
+                te_low = [9000.000, 9500.0]
+            else:
+                te_low = self.temO2
+                print '   Te_low (O2) =', te_low
+                
+            if math.isnan(self.TO3[0]):
+                te_high = [10000.0, 10500.0]
+                print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
+            else:
+                te_high = self.TO3
+                print '   Te_high (O3) =', te_high
+                # make sure the loz ionization temperature has a lowe temperature than the high one
+                if (te_low[0] > te_high[0]) or math.isnan(self.temO2[0]):
+                    print '   Te_low (O2-Garnet92) =', self.TO2gar
+                    te_low = self.TO2gar
+            if te_low[0] == 9000.00:
+                print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
+                
+            if math.isnan(self.TS3[0]):
+                te_verylow = [8000.0, 8500.0]
+            else:
+                te_verylow = self.TS3
             
         print 'Densitiy being used for calculations:'
-        if math.isnan(self.denO2[0]):
-            dens = [100.0, 150.0]
-            print 'ne[O 2] not available, using default value: 100.0 +- 50.0'
-        else:
-            dens = self.denO2
-            print 'ne[O 2] =', self.denO2
-            
+        if forceNe != None:
+            if type(forceNe) is not list:
+                # error is not defined, use a default value of 50% of the given temperature
+                perr = 0.50
+                ne = forceNe
+            else:
+                ne = forceNe[0]
+                if forceNe[1] < forceNe[0]:
+                    abserr = forceNe[1]
+                else:
+                    abserr = forceNe[1] - forceNe[0]
+                perr = (abserr * 1.0) / ne
+            dens_err = ne + (ne * perr)
+            dens = [ne, dens_err]
+            print '   Density forced to be: ', dens[0], '+-', dens[1]-dens[0], '\n'
+        else:        
+            if math.isnan(self.denO2[0]):
+                dens = [100.0, 150.0]
+                print 'ne[O 2] not available, using default value: 100.0 +- 50.0 \n'
+            else:
+                dens = self.denO2
+                print 'ne[O 2] =', self.denO2, '\n'
+                
         print '\n  Calculating abundances.... \n'
+            
         # Define all atoms to make calculations
         all_atoms = pn.getAtomDict()
         #print 'all_atoms', all_atoms
@@ -1447,7 +1500,6 @@ class AdvancedOps:
                     logionab = 0.0
                     erlogionerr = 0.0
                 print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
-        exit()
         
         ### TOTAL abundances
         icf = pn.ICF()
@@ -1689,10 +1741,10 @@ class AdvancedOps:
         return (lines_info, dereddening_info, uncertainties_info)
         
         
-    def perform_advanced_ops(self):
+    def perform_advanced_ops(self, forceTe, forceNe):
         lines_pyneb_matches = self.writeRedCorrFile()
         self.get_tempsdens()
-        self.get_iontotabs()
+        self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
 
 
