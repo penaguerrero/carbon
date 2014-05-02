@@ -17,10 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 17
+object_number = 12
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -29,13 +29,13 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 1
+order = 5
 
 # 6) What is the width of the window to use to find local continuum?
-window = 250
+window = 40
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
@@ -43,7 +43,7 @@ plot = True
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
 text_table = False
 
-# Want to see the quiasi-final spectrum?  (i.e. correct for redshift and rebin)
+# Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
 correct_redshift = True
 rebin = False
 
@@ -72,9 +72,9 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
 #altern = '../results/sbs1319/sbs1319_optspec_corr.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
-altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
-w, f = numpy.loadtxt(altern, unpack=True)
-data = [numpy.array([w,f])]
+#altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
+#w, f = numpy.loadtxt(altern, unpack=True)
+#data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
@@ -86,7 +86,19 @@ z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
 G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. '''
 originals = [1.58, 2.73, 4.92]
-desired_disp_list = [2.0, 4.0, 5.0]
+or1 = originals[0]
+or2 = originals[1]
+or3 = originals[2]
+#                                    0              1                 2                 3              4                5
+desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
+                            #        6              7                 8                9               10               11
+                            [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
+                            [2.0, 6.0, 8.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
+#                                 12             13                14               15              16               17                            
+desired_disp_list = desired_disp_listoflists[object_number]
+
+# Do you want NOT to consider the first 150 Angstroms? Default=True, meaning no, do not take into account.
+nullfirst150 = True
 
 for d, s in zip(data, specs):
     print 'Working with:  %s' % full_file_list[s]
@@ -102,7 +114,9 @@ for d, s in zip(data, specs):
         text_table = False
     else:
         z = 0.0  # this is non-important because we are NOT correcting for redshift
-    object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, window=window, plot=plot, z_correct=correct_redshift, normalize=normalize)
+    object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, 
+                                                                            window=window, plot=plot, z_correct=correct_redshift, 
+                                                                            normalize=normalize, nullfirst150=nullfirst150)
     wavs, fluxs = object_spectra
     _, cont_fluxs = fitted_continuum
 
