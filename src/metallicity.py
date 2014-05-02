@@ -704,6 +704,7 @@ class AdvancedOps:
         if verbose == True:
             print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
             print 'For  cHbeta = %0.3f' % self.cHbeta
+        print >> tf, 'cHbeta = %0.3f' % self.cHbeta
         for w, el, io, Ic, er in zip(self.wavelength, self.element, self.ion, self.intensity, self.errinten):
             intw = int(numpy.round(w, decimals=0))
             cw = str(intw)
@@ -754,16 +755,16 @@ class AdvancedOps:
             if line.wave == 1907:           # C 3
                 I_1907 = line.corrIntens
             elif line.wave == 1909:
-                I_1909 = line.corrIntens 
+                self.I_1909 = line.corrIntens 
             elif line.wave == 2326:         # C 2
                 I_2326 = line.corrIntens
             elif line.wave == 2328:
                 I_2328 = line.corrIntens 
             # Nitrogen
             elif line.wave == 1749:         # N 3
-                I_1749 = line.corrIntens                      
+                self.I_1749 = line.corrIntens                      
             elif line.wave == 1752:
-                I_1752 = line.corrIntens            
+                self.I_1752 = line.corrIntens            
             elif line.wave == 5755:         # N 2
                 I_5755 = line.corrIntens                      
             elif line.wave == 6548:
@@ -775,6 +776,10 @@ class AdvancedOps:
             elif line.wave == 5200:
                 I_5200 = line.corrIntens                      
             # Oxygen 2 and 3
+            elif line.wave == 1661:
+                self.I_1661 = line.corrIntens
+            elif line.wave == 1666:
+                self.I_1666 = line.corrIntens
             elif line.wave == 4363:
                 I_4363 = line.corrIntens
                 print '4363 has an intensity of', I_4363
@@ -1121,7 +1126,7 @@ class AdvancedOps:
             self.C3 = pn.Atom("C", "3")
             den_diag_C3 = 'L(1907) / L(1909)'
             self.strongC3 = I_1907
-            self.denC3 = self.C3.getTemDen(I_1907/I_1909, tem=10000.0, to_eval=den_diag_C3) 
+            self.denC3 = self.C3.getTemDen(I_1907/self.I_1909, tem=10000.0, to_eval=den_diag_C3) 
             print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('C 3]','1907/1909', 'Medium', self.denC3[0], self.denC3[1])
             if self.writeouts:
                 den = self.denC3
@@ -1144,8 +1149,8 @@ class AdvancedOps:
         try:
             self.N3 = pn.Atom("N", "3")
             den_diag_N3 = 'L(1749) / L(1752)'
-            self.strongN3 = I_1752
-            self.denN3 = self.N3.getTemDen(I_1749/I_1752, tem=10000.0, to_eval=den_diag_N3) 
+            self.strongN3 = self.I_1752
+            self.denN3 = self.N3.getTemDen(self.I_1749/self.I_1752, tem=10000.0, to_eval=den_diag_N3) 
             print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('N 3]','1749/1752', 'Medium', self.denN3[0], self.denN3[1])
             if self.writeouts:
                 den = self.denN3
@@ -1387,12 +1392,16 @@ class AdvancedOps:
             dens = [ne, dens_err]
             print '   Density forced to be: ', dens[0], '+-', dens[1]-dens[0], '\n'
         else:        
-            if math.isnan(self.denO2[0]):
+            if math.isnan(self.denS2[0]):
                 dens = [100.0, 150.0]
-                print 'ne[O 2] not available, using default value: 100.0 +- 50.0 \n'
+                print 'ne[S 2] not available, using default value: 100.0 +- 50.0 \n'
             else:
-                dens = self.denO2
-                print 'ne[O 2] =', self.denO2, '\n'
+                #ne = self.denO2
+                ne = self.denS2
+                if numpy.abs(ne[1] - ne[0]) < 20.0:
+                    ne[1] = ne[0] + ne[0]*0.1
+                dens = ne
+                print 'ne =', dens, '\n'
                 
         print '\n  Calculating abundances.... \n'
             
@@ -1470,6 +1479,45 @@ class AdvancedOps:
             else:
                 logab = 12+numpy.log10(ab[0])
             print ion, ab, logab
+        
+        #Oab = self.O3.getIonAbundance(4.15, te_high, dens, to_eval='L(1661)')
+        #print Oab        
+
+        # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
+        # Equation 2 for C^{++}/O^{++}
+        t = te_high/10000.0
+        if self.I_1666[0] < 0.0:
+            I_1663 = self.I_1661
+        else:
+            I_1663 = self.I_1666
+        I_1909 = self.I_1909
+        C2toO2 = 0.089 * numpy.exp(-1.09/t[0]) * (I_1909[0]/I_1663[0])
+        # error calculation
+        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/t[1]) * (I_1909[0]/I_1663[0])
+        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(t[0]-numpy.abs(t[1]-t[0]))) * (I_1909[0]/I_1663[0])
+        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/t[0]) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
+        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/t[0]) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
+        err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
+        err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
+        C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
+        #if C2toO2 < 0.0:
+        #    C2toO2 = 0.0
+        # Equation 3 for C^{++}/O^{++}
+        #I_1759 = self.I_1749
+        I_1752 = self.I_1752
+        N2toO2 = 0.212 * numpy.exp(-0.43/t[0]) * (I_1752[0]/I_1663[0])
+        # error calculation
+        uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/t[1]) * (I_1752[0]/I_1663[0])
+        lolimN2toO2_temp =  0.212 * numpy.exp(-0.43/(t[0]-numpy.abs(t[1]-t[0]))) * (I_1752[0]/I_1663[0])
+        uplimN2toO2_lines =  0.212 * numpy.exp(-0.43/t[0]) * ((I_1752[0] + I_1752[1])/(I_1663[0] + I_1663[1]))
+        lolimN2toO2_lines =  0.212 * numpy.exp(-0.43/t[0]) * ((I_1752[0] - I_1752[1])/(I_1663[0] - I_1663[1]))
+        err_N2toO2_temp = numpy.sqrt((uplimN2toO2_temp - N2toO2)**2 + (N2toO2 - lolimN2toO2_temp)**2)
+        err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
+        N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
+        #if N2toO2 < 0.0: 
+        #    N2toO2 = 0.0
+        print '\nC2/O2 = ', C2toO2, '+-', C2toO2_err
+        print 'N2/O2 = ', N2toO2, '+-', N2toO2_err,'\n'
 
         # Write results in text file
         if self.writeouts:
@@ -1500,6 +1548,15 @@ class AdvancedOps:
                     logionab = 0.0
                     erlogionerr = 0.0
                 print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
+            print >> outf, '#####'
+            print >> outf, '# RATIOS -- using equations from Garnet et al. (1995)'
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C2/O2', '1909/1666', C2toO2, C2toO2_err))
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '1752/1666', N2toO2, N2toO2_err))
+            n2 = sorted_atoms.index('N2')
+            o2 = sorted_atoms.index('O2')
+            n2too2 = totabs_ions_list[n2][0]/totabs_ions_list[o2][0]
+            n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[n2][1]/totabs_ions_list[n2][0])**2 + (totabs_ions_list[o2][1]/totabs_ions_list[o2][0])**2)
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '6548/5007', n2too2, n2too2_err))
         
         ### TOTAL abundances
         icf = pn.ICF()
