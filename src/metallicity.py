@@ -1506,15 +1506,16 @@ class AdvancedOps:
         icf.getAvailableICFs()
         icf.printAllICFs(type_=['HII'])
         #r = icf.getReference('Ial06_22a')
-        #atom_abun = {}
+        elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
         atom_abun = OrderedDict()
-        for atom, ionab, err in zip(atoms, tot_ion_ab, tot_ion_ab_err):
-            atom_abun[atom] = ionab
-            #err_str = atom + '_err'
-            #atom_abun[err_str] = err
+        #atom_abun = {}
+        for ion, ionabund in zip(sorted_atoms, totabs_ions_list):
+            atom_abun[ion] = ionabund
+        print atom_abun
+        exit()
         elem_abun = icf.getElemAbundance(atom_abun)#, icf_list=['TPP85'])
         print elem_abun
-        print elem_abun['Ial06_22a']
+        print elem_abun['TPP85'] #['Ial06_22a']
         
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
