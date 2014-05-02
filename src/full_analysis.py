@@ -28,7 +28,7 @@ first_redcorr = False
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 ############################################################################################################################################
 
@@ -42,7 +42,7 @@ I_theo_HaHb = 2.86
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [2.0, 0.05], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.2, 0.02], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.5, 0.04]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -52,6 +52,8 @@ EWabsHbeta = combo[0]
 # for HII region type objects there is no restriction to max but values MUST be positive
 C_Hbeta = combo[1]
 
+# Are you using already rebinned data?  Then set perform_rebin=False
+perform_rebin = True
 # Desired Angstroms per pixel
 # Mrk 1087: 2.0, 8.0, 8.0
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
@@ -63,8 +65,8 @@ or3 = originals[2]
 #                                    0              1                 2                 3              4                5
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
-                            [2.0, 8.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
-                            [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
+                            [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
+                            [2.0, 7.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
 #                                 12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
@@ -168,10 +170,14 @@ err_stis_list = [0.015, 0.05, 0.05]
 for d, cd, s in zip(data, cont_data, specs):
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
-    #rebinned_arr = spectrum.rebin_spec2disp(desired_dispersion, d)
-    #rebinned_cont = spectrum.rebin_spec2disp(desired_dispersion, cd)
-    rebinned_arr = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], d)
-    rebinned_cont = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], cd)
+    ##rebinned_arr = spectrum.rebin_spec2disp(desired_dispersion, d)
+    ##rebinned_cont = spectrum.rebin_spec2disp(desired_dispersion, cd)
+    if perform_rebin:
+        rebinned_arr = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], d)
+        rebinned_cont = spectrum.rebin2AperPix(originals[s], desired_disp_list[s], cd)
+    else:
+        rebinned_arr = d
+        rebinned_cont = cd
     
     #print '    *** Wavelengths corrected for redshift.'
     w_corr = rebinned_arr[0] / (1+float(z))
@@ -227,10 +233,10 @@ catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden,
 err_flux, err_EW, cont_errs = flxEW_errs
 
 # Determine the corresponding E(B-V) value for each object
+av = A_V_list[object_number]
 if use_Chbeta:
     ebv=0.0
 else:
-    av = A_V_list[object_number]
     ebv = A_B_list[object_number] - av
     print 'This is the E(B-V) = ', ebv
 
