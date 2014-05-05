@@ -17,10 +17,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 12
+object_number = 17
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
+specs = [1]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -32,19 +32,19 @@ normalize = False
 sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 5
+order = 1
 
 # 6) What is the width of the window to use to find local continuum?
-window = 40
+window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
 plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
+correct_redshift = False
 rebin = False
 
 ############################################################################################################################################
@@ -72,9 +72,9 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
 #altern = '../results/sbs1319/sbs1319_optspec_corr.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
-#altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
-#w, f = numpy.loadtxt(altern, unpack=True)
-#data = [numpy.array([w,f])]
+altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
+w, f = numpy.loadtxt(altern, unpack=True)
+data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
@@ -137,7 +137,7 @@ for d, s in zip(data, specs):
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
     splot_text = False
-    part_of_spec = 'opt'
+    part_of_spec = 'nir'
     if splot_text == True:
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
