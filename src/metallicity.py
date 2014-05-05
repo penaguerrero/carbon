@@ -937,14 +937,15 @@ class AdvancedOps:
             print >> outf, '# FIRST estimations of TEMPERATURES:'
         try:
             self.O3 = pn.Atom("O", "3")
-            self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
+            #self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
             #print 'ratio of O3 = ', (I_4959+I_5007)/I_4363
-            self.strongO3 = (I_4959+I_5007)
+            self.tem_diag_O3 = 'L(5007) / L(4363)'
+            self.strongO3 = I_5007
             self.TO3 = self.O3.getTemDen(self.strongO3/I_4363, den=100., to_eval=self.tem_diag_O3)
-            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 3]','(4959+5007)/4363', 'Medium', self.TO3[0], self.TO3[1])
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 3]','5007/4363', 'Medium', self.TO3[0], self.TO3[1])
             if self.writeouts:
                 Terr = numpy.abs(self.TO3[0] - self.TO3[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[O 3]','(4959+5007)/4363', 'Medium', self.TO3[0], self.TO3[1], Terr)
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[O 3]','5007/4363', 'Medium', self.TO3[0], self.TO3[1], Terr)
             #self.O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
         except Exception as e:
             (NameError,),e
@@ -1325,7 +1326,7 @@ class AdvancedOps:
         if (forceTeH != None):
             if type(forceTeH) is not list:
                 # error is not defined, use a default value of 25% of the given temperature
-                perr = 0.25
+                perr = 0.15
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
                 teL = forceTeH * 0.9         # 90% of the high temperature
@@ -1349,7 +1350,7 @@ class AdvancedOps:
             print '   High ionization degree temperature forced to be:      ', te_high[0], '+-', te_high[1]-te_high[0]
             print '   Low ionization degree temperature    =   Te_high*0.9: ', te_low[0], '+-', te_low[1]-te_low[0]
             print '   Very Low ionization degree temperature = Te_high*0.8: ', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
-            print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr), '%'
+            print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr*100.0), '%'
         else:
             if math.isnan(self.temO2[0]):
                 te_low = [9000.000, 9500.0]
@@ -1485,35 +1486,38 @@ class AdvancedOps:
 
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
         # Equation 2 for C^{++}/O^{++}
-        t = te_high/10000.0
+        tc = te_high[0]/10000.0         # central temp
+        tpluserr = te_high[1]/10000.0   # central temp plus error
         if self.I_1666[0] < 0.0:
             I_1663 = self.I_1661
         else:
             I_1663 = self.I_1666
         I_1909 = self.I_1909
-        C2toO2 = 0.089 * numpy.exp(-1.09/t[0]) * (I_1909[0]/I_1663[0])
+        C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_1909[0]/I_1663[0])
         # error calculation
-        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/t[1]) * (I_1909[0]/I_1663[0])
-        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(t[0]-numpy.abs(t[1]-t[0]))) * (I_1909[0]/I_1663[0])
-        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/t[0]) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
-        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/t[0]) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
+        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_1909[0]/I_1663[0])
+        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_1909[0]/I_1663[0])
+        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
+        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
         err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
         err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
-        C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
+        #C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
+        C2toO2_err = (err_C2toO2_temp + err_C2toO2_lines) / 2.0
         #if C2toO2 < 0.0:
         #    C2toO2 = 0.0
         # Equation 3 for C^{++}/O^{++}
         #I_1759 = self.I_1749
         I_1752 = self.I_1752
-        N2toO2 = 0.212 * numpy.exp(-0.43/t[0]) * (I_1752[0]/I_1663[0])
+        N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
         # error calculation
-        uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/t[1]) * (I_1752[0]/I_1663[0])
-        lolimN2toO2_temp =  0.212 * numpy.exp(-0.43/(t[0]-numpy.abs(t[1]-t[0]))) * (I_1752[0]/I_1663[0])
-        uplimN2toO2_lines =  0.212 * numpy.exp(-0.43/t[0]) * ((I_1752[0] + I_1752[1])/(I_1663[0] + I_1663[1]))
-        lolimN2toO2_lines =  0.212 * numpy.exp(-0.43/t[0]) * ((I_1752[0] - I_1752[1])/(I_1663[0] - I_1663[1]))
+        uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/tpluserr) * (I_1752[0]/I_1663[0])
+        lolimN2toO2_temp =  0.212 * numpy.exp(-0.43/(tc-numpy.abs(tpluserr-tc))) * (I_1752[0]/I_1663[0])
+        uplimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] + I_1752[1])/(I_1663[0] + I_1663[1]))
+        lolimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] - I_1752[1])/(I_1663[0] - I_1663[1]))
         err_N2toO2_temp = numpy.sqrt((uplimN2toO2_temp - N2toO2)**2 + (N2toO2 - lolimN2toO2_temp)**2)
         err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
-        N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
+        #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
+        N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
         #if N2toO2 < 0.0: 
         #    N2toO2 = 0.0
         print '\nC2/O2 = ', C2toO2, '+-', C2toO2_err
