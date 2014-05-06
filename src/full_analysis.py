@@ -172,6 +172,10 @@ def make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, text_table,
                                              vacuum, faintObj, linesinfo_file_name, do_errs)
     return object_lines_info
 
+# In case modified files want to be used instead of writing a new one, list spectral region in use_mod_lineinfo_files
+# or set is as None if no file has been modified.
+use_mod_lineinfo_files = ['_opt', '_nir']
+
 for d, cd, s in zip(data, cont_data, specs):
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
@@ -198,19 +202,24 @@ for d, cd, s in zip(data, cont_data, specs):
     # Now obtain the continuum and equivalent widths and write the _lineinfo files
     vacuum = False
     # in case manual changes need to be done to the line fluxes change use_mod_lineinfo_files to True
-    use_mod_lineinfo_files = ['_opt', '_nir']
     if use_mod_lineinfo_files != None:
         for m in use_mod_lineinfo_files:
+            print 'THIS IS THE m THAT WE ARE LOOKING FOR RIGHT NOW...', m
+            print 'THIS IS THE spectrum_region[s]', spectrum_region[s] 
+            use_lineinfo_file = False
             if m == spectrum_region[s]:
                 print 'found a modified file'
-                lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
-                object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
-            else:    
-                print 'file not in modified files list, created a lineinfo file'
-                object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt, vacuum, faintObj, lineinfo_text_file, err_lists)
+                use_lineinfo_file = True
+        if use_lineinfo_file:
+            lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
+            object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
+        #else:    
+        #    print 'file not in modified files list, created a lineinfo file'
+        #    object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt, vacuum, faintObj, lineinfo_text_file, err_lists)
     else:    
         print 'created a lineinfo file'
         object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt, vacuum, faintObj, lineinfo_text_file, err_lists)
+
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     print 'There are ', len(object_lines_info[0]), ' lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
@@ -236,7 +245,7 @@ for d, cd, s in zip(data, cont_data, specs):
         errf.close()
     print ''
     #raw_input('    press enter to continue...')
-
+exit()
 # Gather all the *_lineinfo.txt files into a single file with the name defined below    
 add_str = "_lineinfo"
 text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
