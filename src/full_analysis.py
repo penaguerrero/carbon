@@ -16,13 +16,18 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 12
 
 # Write the text file with line info?
-create_txt = True
+create_txt_lineinfo = True
+# Do deblend of 3727?
+deblend3727 = True
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
 first_redcorr = False
+
+# Write the text file with temperatures, densities, and abundances?
+create_txt_temdenabunds = True
 
 # Choose case
 case = 'B'
@@ -33,7 +38,7 @@ use_Chbeta = False
 ############################################################################################################################################
 
 # Used values of Halpha_width in order to properly correct for reddening
-Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 20.]
+Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 35.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Set theoretical Halpha/Hbeta ratio
@@ -172,10 +177,6 @@ def make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, text_table,
                                              vacuum, faintObj, linesinfo_file_name, do_errs)
     return object_lines_info
 
-# In case modified files want to be used instead of writing a new one, list spectral region in use_mod_lineinfo_files
-# or set is as None if no file has been modified.
-use_mod_lineinfo_files = ['_opt', '_nir']
-
 for d, cd, s in zip(data, cont_data, specs):
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
@@ -202,25 +203,37 @@ for d, cd, s in zip(data, cont_data, specs):
     # Now obtain the continuum and equivalent widths and write the _lineinfo files
     vacuum = False
     # in case manual changes need to be done to the line fluxes change use_mod_lineinfo_files to True
-    if use_mod_lineinfo_files != None:
-        for m in use_mod_lineinfo_files:
-            print 'THIS IS THE m THAT WE ARE LOOKING FOR RIGHT NOW...', m
-            print 'THIS IS THE spectrum_region[s]', spectrum_region[s] 
-            use_lineinfo_file = False
-            if m == spectrum_region[s]:
-                print 'found a modified file'
-                use_lineinfo_file = True
-        if use_lineinfo_file:
-            lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
-            object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
-        #else:    
-        #    print 'file not in modified files list, created a lineinfo file'
-        #    object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt, vacuum, faintObj, lineinfo_text_file, err_lists)
+    if create_txt_lineinfo == False:
+        lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
+        object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
     else:    
-        print 'created a lineinfo file'
-        object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt, vacuum, faintObj, lineinfo_text_file, err_lists)
-
+        print ' created a lineinfo file'
+        object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt_lineinfo, vacuum, faintObj, lineinfo_text_file, err_lists)
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
+    if s == 1:
+        if deblend3727:
+            ### Calculate fluxes of 3726 and 3739   -- this works as long as the sum of the individual lines add up to better than 85% of the total 3727 measurement
+            idx3726 = object_lines_info[0].index(3726.030)
+            idx3729 = object_lines_info[0].index(3728.820)
+            idx3727 = object_lines_info[0].index(3727.0)
+            # assume that real3726 + real3729 = real3727 and that measured3726 + measured3729 = measured3727
+            # then we need a constant K that allows the fluxes of real3726 and real3729 to be comparable with measured3726 and measured3729
+            measured3727 = object_lines_info[3][idx3727]
+            measured3726 = object_lines_info[3][idx3726]
+            measured3729 = object_lines_info[3][idx3729]
+            K = measured3727 / (measured3726 + measured3729)
+            real3726 = K * measured3726
+            real3729 = K * measured3729
+            # insert these fluxes and new equivalent wids in the corresponding places
+            print 'PREVIOUS flux of 3726 =', object_lines_info[3][idx3726], ' and 3729 =', object_lines_info[3][idx3729], '    sum =', object_lines_info[3][idx3726]+object_lines_info[3][idx3729]
+            print '         EWs of 3726 =', object_lines_info[5][idx3726], '  and 3729 =', object_lines_info[5][idx3729], '    sum =', object_lines_info[5][idx3726]+object_lines_info[5][idx3729]
+            object_lines_info[3][idx3726] = real3726
+            object_lines_info[3][idx3729] = real3729
+            object_lines_info[5][idx3726] = real3726 / object_lines_info[4][idx3726]
+            object_lines_info[5][idx3729] = real3729 / object_lines_info[4][idx3729]
+            print ' NEW     flux of 3726 =', object_lines_info[3][idx3726], ' and 3729 =', object_lines_info[3][idx3729], '    sum =', object_lines_info[3][idx3726]+object_lines_info[3][idx3729]
+            print '         EWs of 3726 =', object_lines_info[5][idx3726], '  and 3729 =', object_lines_info[5][idx3729], '    sum =', object_lines_info[5][idx3726]+object_lines_info[5][idx3729]
+
     print 'There are ', len(object_lines_info[0]), ' lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
                                                                              err_instrument=err_stis, err_continuum=err_continuum)
@@ -245,7 +258,7 @@ for d, cd, s in zip(data, cont_data, specs):
         errf.close()
     print ''
     #raw_input('    press enter to continue...')
-exit()
+
 # Gather all the *_lineinfo.txt files into a single file with the name defined below    
 add_str = "_lineinfo"
 text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
@@ -255,7 +268,7 @@ name_out_file = os.path.join(results4object_path, object_name+"_linesNUV2NIR.txt
 # Read the observed lines from the table of lines_info.txt and normalize to Hbeta
 add_str = "_lineerrs"
 errs_files, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
-cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=create_txt, err_cont_fit=True, errs_files=errs_files)
+cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=True, err_cont_fit=True, errs_files=errs_files)
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 err_flux, err_EW, cont_errs = flxEW_errs
 
@@ -293,9 +306,9 @@ if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
 tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
-advops = metallicity.AdvancedOps(object_name, cHbeta, case, writeouts=True, verbose=False)
-forceTe = 18100.0#11200.0 #
-forceNe = 1000.0#500.0  # 
+advops = metallicity.AdvancedOps(object_name, cHbeta, case, writeouts=create_txt_temdenabunds, verbose=False)
+forceTe = None#11200.0 #18600.0
+forceNe = None#500.0  #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe)
 
 
