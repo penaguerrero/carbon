@@ -19,9 +19,9 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # Write the text file with line info?
-create_txt_lineinfo = True
+create_txt_lineinfo = False
 # Do deblend of 3727?
-deblend3727 = True
+deblend3727 = False
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
 first_redcorr = False
@@ -38,7 +38,8 @@ use_Chbeta = False
 ############################################################################################################################################
 
 # Used values of Halpha_width in order to properly correct for reddening
-Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 40., 30., 30., 40., 50., 35.]
+#                     0    1    2    3    4    5    6    7   8     9   10   11   12   13   14   15   16   17
+Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 43., 30., 30., 40., 50., 35.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Set theoretical Halpha/Hbeta ratio
@@ -233,6 +234,7 @@ for d, cd, s in zip(data, cont_data, specs):
             object_lines_info[5][idx3729] = real3729 / object_lines_info[4][idx3729]
             print ' NEW     flux of 3726 =', object_lines_info[3][idx3726], ' and 3729 =', object_lines_info[3][idx3729], '    sum =', object_lines_info[3][idx3726]+object_lines_info[3][idx3729]
             print '         EWs of 3726 =', object_lines_info[5][idx3726], '  and 3729 =', object_lines_info[5][idx3729], '    sum =', object_lines_info[5][idx3726]+object_lines_info[5][idx3729]
+            raw_input()
 
     print 'There are ', len(object_lines_info[0]), ' lines in the ', spectrum_region[s]
     err_fluxes, err_continuum, err_ews = spectrum.get_lineinfo_uncertainties(object_spectra, contum_spectra, Halpha_width=Halpha_width, faintObj=faintObj, 
