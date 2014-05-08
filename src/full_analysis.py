@@ -21,7 +21,8 @@ object_number = 12
 # Write the text file with line info?
 create_txt_lineinfo = False
 # Do deblend of 3727?
-deblend3727 = False
+deblend3727 = True
+deblend6563 = True
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
 first_redcorr = False
@@ -213,10 +214,18 @@ for d, cd, s in zip(data, cont_data, specs):
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     if s == 1:
         if deblend3727:
-            ### Calculate fluxes of 3726 and 3739   -- this works as long as the sum of the individual lines add up to better than 85% of the total 3727 measurement
             idx3726 = object_lines_info[0].index(3726.030)
             idx3729 = object_lines_info[0].index(3728.820)
-            idx3727 = object_lines_info[0].index(3727.0)
+            idx3727 = object_lines_info[0].index(3727.000)
+            '''
+            # Debled 3727 assuming that tot = 3729+3726. From ionic we know that 3726 = 0.7*3729
+            o1 = object_lines_info[3][idx3726]
+            tot = object_lines_info[3][idx3727]
+            print 'I(3727) = %0.3e   ew = %0.3f' % (tot, tot/object_lines_info[4][idx3727])
+            print 'I(3726) = %0.3e    I(3729) = %0.3e' % (o1, o1*0.7)
+            print '   ew = %0.3f         ew = %0.3f ' % (o1/object_lines_info[4][idx3726], (o1*0.7)/object_lines_info[4][idx3729])
+            '''
+            ### Calculate fluxes of 3726 and 3739   -- this works as long as the sum of the individual lines add up to better than 85% of the total 3727 measurement
             # assume that real3726 + real3729 = real3727 and that measured3726 + measured3729 = measured3727
             # then we need a constant K that allows the fluxes of real3726 and real3729 to be comparable with measured3726 and measured3729
             measured3727 = object_lines_info[3][idx3727]
@@ -226,14 +235,28 @@ for d, cd, s in zip(data, cont_data, specs):
             real3726 = K * measured3726
             real3729 = K * measured3729
             # insert these fluxes and new equivalent wids in the corresponding places
-            print 'PREVIOUS flux of 3726 =', object_lines_info[3][idx3726], ' and 3729 =', object_lines_info[3][idx3729], '    sum =', object_lines_info[3][idx3726]+object_lines_info[3][idx3729]
-            print '         EWs of 3726 =', object_lines_info[5][idx3726], '  and 3729 =', object_lines_info[5][idx3729], '    sum =', object_lines_info[5][idx3726]+object_lines_info[5][idx3729]
-            object_lines_info[3][idx3726] = real3726
+            #print 'PREVIOUS flux:  3726 = %0.3e    3729 = %0.3e    sum = %0.3e' % (object_lines_info[3][idx3726], object_lines_info[3][idx3729], object_lines_info[3][idx3726]+object_lines_info[3][idx3729])
+            #print '          EWs:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
             object_lines_info[3][idx3729] = real3729
             object_lines_info[5][idx3726] = real3726 / object_lines_info[4][idx3726]
             object_lines_info[5][idx3729] = real3729 / object_lines_info[4][idx3729]
-            print ' NEW     flux of 3726 =', object_lines_info[3][idx3726], ' and 3729 =', object_lines_info[3][idx3729], '    sum =', object_lines_info[3][idx3726]+object_lines_info[3][idx3729]
-            print '         EWs of 3726 =', object_lines_info[5][idx3726], '  and 3729 =', object_lines_info[5][idx3729], '    sum =', object_lines_info[5][idx3726]+object_lines_info[5][idx3729]
+            print '   NEW   flux:  3726 = %0.3e    3729 = %0.3e    sum = %0.3e' % (object_lines_info[3][idx3726], object_lines_info[3][idx3729], object_lines_info[3][idx3726]+object_lines_info[3][idx3729])
+            print '          EWs:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
+            raw_input()
+    if s == 2:
+        if deblend6563:
+            # Deblend the N2 lines from 6563. This assumes that n1+H+n2 = tot, and we know that n2 is approx 3n1
+            # hence, n1 = (tot - H) / 4
+            idx6548 = object_lines_info[0].index(6548.030)
+            idx6563 = object_lines_info[0].index(6562.820)
+            idx6565 = object_lines_info[0].index(6565.00)
+            idx6584 = object_lines_info[0].index(6583.410)
+            H = object_lines_info[3][idx6563]
+            tot = object_lines_info[3][idx6565]
+            n1 = (tot - H) / 4.0
+            print 'I(sum of 6548, 6563, 6584) = %0.3e' % tot
+            print 'I(6548) = %0.3e    I(6563) = %0.3e    I(6584) = %0.3e' % (n1, H, n1*3)
+            print '     ew = %0.3f           ew = %0.3f           ew = %0.3f' % (n1/object_lines_info[4][idx6548], H/object_lines_info[4][idx6563], (n1*3)/object_lines_info[4][idx6584])
             raw_input()
 
     print 'There are ', len(object_lines_info[0]), ' lines in the ', spectrum_region[s]
