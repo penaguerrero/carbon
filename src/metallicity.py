@@ -1457,7 +1457,7 @@ class AdvancedOps:
                              # K4     K5      Mg5     N1      N2      N3      Na4     Na6     Ne3     Ne4     Ne5     
                              '6796', '4163', '2783', '5200', '6548', '1752', '3362', '2970', '3869', '2425', '3346',
                              # O1     O2     O3      S2      S3      Si2     Si3
-                             '6300', '3729', '5007', '6731', '9531', '2345', '1892']
+                             '6300', '3727', '5007', '6731', '9531', '2345', '1892']
         for label in line_label_list:
             for line in strong_lines_list:
                 if line in label:
@@ -1564,19 +1564,43 @@ class AdvancedOps:
         
         ### TOTAL abundances
         icf = pn.ICF()
-        icf.getAvailableICFs()
-        icf.printAllICFs(type_=['HII'])
+        icf.getAvailableICFs() # get all available ICFs
+        icf.printAllICFs(type_=['HII']) # print out the ICFs only for HII regions
         #r = icf.getReference('Ial06_22a')
-        elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
-        atom_abun = OrderedDict()
+        self.atom_abun = OrderedDict()
         #atom_abun = {}
         for ion, ionabund in zip(sorted_atoms, totabs_ions_list):
-            atom_abun[ion] = ionabund
-        print atom_abun
-        exit()
-        elem_abun = icf.getElemAbundance(atom_abun)#, icf_list=['TPP85'])
-        print elem_abun
-        print elem_abun['TPP85'] #['Ial06_22a']
+            self.atom_abun[ion] = ionabund
+        print self.atom_abun
+        # use a specific recipy to determine abundances
+        #elem_abunTPP85 = icf.getElemAbundance(self.atom_abun, icf_list=['TPP85']) 
+        elem_abunIal06_22a = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_22a'])
+        #icf.getExpression('Ial06_22a') # returns the analytical expression of the icf identified by the label TPP85
+        #icf.getReference('Ial06_22a') # returns the bibliographic reference of the source paper
+        #icf.getURL('Ial06_22a') # returns the ADS URL of the source paper
+        print elem_abunIal06_22a['Ial06_22a']
+
+        #elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
+        elem_abun = OrderedDict()
+        #Otot_test = self.atom_abun['O2'] + self.atom_abun['O3']
+        Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
+        O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
+        Ototerr = numpy.sqrt(O23sq)
+        elem_abun['O'] = [Otot, Ototerr]
+        print ' Assuming that  Otot = O+ + O++'
+        #print 'Otot_test[1]', Otot_test[1], '    Ototerr', Ototerr
+        print 'Otot = %0.2f +- %0.2f' % (12+numpy.log10(Otot), numpy.log10((100+Ototerr) / (100-Ototerr))/2.0)
+        
+        # Nitrogen
+        Ntot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
+        print ' Assuming that  ICF(N) from Peimbert+Costero 69 = (N+ * Otot) / O+ = '
+        Ntoterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 
+                             + self.atom_abun['N2'][1]**2)
+        elem_abun['N'] = [Ntot, Ntoterr]
+        Nicf = Otot / self.atom_abun['O2'][0]
+        Nerrp = (Ntoterr/Ntot)*100
+        #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
+        print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((100+Nerrp) / (100-Nerrp))/2.0)
         
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
