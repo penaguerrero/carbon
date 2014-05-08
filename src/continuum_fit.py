@@ -41,7 +41,7 @@ window = 550
 plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = True
+text_table = False
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
 correct_redshift = False
@@ -139,7 +139,10 @@ for d, s in zip(data, specs):
     splot_text = False
     part_of_spec = 'nir'
     if splot_text == True:
-        name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
+        if rebin:
+            name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_REBINNED.txt")
+        else:
+            name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         fout = open(name_out_file, 'w+')
         wavs, fluxs = object_spectra
         for w, f in zip(wavs, fluxs):
