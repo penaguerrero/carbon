@@ -499,11 +499,13 @@ class BasicOps:
         if do_errs != None:
             self.errs_list = do_errs
         # Adopt predefined atomic data set
-        pn.atomicData.getPredefinedDataFileDict()
-        #pn.atomicData.printDirForAllFiles()        # this prints all the paths for all the atomic data files
+        #pn.atomicData.getPredefinedDataFileDict()
+        pn.atomicData.resetDataFileDict
         # Adopt IRAF atomic data set
         #pn.atomicData.setDataFileDict('IRAF_09')
-
+        pn.atomicData.printDirForAllFiles()        # this prints all the paths for all the atomic data files
+        raw_input()
+        
     def underlyingAbsCorr(self):
         catalog_wavelength = self.catalog_wavelength
         continuum = self.continuum
@@ -1593,14 +1595,14 @@ class AdvancedOps:
         
         # Nitrogen
         Ntot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
-        print ' Assuming that  ICF(N) from Peimbert+Costero 69 = (N+ * Otot) / O+ = '
+        print ' Assuming that  ICF(N) from Peimbert+Costero 69 = (N+ * Otot) / O+  '
         Ntoterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 
                              + self.atom_abun['N2'][1]**2)
         elem_abun['N'] = [Ntot, Ntoterr]
         Nicf = Otot / self.atom_abun['O2'][0]
         Nerrp = (Ntoterr/Ntot)*100
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
-        print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((100+Nerrp) / (100-Nerrp))/2.0)
+        print 'ICF(N)=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((100+Nerrp) / (100-Nerrp))/2.0)
         
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
