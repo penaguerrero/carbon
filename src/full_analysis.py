@@ -21,8 +21,8 @@ object_number = 12
 # Write the text file with line info?
 create_txt_lineinfo = False
 # Do deblend of 3727?
-deblend3727 = True
-deblend6563 = True
+deblend3727 = False
+deblend6563 = False
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
 first_redcorr = False
@@ -49,7 +49,7 @@ I_theo_HaHb = 2.86
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.2, 0.02], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [2.8, 0.01]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [2.8, 0.01]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -308,16 +308,29 @@ else:
 # Do reddening correction 
 # Choose the one we intend to use 
 #redlaw= 'S 79 H 83'   ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
-#redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
+redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
 #redlaw = 'oD 94'      ## O'Donnell 1994, ApJ, 422, 1580
 #redlaw = 'LMC G 03'   ## Gordon et al. (2003, ApJ, 594,279)
-redlaw = 'B 07'       ## Blagrave et al 2007, ApJ, 655, 299
+#redlaw = 'B 07'       ## Blagrave et al 2007, ApJ, 655, 299
 cHbeta = 0.434*C_Hbeta
 kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
 flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
+if use_Chbeta:
+    idx4861 = catalog_wavelength.index(4861.33)
+    idx6563 = catalog_wavelength.index(6562.820)
+    new_ratio = Idered[idx6563]/Idered[idx4861]
+    print '  new Halpha/Hbeta = %0.2f' % new_ratio
+    #raw_input()
+
 # Write the results with errors
-RedCor_file = os.path.join(results4object_path, object_name+"_RedCor.txt")
+if use_Chbeta:
+    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
+    tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor_CHbeta.txt")
+else:
+    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
+    tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor_Ebv.txt")
+    
 RedCor_file = open(RedCor_file, 'w+')
 print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
 for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW):
@@ -330,7 +343,6 @@ RedCor_file.close()
 if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
-tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor.txt")
 advops = metallicity.AdvancedOps(object_name, cHbeta, case, writeouts=create_txt_temdenabunds, verbose=False)
 forceTe = None#11200.0 #18600.0
 forceNe = None#500.0  #1000.0
