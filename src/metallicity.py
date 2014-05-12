@@ -499,12 +499,12 @@ class BasicOps:
         if do_errs != None:
             self.errs_list = do_errs
         # Adopt predefined atomic data set
-        #pn.atomicData.getPredefinedDataFileDict()
-        pn.atomicData.resetDataFileDict
-        # Adopt IRAF atomic data set
-        #pn.atomicData.setDataFileDict('IRAF_09')
-        pn.atomicData.printDirForAllFiles()        # this prints all the paths for all the atomic data files
-        raw_input()
+        pn.atomicData.getPredefinedDataFileDict()   # same as  pn.atomicData.getDataFile()
+        #pn.atomicData.setDataFileDict('IRAF_09')   # Adopt IRAF atomic data set
+        #pn.atomicData.resetDataFileDict            # Reset the atomic data to the predefined one
+        #pn.atomicData.printDirForAllFiles()        # This prints all the paths for all the atomic data files
+        #pn.atomicData.printAllSources()            # Returns the bibliographic reference of the source paper
+        #raw_input()
         
     def underlyingAbsCorr(self):
         catalog_wavelength = self.catalog_wavelength
@@ -1584,25 +1584,53 @@ class AdvancedOps:
 
         #elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
         elem_abun = OrderedDict()
+        # Oxygen
         #Otot_test = self.atom_abun['O2'] + self.atom_abun['O3']
         Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
         O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
         Ototerr = numpy.sqrt(O23sq)
+        O_errp = (Ototerr/Otot)*100
         elem_abun['O'] = [Otot, Ototerr]
-        print ' Assuming that  Otot = O+ + O++'
+        print ' Assuming that  Otot = O+ + O++:  ', Otot, '+-', Ototerr, '( which is ', O_errp, ' %)'
         #print 'Otot_test[1]', Otot_test[1], '    Ototerr', Ototerr
-        print 'Otot = %0.2f +- %0.2f' % (12+numpy.log10(Otot), numpy.log10((100+Ototerr) / (100-Ototerr))/2.0)
+        print 'O_tot = %0.2f +- %0.2f' % (12+numpy.log10(Otot), numpy.log10((100+O_errp) / (100-O_errp))/2.0)
         
         # Nitrogen
-        Ntot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
-        print ' Assuming that  ICF(N) from Peimbert+Costero 69 = (N+ * Otot) / O+  '
-        Ntoterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 
-                             + self.atom_abun['N2'][1]**2)
-        elem_abun['N'] = [Ntot, Ntoterr]
+        N_tot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
+        print ' Assuming ICF(N) from Peimbert+Costero 69 = (Otot / O+) * N+'
+        N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 +
+                             self.atom_abun['N2'][1]**2)
+        elem_abun['N'] = [N_tot, N_toterr]
         Nicf = Otot / self.atom_abun['O2'][0]
-        Nerrp = (Ntoterr/Ntot)*100
+        N_errp = (N_toterr/N_tot)*100
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
-        print 'ICF(N)=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((100+Nerrp) / (100-Nerrp))/2.0)
+        print 'ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(N_tot), numpy.log10((100+N_errp) / (100-N_errp))/2.0)
+        
+        # Neon
+        print ' Assuming ICF(Ne) from Peimbert+Costero 69 =  (Otot / O++) * Ne++'
+        Ne_icf = Otot / self.atom_abun['O3'][0]
+        Ne_tot = self.atom_abun['Ne3'][0] * Ne_icf
+        Ne_toterr = numpy.sqrt((O23sq * (self.atom_abun['O2'][0]/Otot)**2) * (self.atom_abun['Ne3'][0]/self.atom_abun['O3'][0])**2 +
+                               self.atom_abun['Ne3'][1]**2)
+        elem_abun['Ne'] = [Ne_tot, Ne_toterr]
+        Ne_errp = (Ne_toterr/Ne_tot)*100
+        print 'ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, 12+numpy.log10(Ne_tot), numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0)
+        
+        # Sulphur
+        print ' Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
+        print 'O+ / Otot =', self.atom_abun['O2'][0]/Otot
+        #OpOtot = float(raw_input('Enter O+/Otot: '))
+        OpOtot = -0.25
+        S_icf = 1.0 / 10**(OpOtot)
+        S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
+        S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
+        # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
+        S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
+                               (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
+        elem_abun['S'] = [S_tot, S_toterr]
+        S_errp = (S_toterr/S_tot)*100
+        print ' S_toterr = ', S_toterr, '=', S_errp, '%'
+        print 'ICF(S)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
         
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
