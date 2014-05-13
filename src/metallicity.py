@@ -1573,15 +1573,16 @@ class AdvancedOps:
         #atom_abun = {}
         for ion, ionabund in zip(sorted_atoms, totabs_ions_list):
             self.atom_abun[ion] = ionabund
-        print self.atom_abun
+        #print self.atom_abun
         # use a specific recipy to determine abundances
         #elem_abunTPP85 = icf.getElemAbundance(self.atom_abun, icf_list=['TPP85']) 
-        elem_abunIal06_22a = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_22a'])
+        #elem_abunIal06_22a = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_22a'])
         #icf.getExpression('Ial06_22a') # returns the analytical expression of the icf identified by the label TPP85
         #icf.getReference('Ial06_22a') # returns the bibliographic reference of the source paper
         #icf.getURL('Ial06_22a') # returns the ADS URL of the source paper
-        print elem_abunIal06_22a['Ial06_22a']
-
+        #icf.printInfo('Ial06_20a')
+        #print 'elem_abunIal06_22a', elem_abunIal06_22a#['Ial06_22a']
+        
         #elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
         elem_abun = OrderedDict()
         # Oxygen
@@ -1593,7 +1594,8 @@ class AdvancedOps:
         elem_abun['O'] = [Otot, Ototerr]
         print ' Assuming that  Otot = O+ + O++:  ', Otot, '+-', Ototerr, '( which is ', O_errp, ' %)'
         #print 'Otot_test[1]', Otot_test[1], '    Ototerr', Ototerr
-        print 'O_tot = %0.2f +- %0.2f' % (12+numpy.log10(Otot), numpy.log10((100+O_errp) / (100-O_errp))/2.0)
+        logOtot = 12+numpy.log10(Otot)
+        print 'O_tot = %0.2f +- %0.2f' % (logOtot, numpy.log10((100+O_errp) / (100-O_errp))/2.0)
         
         # Nitrogen
         N_tot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
@@ -1631,11 +1633,19 @@ class AdvancedOps:
         S_errp = (S_toterr/S_tot)*100
         print ' S_toterr = ', S_toterr, '=', S_errp, '%'
         print 'ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
+        # For comparison also clculate abundances with Izotov et al (2006)
+        if logOtot <= 7.2:
+            S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_20a'])
+        elif (logOtot > 7.2) and (logOtot < 8.2):
+            S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_20b'])
+        if logOtot >= 8.2:
+            S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=['Ial06_20c'])
+        print 'Abundance with Izotov06  S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
         
         # Argon
         print ' Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
         Ar34 = self.atom_abun['Ar3'][0] + self.atom_abun['Ar4'][0]
-        Ar_icf = (self.atom_abun['S2'][0] / self.atom_abun['S3'][0]) * self.atom_abun['Ar3'][0]
+        Ar_icf = ((self.atom_abun['S2'][0] / self.atom_abun['S3'][0]) * self.atom_abun['Ar3'][0] + Ar34)/Ar34 
         Ar_tot = Ar34 * Ar_icf
         S23err = (self.atom_abun['S2'][0] / self.atom_abun['S3'][0]) * numpy.sqrt( (self.atom_abun['S2'][1]/self.atom_abun['S2'][0])**2 + (self.atom_abun['S3'][1]/self.atom_abun['S3'][0])**2 )
         Ar34err =  numpy.sqrt( self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2 )
