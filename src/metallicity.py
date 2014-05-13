@@ -1630,7 +1630,21 @@ class AdvancedOps:
         elem_abun['S'] = [S_tot, S_toterr]
         S_errp = (S_toterr/S_tot)*100
         print ' S_toterr = ', S_toterr, '=', S_errp, '%'
-        print 'ICF(S)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
+        print 'ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
+        
+        # Argon
+        print ' Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
+        Ar34 = self.atom_abun['Ar3'][0] + self.atom_abun['Ar4'][0]
+        Ar_icf = (self.atom_abun['S2'][0] / self.atom_abun['S3'][0]) * self.atom_abun['Ar3'][0]
+        Ar_tot = Ar34 * Ar_icf
+        S23err = (self.atom_abun['S2'][0] / self.atom_abun['S3'][0]) * numpy.sqrt( (self.atom_abun['S2'][1]/self.atom_abun['S2'][0])**2 + (self.atom_abun['S3'][1]/self.atom_abun['S3'][0])**2 )
+        Ar34err =  numpy.sqrt( self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2 )
+        Ar_toterr = numpy.sqrt( Ar_icf**2 * (((self.atom_abun['S2'][0]/self.atom_abun['S3'][0]) / S23err)**2 + (Ar34/Ar34err)**2 )**2 +
+                               (self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2) * Ar_icf**2 )
+        elem_abun['S'] = [Ar_tot, Ar_toterr]
+        Ar_errp = (Ar_toterr/Ar_tot)*100
+        print ' Ar_toterr = ', Ar_toterr, '=', Ar_errp, '%'
+        print 'ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, 12+numpy.log10(Ar_tot), numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0)
         
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
