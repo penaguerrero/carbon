@@ -1586,41 +1586,60 @@ class AdvancedOps:
         #elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
         elem_abun = OrderedDict()
         # Oxygen
-        #Otot_test = self.atom_abun['O2'] + self.atom_abun['O3']
+        print '\n OXYGEN'
         Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
         O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
         Ototerr = numpy.sqrt(O23sq)
         O_errp = (Ototerr/Otot)*100
         elem_abun['O'] = [Otot, Ototerr]
-        print '  \n Assuming that  Otot = O+ + O++:  ', Otot, '+-', Ototerr, '( which is ', O_errp, ' %)'
-        #print 'Otot_test[1]', Otot_test[1], '    Ototerr', Ototerr
+        print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
+        # For such assumption see Lopez-Sanchez & Esteban (2009) and Izotov et al. (2006) 
         logOtot = 12+numpy.log10(Otot)
-        print 'O_tot = %0.2f +- %0.2f \n' % (logOtot, numpy.log10((100+O_errp) / (100-O_errp))/2.0)
+        logOtoterr = numpy.log10((100+O_errp) / (100-O_errp))/2.0
+        print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
+        logOtot_sun = 8.66 #+-0.05    taken from Asplund et al. 2005
+        logOtot_sun_err = 0.05
+        OH = logOtot - logOtot_sun
+        OHerr = numpy.sqrt(logOtoterr**2 + logOtot_sun_err**2)
+        print '    [O/H]  =  log(O/H) - log(O/H)_sun  =  %0.2f +- %0.2f' % (OH, OHerr)
+        print '    * considering the existence of O+3 due to detection of HeII 4686, [O/H] should be higher'
+        print '      by about 0.01 to 0.02 dex (Lopez-Sanchez & Esteban 2009).'
         
         # Nitrogen
+        print '\n NITROGEN'
         N_tot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
-        print ' Assuming ICF(N) from Peimbert+Costero 69 = (Otot / O+) * N+'
+        print '    Assuming ICF(N) from Peimbert+Costero 69 = (Otot / O+) * N+'
         N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 +
                              self.atom_abun['N2'][1]**2)
         elem_abun['N'] = [N_tot, N_toterr]
         Nicf = Otot / self.atom_abun['O2'][0]
         N_errp = (N_toterr/N_tot)*100
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
-        print 'ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f \n' % (Nicf, 12+numpy.log10(N_tot), numpy.log10((100+N_errp) / (100-N_errp))/2.0)
+        print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(N_tot), numpy.log10((100+N_errp) / (100-N_errp))/2.0)
+        R = N_tot / Otot
+        Ratio = numpy.log(R)
+        Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Neon
-        print ' Assuming ICF(Ne) from Peimbert+Costero 69 =  (Otot / O++) * Ne++'
+        print '\n NEON'
+        print '    Assuming ICF(Ne) from Peimbert+Costero 69 =  (Otot / O++) * Ne++'
         Ne_icf = Otot / self.atom_abun['O3'][0]
         Ne_tot = self.atom_abun['Ne3'][0] * Ne_icf
         Ne_toterr = numpy.sqrt((O23sq * (self.atom_abun['O2'][0]/Otot)**2) * (self.atom_abun['Ne3'][0]/self.atom_abun['O3'][0])**2 +
                                self.atom_abun['Ne3'][1]**2)
         elem_abun['Ne'] = [Ne_tot, Ne_toterr]
         Ne_errp = (Ne_toterr/Ne_tot)*100
-        print 'ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f \n' % (Ne_icf, 12+numpy.log10(Ne_tot), numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0)
+        print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, 12+numpy.log10(Ne_tot), numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0)
+        R = Ne_tot / Otot
+        Ratio = numpy.log(R)
+        Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        print '    Ne/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Sulphur
-        print ' Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
-        print '    Make sure that  O+ / Otot ~ 0.1:', self.atom_abun['O2'][0]/Otot
+        print '\n SULPHUR'
+        print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
+        print '    * Make sure that  O+ / Otot ~ 0.1:', self.atom_abun['O2'][0]/Otot
         #OpOtot = float(raw_input('Enter O+/Otot: '))
         OpOtot = -0.25
         S_icf = 1.0 / 10**(OpOtot)
@@ -1629,10 +1648,10 @@ class AdvancedOps:
         # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
         S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
                                (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
-        elem_abun['S'] = [S_tot, S_toterr]
+        elem_abun['S'] = [S_tot, S_toterr]        
         S_errp = (S_toterr/S_tot)*100
-        print ' S_toterr = ', S_toterr, '=', S_errp, '%'
-        print 'ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
+        print '    S_toterr = ', S_toterr, '=', S_errp, '%'
+        print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
         # For comparison also clculate abundances with Izotov et al (2006)
         if logOtot <= 7.2:
             rule = 'Ial06_20a'
@@ -1647,57 +1666,77 @@ class AdvancedOps:
         print '                      Izotov et al. 06  =  %0.3e +- %0.3e' % (abS, erS)
         print '        they compare as: Izotov/Garnett = ', elem_abun['S'][0]/abS
         print '                          Garnett + err = ', elem_abun['S'][0] + elem_abun['S'][1]
-        print '                          Izotov - err  = ', abS - erS, ' \n'
+        print '                          Izotov - err  = ', abS - erS
+        R = S_tot / Otot
+        Ratio = numpy.log10(R)
+        Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Ototerr/Otot)**2)
+        Ratioerr = Rerr / (2.303 * R)
+        print '    S/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Chlorine
-        print ' Assuming ICF(Cl) from Peimbert, Peimbert Ruiz (2005):  ((S+/S++)*Cl++ + Cl++ + (Ar+++/Ar++)*Cl++) / Cl++'
-        cl3 = self.atom_abun['Cl3'][0]
-        S23 = self.atom_abun['S2'][0] / self.atom_abun['S3'][0]
-        Ar43 = self.atom_abun['Ar4'][0]/self.atom_abun['Ar3'][0]
-        Cl_icf = (S23*cl3 + cl3 + Ar43*cl3) / cl3 
-        Cl_tot = cl3 * Cl_icf
-        S23err = S23 * numpy.sqrt( (self.atom_abun['S2'][1]/self.atom_abun['S2'][0])**2 + (self.atom_abun['S3'][1]/self.atom_abun['S3'][0])**2 )
-        Ar43err =  Ar43 * numpy.sqrt( (self.atom_abun['Ar4'][1]/self.atom_abun['Ar4'][0])**2 + (self.atom_abun['Ar3'][1]/self.atom_abun['Ar3'][0])**2 )
-        er1 = (S23*cl3) * numpy.sqrt((S23err/S23)**2 + (self.atom_abun['Cl3'][1]/self.atom_abun['Cl3'][0])**2)
-        er2 = (Ar43*cl3) * numpy.sqrt((Ar43err/Ar43)**2 + (self.atom_abun['Cl3'][1]/self.atom_abun['Cl3'][0])**2)
-        er3 = numpy.sqrt(er1**2 + er2**2 + self.atom_abun['Cl3'][1]**2)
-        clicferr = Cl_icf * numpy.sqrt((er3/(S23*cl3 + cl3 + Ar43*cl3))**2 + (self.atom_abun['Cl3'][1]/cl3)**2)
-        Cl_toterr = Cl_tot * numpy.sqrt((self.atom_abun['Cl3'][1]/cl3)**2 + (clicferr/Cl_icf)**2)
-        Cl_errp = (Cl_toterr/Cl_tot)*100
-        print ' Cl_toterr = ', Cl_toterr, '=', Cl_errp, '%'
-        print 'ICF(Cl)=%0.2f ,   Cl_tot = %0.2f +- %0.2f' % (Cl_icf, 12+numpy.log10(Cl_tot), numpy.log10((100+Cl_errp) / (100-Cl_errp))/2.0)
-        # For comparison also clculate abundances with Izotov et al (2006)
-        if logOtot <= 7.2:
-            rule = 'Ial06_21a'
-        elif (logOtot > 7.2) and (logOtot < 8.2):
-            rule = 'Ial06_21b'
-        elif logOtot >= 8.2:
-            rule = 'Ial06_21c'
-        ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
-        ab = ab_Ial06[rule][0]
-        er = ab_Ial06[rule][1]
-        #elem_abun['Cl'] = [Cl_tot, Cl_toterr]
-        elem_abun['Cl'] = [ab, er]
-        print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Cl_tot, Cl_toterr) 
-        print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
-        print '       they compare as: Izotov/Peimbert = ', Cl_tot/ab
-        print '                         Peimbert + err = ', Cl_tot + Cl_toterr
-        print '                          Izotov - err  = ', ab - er, ' \n'
+        print '\n CHLORINE'
+        if self.atom_abun['Cl3'][0] > 0.0:
+            # Use Izotov et al (2006) just in case conditions for Peimbert et al (2005) are not met
+            if logOtot <= 7.2:
+                rule = 'Ial06_21a'
+            elif (logOtot > 7.2) and (logOtot < 8.2):
+                rule = 'Ial06_21b'
+            elif logOtot >= 8.2:
+                rule = 'Ial06_21c'
+            ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
+            ab = ab_Ial06[rule][0]
+            er = ab_Ial06[rule][1]
+            elem_abun['Cl'] = [ab, er]
+            # There are 2 conditions to use the ICF from Peimbert et al (2005):
+            # 1. Diff between S3 and S2 is between 2 - 10 %
+            # 2. Both Ar3 and Ar4 must be positive
+            diffS = numpy.abs(numpy.abs(self.atom_abun['S3'][0]) - numpy.abs(self.atom_abun['S2'][0]))
+            diffSper =  numpy.abs(self.atom_abun['S3'][0])/diffS
+            if (diffSper >= 0.02) and (diffSper <= 0.1):
+                print '    Percentage difference between S3 and S2 =', diffSper, '%'
+                if (self.atom_abun['Ar4'][0] > 0.0) and (self.atom_abun['Ar3'][0] > 0.0):
+                    print '    Assuming ICF(Cl) from Peimbert, Peimbert Ruiz (2005):  ((S+/S++)*Cl++ + Cl++ + (Ar+++/Ar++)*Cl++) / Cl++'
+                    cl3 = self.atom_abun['Cl3'][0]
+                    S23 = self.atom_abun['S2'][0] / self.atom_abun['S3'][0]
+                    Ar43 = self.atom_abun['Ar4'][0]/self.atom_abun['Ar3'][0]
+                    Cl_icf = (S23*cl3 + cl3 + Ar43*cl3) / cl3 
+                    Cl_tot = cl3 * Cl_icf
+                    S23err = S23 * numpy.sqrt( (self.atom_abun['S2'][1]/self.atom_abun['S2'][0])**2 + (self.atom_abun['S3'][1]/self.atom_abun['S3'][0])**2 )
+                    Ar43err =  Ar43 * numpy.sqrt( (self.atom_abun['Ar4'][1]/self.atom_abun['Ar4'][0])**2 + (self.atom_abun['Ar3'][1]/self.atom_abun['Ar3'][0])**2 )
+                    er1 = (S23*cl3) * numpy.sqrt((S23err/S23)**2 + (self.atom_abun['Cl3'][1]/self.atom_abun['Cl3'][0])**2)
+                    er2 = (Ar43*cl3) * numpy.sqrt((Ar43err/Ar43)**2 + (self.atom_abun['Cl3'][1]/self.atom_abun['Cl3'][0])**2)
+                    er3 = numpy.sqrt(er1**2 + er2**2 + self.atom_abun['Cl3'][1]**2)
+                    clicferr = Cl_icf * numpy.sqrt((er3/(S23*cl3 + cl3 + Ar43*cl3))**2 + (self.atom_abun['Cl3'][1]/cl3)**2)
+                    Cl_toterr = Cl_tot * numpy.sqrt((self.atom_abun['Cl3'][1]/cl3)**2 + (clicferr/Cl_icf)**2)
+                    Cl_errp = (Cl_toterr/Cl_tot)*100
+                    #elem_abun['Cl'] = [Cl_tot, Cl_toterr]
+                    print '    Cl_toterr = ', Cl_toterr, '=', Cl_errp, '%'
+                    print '    ICF(Cl)=%0.2f ,   Cl_tot = %0.2f +- %0.2f' % (Cl_icf, 12+numpy.log10(Cl_tot), numpy.log10((100+Cl_errp) / (100-Cl_errp))/2.0)
+                    # For comparison also clculate abundances with Izotov et al (2006)
+                    print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Cl_tot, Cl_toterr) 
+                    print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
+                    print '       they compare as: Izotov/Peimbert = ', Cl_tot/ab
+                    print '                         Peimbert + err = ', Cl_tot + Cl_toterr
+                    print '                          Izotov - err  = ', ab - er
+                    R = Cl_tot / Otot
+                    Ratio = numpy.log10(R)
+                    Rerr = R * numpy.sqrt((Cl_toterr/Cl_tot)**2 + (Ototerr/Otot)**2)
+                    Ratioerr = Rerr / (2.303 * R)
+            else:
+                print '    Assuming ICF(Cl) from Izotov et al. (2006)'
+                print '    Cl_toterr = ', er, '=', ab/er, '%'
+                print '    Cl_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+                R = ab /Otot
+                Ratio = numpy.log(R)
+                Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
+                Ratioerr = Rerr / (2.303 * R)
+            print '    Cl/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        else:
+            elem_abun['Cl'] = [0.0, 0.0]
+            print '    No Cl abundance available.'            
         
         # Argon
-        print ' Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
-        Ar34 = self.atom_abun['Ar3'][0] + self.atom_abun['Ar4'][0]
-        Ar_icf = (S23 * self.atom_abun['Ar3'][0] + Ar34)/Ar34 
-        Ar_tot = Ar34 * Ar_icf
-        Ar34err =  numpy.sqrt( self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2 )
-        er1 = (S23 * self.atom_abun['Ar3'][0]) * numpy.sqrt((S23err/S23)**2 + (self.atom_abun['Ar3'][1]/self.atom_abun['Ar3'][0])**2)
-        er2 = numpy.sqrt(er1**2 + self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2)
-        Ar_icferr = Ar_icf * numpy.sqrt((er2/(S23 * self.atom_abun['Ar3'][0] + Ar34))**2 + (Ar34err/Ar34)**2)
-        Ar_toterr = Ar_tot * numpy.sqrt((Ar34err/Ar34)**2 + (Ar_icferr/Ar_icf)**2)
-        Ar_errp = (Ar_toterr/Ar_tot)*100
-        print ' Ar_toterr = ', Ar_toterr, '=', Ar_errp, '%'
-        print 'ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, 12+numpy.log10(Ar_tot), numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0)
-        # For comparison also clculate abundances with Izotov et al (2006)
+        print '\n ARGON'
         if logOtot <= 7.2:
             rule = 'Ial06_22a'
         elif (logOtot > 7.2) and (logOtot < 8.2):
@@ -1707,14 +1746,108 @@ class AdvancedOps:
         ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
         ab = ab_Ial06[rule][0]
         er = ab_Ial06[rule][1]
-        #elem_abun['Ar'] = [Ar_tot, Ar_toterr]
         elem_abun['Ar'] = [ab, er]
-        print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Ar_tot, Ar_toterr) 
-        print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
-        print '       they compare as: Izotov/Peimbert = ', Ar_tot/ab
-        print '                         Peimbert + err = ', Ar_tot + Ar_toterr
-        print '                          Izotov - err  = ', ab - er, ' \n'
+        # If possible, use Peimbert et al (2005)
+        if (self.atom_abun['Ar4'][0] > 0.0) and (self.atom_abun['Ar3'][0] > 0.0):
+            print '    Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
+            Ar34 = self.atom_abun['Ar3'][0] + self.atom_abun['Ar4'][0]
+            S23 = self.atom_abun['S2'][0] / self.atom_abun['S3'][0]
+            Ar_icf = (S23 * self.atom_abun['Ar3'][0] + Ar34)/Ar34 
+            Ar_tot = Ar34 * Ar_icf
+            S23err = S23 * numpy.sqrt( (self.atom_abun['S2'][1]/self.atom_abun['S2'][0])**2 + (self.atom_abun['S3'][1]/self.atom_abun['S3'][0])**2 )
+            Ar34err =  numpy.sqrt( self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2 )
+            er1 = (S23 * self.atom_abun['Ar3'][0]) * numpy.sqrt((S23err/S23)**2 + (self.atom_abun['Ar3'][1]/self.atom_abun['Ar3'][0])**2)
+            er2 = numpy.sqrt(er1**2 + self.atom_abun['Ar3'][1]**2 + self.atom_abun['Ar4'][1]**2)
+            Ar_icferr = Ar_icf * numpy.sqrt((er2/(S23 * self.atom_abun['Ar3'][0] + Ar34))**2 + (Ar34err/Ar34)**2)
+            Ar_toterr = Ar_tot * numpy.sqrt((Ar34err/Ar34)**2 + (Ar_icferr/Ar_icf)**2)
+            Ar_errp = (Ar_toterr/Ar_tot)*100
+            print '    Ar_toterr = ', Ar_toterr, '=', Ar_errp, '%'
+            print '    ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, 12+numpy.log10(Ar_tot), numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0)
+            # For comparison also clculate abundances with Izotov et al (2006) when we have both
+            if logOtot <= 7.2:
+                rule = 'Ial06_23a'
+            elif (logOtot > 7.2) and (logOtot < 8.2):
+                rule = 'Ial06_23b'
+            elif logOtot >= 8.2:
+                rule = 'Ial06_23c'
+            ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
+            ab = ab_Ial06[rule][0]
+            er = ab_Ial06[rule][1]
+            elem_abun['Ar'] = [ab, er]
+            #elem_abun['Ar'] = [Ar_tot, Ar_toterr]
+            print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Ar_tot, Ar_toterr) 
+            print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
+            print '       they compare as: Izotov/Peimbert = ', Ar_tot/ab
+            print '                         Peimbert + err = ', Ar_tot + Ar_toterr
+            print '                          Izotov - err  = ', ab - er
+            R = Ar_tot / Otot
+            Ratio = numpy.log10(R)
+            Rerr = R * numpy.sqrt((Ar_toterr/Ar_tot)**2 + (Ototerr/Otot)**2)
+            Ratioerr = Rerr / (2.303 * R)
+        else:
+            print '    Assuming ICF(Ar) from Izotov et al. (2006)'
+            print '    Ar_toterr = ', er, '=', ab/er, '%'
+            print '    Ar_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            R = ab / Otot
+            Ratio = numpy.log10(R)
+            Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
+            Ratioerr = Rerr / (2.303 * R)
+        print '    Ar/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
+        # Iron
+        print '\n IRON'
+        if self.atom_abun['Fe3'][0] > 0.0:
+            # Use Izotov et al (2006)
+            if logOtot <= 7.2:
+                rule = 'Ial06_41a'
+            elif (logOtot > 7.2) and (logOtot < 8.2):
+                rule = 'Ial06_24b'
+            elif logOtot >= 8.2:
+                rule = 'Ial06_24c'
+            ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
+            ab = ab_Ial06[rule][0]
+            er = ab_Ial06[rule][1]
+            elem_abun['Fe'] = [ab, er]
+            print '    Assuming ICF(Fe) from Izotov et al. (2006)'
+            print '    Fe_toterr = ', er, '=', ab/er, '%'
+            print '    Fe_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            R = ab / Otot
+            Ratio = numpy.log10(R)
+            Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
+            Ratioerr = Rerr / (2.303 * R)
+            print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        else:
+            elem_abun['Fe'] = [0.0, 0.0]
+            print '    No Fe abundance available.'            
+
+        # Aluminum
+        print '\n ALUMINUM'
+        icf.getAvailableICFs('Al3') # get all available ICFs
+        exit()
+        if self.atom_abun['Fe3'][0] > 0.0:
+            # Use Izotov et al (2006)
+            if logOtot <= 7.2:
+                rule = 'Ial06_41a'
+            elif (logOtot > 7.2) and (logOtot < 8.2):
+                rule = 'Ial06_24b'
+            elif logOtot >= 8.2:
+                rule = 'Ial06_24c'
+            ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
+            ab = ab_Ial06[rule][0]
+            er = ab_Ial06[rule][1]
+            elem_abun['Fe'] = [ab, er]
+            print '    Assuming ICF(Fe) from Izotov et al. (2006)'
+            print '    Fe_toterr = ', er, '=', ab/er, '%'
+            print '    Fe_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            R = ab / Otot
+            Ratio = numpy.log10(R)
+            Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
+            Ratioerr = Rerr / (2.303 * R)
+            print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        else:
+            elem_abun['Fe'] = [0.0, 0.0]
+            print '    No Fe abundance available.'            
+
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
