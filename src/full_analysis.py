@@ -16,10 +16,10 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 12
+object_number = 16
 
 # Write the text file with line info?
-create_txt_lineinfo = False
+create_txt_lineinfo = True
 # Do deblend of 3727?
 deblend3727 = False
 deblend6563 = False
@@ -349,5 +349,5 @@ forceNe = None#500.0  #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe)
 
 
-print 'Code finished!'
+print '\n Code finished!'
 
