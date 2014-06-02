@@ -1818,9 +1818,10 @@ class AdvancedOps:
             print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
             elem_abun['Fe'] = [0.0, 0.0]
-            print '    No Fe abundance available.'            
-
-        # Aluminum
+            print '    No Fe abundance available.'  
+                      
+        '''
+        # Aluminum STILL PENDING BECAUSE NO SOURCE OF ICF FOR HII REGIONS.
         print '\n ALUMINUM'
         icf.getAvailableICFs('Al3') # get all available ICFs
         exit()
@@ -1847,7 +1848,8 @@ class AdvancedOps:
         else:
             elem_abun['Fe'] = [0.0, 0.0]
             print '    No Fe abundance available.'            
-
+        '''
+            
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
