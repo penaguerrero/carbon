@@ -1374,9 +1374,17 @@ class AdvancedOps:
                 print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
                 
             if math.isnan(self.TS3[0]):
-                te_verylow = [8000.0, 8500.0]
-            else:
+                te_verylow = [8500.0, 9000.0]
+                print '   Te[S 3] not available, using default value:   te_Verylow = 8,500 +- 500.0'
+            elif self.TS3[0] <= self.TO3[0]:
                 te_verylow = self.TS3
+                print '   Te_Verylow (S3) = ', te_verylow
+            elif self.TS3[0] > self.TO3[0]:
+                teVlow = self.TO3[0]*0.85
+                perS3 = (self.TS3[1] - self.TS3[0]) / self.TS3[0]
+                te_verylow = [teVlow, teVlow+teVlow*perS3]
+                print self.TS3, perS3
+                print '   Te[S 3] > Te[O 3], using default value:   te_Verylow = Te[O 3]*0.85 +-  % err of Te[S 3] =', te_verylow
             
         print 'Densitiy being used for calculations:'
         if forceNe != None:
@@ -1556,6 +1564,7 @@ class AdvancedOps:
                 print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
             print >> outf, '#####'
             print >> outf, '# RATIOS -- using equations from Garnet et al. (1995)'
+            print >> outf, ('{:<6} {:>11} {:>11} {:>10}'.format('# Ion ratio', 'Line ratio', 'Value', 'Abs err'))
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C2/O2', '1909/1666', C2toO2, C2toO2_err))
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '1752/1666', N2toO2, N2toO2_err))
             n2 = sorted_atoms.index('N2')
@@ -1591,11 +1600,11 @@ class AdvancedOps:
         O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
         Ototerr = numpy.sqrt(O23sq)
         O_errp = (Ototerr/Otot)*100
-        elem_abun['O'] = [Otot, Ototerr]
         print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
         # For such assumption see Lopez-Sanchez & Esteban (2009) and Izotov et al. (2006) 
         logOtot = 12+numpy.log10(Otot)
         logOtoterr = numpy.log10((100+O_errp) / (100-O_errp))/2.0
+        elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr]        
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
         logOtot_sun = 8.66 #+-0.05    taken from Asplund et al. 2005
         logOtot_sun_err = 0.05
@@ -1611,11 +1620,13 @@ class AdvancedOps:
         print '    Assuming ICF(N) from Peimbert+Costero 69 = (Otot / O+) * N+'
         N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 +
                              self.atom_abun['N2'][1]**2)
-        elem_abun['N'] = [N_tot, N_toterr]
         Nicf = Otot / self.atom_abun['O2'][0]
         N_errp = (N_toterr/N_tot)*100
+        logele = 12+numpy.log10(N_tot)
+        logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
+        elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr]
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
-        print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(N_tot), numpy.log10((100+N_errp) / (100-N_errp))/2.0)
+        print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
         R = N_tot / Otot
         Ratio = numpy.log(R)
         Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
@@ -1628,9 +1639,11 @@ class AdvancedOps:
         Ne_tot = self.atom_abun['Ne3'][0] * Ne_icf
         Ne_toterr = numpy.sqrt((O23sq * (self.atom_abun['O2'][0]/Otot)**2) * (self.atom_abun['Ne3'][0]/self.atom_abun['O3'][0])**2 +
                                self.atom_abun['Ne3'][1]**2)
-        elem_abun['Ne'] = [Ne_tot, Ne_toterr]
         Ne_errp = (Ne_toterr/Ne_tot)*100
-        print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, 12+numpy.log10(Ne_tot), numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0)
+        logele = 12+numpy.log10(Ne_tot)
+        logeleerr = numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0
+        elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr]
+        print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, logele, logeleerr)
         R = Ne_tot / Otot
         Ratio = numpy.log(R)
         Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
@@ -1648,10 +1661,12 @@ class AdvancedOps:
         # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
         S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
                                (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
-        elem_abun['S'] = [S_tot, S_toterr]        
         S_errp = (S_toterr/S_tot)*100
+        logele = 12+numpy.log10(S_tot)
+        logeleerr = numpy.log10((100+S_errp) / (100-S_errp))/2.0
+        elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr]   
         print '    S_toterr = ', S_toterr, '=', S_errp, '%'
-        print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, 12+numpy.log10(S_tot), numpy.log10((100+S_errp) / (100-S_errp))/2.0)
+        print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, logele, logeleerr)
         # For comparison also clculate abundances with Izotov et al (2006)
         if logOtot <= 7.2:
             rule = 'Ial06_20a'
@@ -1686,7 +1701,6 @@ class AdvancedOps:
             ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
             ab = ab_Ial06[rule][0]
             er = ab_Ial06[rule][1]
-            elem_abun['Cl'] = [ab, er]
             # There are 2 conditions to use the ICF from Peimbert et al (2005):
             # 1. Diff between S3 and S2 is between 2 - 10 %
             # 2. Both Ar3 and Ar4 must be positive
@@ -1709,9 +1723,11 @@ class AdvancedOps:
                     clicferr = Cl_icf * numpy.sqrt((er3/(S23*cl3 + cl3 + Ar43*cl3))**2 + (self.atom_abun['Cl3'][1]/cl3)**2)
                     Cl_toterr = Cl_tot * numpy.sqrt((self.atom_abun['Cl3'][1]/cl3)**2 + (clicferr/Cl_icf)**2)
                     Cl_errp = (Cl_toterr/Cl_tot)*100
-                    #elem_abun['Cl'] = [Cl_tot, Cl_toterr]
+                    logele = 12+numpy.log10(Cl_tot)
+                    logeleerr = numpy.log10((100+Cl_errp) / (100-Cl_errp))/2.0
+                    elem_abun['Cl'] = [Cl_tot, Cl_toterr, Cl_errp, logele, logeleerr]   
                     print '    Cl_toterr = ', Cl_toterr, '=', Cl_errp, '%'
-                    print '    ICF(Cl)=%0.2f ,   Cl_tot = %0.2f +- %0.2f' % (Cl_icf, 12+numpy.log10(Cl_tot), numpy.log10((100+Cl_errp) / (100-Cl_errp))/2.0)
+                    print '    ICF(Cl)=%0.2f ,   Cl_tot = %0.2f +- %0.2f' % (Cl_icf, logele, logeleerr)
                     # For comparison also clculate abundances with Izotov et al (2006)
                     print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Cl_tot, Cl_toterr) 
                     print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
@@ -1724,8 +1740,12 @@ class AdvancedOps:
                     Ratioerr = Rerr / (2.303 * R)
             else:
                 print '    Assuming ICF(Cl) from Izotov et al. (2006)'
-                print '    Cl_toterr = ', er, '=', ab/er, '%'
-                print '    Cl_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+                perr = er/ab *100
+                print '    Cl_toterr = ', er, '=', perr, '%'
+                logele = 12+numpy.log10(ab)
+                logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
+                elem_abun['Cl'] = [ab, er, perr, logele, logeleerr]   
+                print '    Cl_tot = %0.2f +- %0.2f' % (logele, logeleerr)
                 R = ab /Otot
                 Ratio = numpy.log(R)
                 Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
@@ -1746,7 +1766,6 @@ class AdvancedOps:
         ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
         ab = ab_Ial06[rule][0]
         er = ab_Ial06[rule][1]
-        elem_abun['Ar'] = [ab, er]
         # If possible, use Peimbert et al (2005)
         if (self.atom_abun['Ar4'][0] > 0.0) and (self.atom_abun['Ar3'][0] > 0.0):
             print '    Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
@@ -1762,7 +1781,10 @@ class AdvancedOps:
             Ar_toterr = Ar_tot * numpy.sqrt((Ar34err/Ar34)**2 + (Ar_icferr/Ar_icf)**2)
             Ar_errp = (Ar_toterr/Ar_tot)*100
             print '    Ar_toterr = ', Ar_toterr, '=', Ar_errp, '%'
-            print '    ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, 12+numpy.log10(Ar_tot), numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0)
+            logele = 12+numpy.log10(Ar_tot)
+            logeleerr = numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0
+            elem_abun['Ar'] = [Ar_tot, Ar_toterr, Ar_errp, logele, logeleerr]
+            print '    ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, logele, logeleerr)
             # For comparison also clculate abundances with Izotov et al (2006) when we have both
             if logOtot <= 7.2:
                 rule = 'Ial06_23a'
@@ -1773,8 +1795,10 @@ class AdvancedOps:
             ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
             ab = ab_Ial06[rule][0]
             er = ab_Ial06[rule][1]
-            elem_abun['Ar'] = [ab, er]
-            #elem_abun['Ar'] = [Ar_tot, Ar_toterr]
+            #logele = 12+numpy.log10(ab)
+            #perr = er/ab *100
+            #logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
+            #elem_abun['Ar'] = [ab, er, logele, logeleerr]   
             print '    Abundances with: Peimbert et al. 05 =  %0.3e +- %0.3e' % (Ar_tot, Ar_toterr) 
             print '                     Izotov et al. 06   =  %0.3e +- %0.3e' % (ab, er)
             print '       they compare as: Izotov/Peimbert = ', Ar_tot/ab
@@ -1786,8 +1810,12 @@ class AdvancedOps:
             Ratioerr = Rerr / (2.303 * R)
         else:
             print '    Assuming ICF(Ar) from Izotov et al. (2006)'
-            print '    Ar_toterr = ', er, '=', ab/er, '%'
-            print '    Ar_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            perr = er/ab * 100.0
+            print '    Ar_toterr = ', er, '=', perr, '%'
+            logele = 12+numpy.log10(ab)
+            logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
+            elem_abun['Ar'] = [ab, er, perr, logele, logeleerr]
+            print '    Ar_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
@@ -1807,10 +1835,13 @@ class AdvancedOps:
             ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
             ab = ab_Ial06[rule][0]
             er = ab_Ial06[rule][1]
-            elem_abun['Fe'] = [ab, er]
             print '    Assuming ICF(Fe) from Izotov et al. (2006)'
-            print '    Fe_toterr = ', er, '=', ab/er, '%'
-            print '    Fe_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            perr = er/ab * 100.0
+            print '    Fe_toterr = ', er, '=', perr, '%'
+            logele = 12+numpy.log10(ab)
+            logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
+            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr]
+            print '    Fe_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
@@ -1836,10 +1867,13 @@ class AdvancedOps:
             ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
             ab = ab_Ial06[rule][0]
             er = ab_Ial06[rule][1]
-            elem_abun['Fe'] = [ab, er]
             print '    Assuming ICF(Fe) from Izotov et al. (2006)'
-            print '    Fe_toterr = ', er, '=', ab/er, '%'
-            print '    Fe_tot = %0.2f +- %0.2f' % (12+numpy.log10(ab), numpy.log10((100+ab/er) / (100-ab/er))/2.0)
+            perr = er/ab * 100.0
+            print '    Fe_toterr = ', er, '=', perr, '%'
+            logele = 12+numpy.log10(ab)
+            logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
+            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr]
+            print '    Fe_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
@@ -1847,9 +1881,21 @@ class AdvancedOps:
             print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
             elem_abun['Fe'] = [0.0, 0.0]
-            print '    No Fe abundance available.'            
+            print '    No Fe abundance available.'  
         '''
             
+        # print total abundances in file
+        if self.writeouts:
+            print >> outf, '#####'
+            print >> outf, '# TOTAL ABUNDANCES '
+            print >> outf, ('{:<5} {:>12} {:>12} {:>7} {:>10} {:>7} {:>10} {:>7}'.format('# Element', 'abundance', 'abs error', '% err', 
+                                                                                   'LOGabund', 'LOGerr', 'X/O', 'err'))
+            for ele, vals in elem_abun.items():
+                XO = vals[0] / Otot
+                XOerr = XO * numpy.sqrt((Ototerr/Otot)**2 + (vals[1]/vals[0])**2)
+                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>7.0f} {:>10.2f} {:>7.2f} {:>10.4f} {:>7.4f}'.format(ele, vals[0], vals[1], 
+                                                                                                                  vals[2], vals[3], vals[4], 
+                                                                                                                  XO, XOerr))
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
