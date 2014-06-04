@@ -665,7 +665,7 @@ class BasicOps:
 
     
 class AdvancedOps:
-    def __init__(self, object_name, cHbeta, case, writeouts=False, verbose=False):
+    def __init__(self, object_name, cHbeta, case, use_Chbeta, writeouts=False, verbose=False):
         # Inputs:
         self.object_name = object_name
         self.cHbeta = cHbeta
@@ -674,12 +674,18 @@ class AdvancedOps:
         self.writeouts = writeouts              # write or not text files with outputs (temps, densities, and abundances)
         # Variables defined in the class
         self.lines_pyneb_matches = []
+        # Define the string added to the name of the text files to be written according to the reddening process used
+        if use_Chbeta:
+            self.RedCorType = 'CHbeta'
+        else:
+            self.RedCorType = 'Ebv'
+
     
     def writeRedCorrFile(self):
         ''' This function writes a text file in a pyneb readable format... Necessary to find the temperatures and densities. '''
         object_name = self.object_name
         verbose = self.verbose
-        input_file = object_name+'_RedCor.txt'
+        input_file = object_name+'_RedCor_'+self.RedCorType+'.txt'
         path_object = '../results/'+object_name
         path_inputfile = os.path.join(path_object, input_file)
         # define the columns to be filled when reading the file
@@ -738,7 +744,8 @@ class AdvancedOps:
         This is a VERY big function that unfortunately cannot be broken... It determines ALL posible temperatures and densities 
         that are avaiable to veryfy with IRAF. The abundance determination can be turned off by setting iontotabs to False.
         '''
-        out_file = self.object_name+'_TempDens.txt'
+        RedCorType = self.RedCorType
+        out_file = self.object_name+'_TempDens_'+RedCorType+'.txt'
         path_object = '../results/'+self.object_name
         fullpath_outfile = os.path.join(path_object, out_file)
         if self.writeouts:
@@ -1323,6 +1330,8 @@ class AdvancedOps:
         forceNe = specific density to be used 
                     It can be either one value or a list of value and error.
         '''
+        # Define the string added to the name of the text files to be written according to the reddening process used
+        RedCorType = self.RedCorType
         # Define the high and lo ionization zones temperatures and densities
         print 'Temperatures being used for estimation of abundances:'
         if (forceTeH != None):
@@ -1535,7 +1544,7 @@ class AdvancedOps:
 
         # Write results in text file
         if self.writeouts:
-            out_file = self.object_name+'_IonicTotAbundances.txt'
+            out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
             path_object = '../results/'+self.object_name
             fullpath_outfile = os.path.join(path_object, out_file)
             outf = open(fullpath_outfile, 'w+')
@@ -1604,7 +1613,10 @@ class AdvancedOps:
         # For such assumption see Lopez-Sanchez & Esteban (2009) and Izotov et al. (2006) 
         logOtot = 12+numpy.log10(Otot)
         logOtoterr = numpy.log10((100+O_errp) / (100-O_errp))/2.0
-        elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr]        
+        R = Otot / Otot
+        Ratio = numpy.log(R)
+        Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr, Ratio, Ratioerr]        
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
         logOtot_sun = 8.66 #+-0.05    taken from Asplund et al. 2005
         logOtot_sun_err = 0.05
@@ -1616,20 +1628,20 @@ class AdvancedOps:
         
         # Nitrogen
         print '\n NITROGEN'
-        N_tot = (Otot * self.atom_abun['N2'][0]) / self.atom_abun['O2'][0]
         print '    Assuming ICF(N) from Peimbert+Costero 69 = (Otot / O+) * N+'
+        N_tot = (Otot / self.atom_abun['O2'][0]) * self.atom_abun['N2'][0]
         N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 +
                              self.atom_abun['N2'][1]**2)
         Nicf = Otot / self.atom_abun['O2'][0]
         N_errp = (N_toterr/N_tot)*100
         logele = 12+numpy.log10(N_tot)
         logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
-        elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr]
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
         print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
         R = N_tot / Otot
         Ratio = numpy.log(R)
         Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Neon
@@ -1642,11 +1654,11 @@ class AdvancedOps:
         Ne_errp = (Ne_toterr/Ne_tot)*100
         logele = 12+numpy.log10(Ne_tot)
         logeleerr = numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0
-        elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr]
         print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, logele, logeleerr)
         R = Ne_tot / Otot
         Ratio = numpy.log(R)
         Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    Ne/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Sulphur
@@ -1664,7 +1676,6 @@ class AdvancedOps:
         S_errp = (S_toterr/S_tot)*100
         logele = 12+numpy.log10(S_tot)
         logeleerr = numpy.log10((100+S_errp) / (100-S_errp))/2.0
-        elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr]   
         print '    S_toterr = ', S_toterr, '=', S_errp, '%'
         print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, logele, logeleerr)
         # For comparison also clculate abundances with Izotov et al (2006)
@@ -1677,15 +1688,16 @@ class AdvancedOps:
         S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
         abS = S_Ial06[rule][0]
         erS = S_Ial06[rule][1]
-        print '    Abundances with:  Garnett 89        =  %0.3e +- %0.3e' % (elem_abun['S'][0], elem_abun['S'][1]) 
+        print '    Abundances with:  Garnett 89        =  %0.3e +- %0.3e' % (S_tot, S_toterr) 
         print '                      Izotov et al. 06  =  %0.3e +- %0.3e' % (abS, erS)
-        print '        they compare as: Izotov/Garnett = ', elem_abun['S'][0]/abS
-        print '                          Garnett + err = ', elem_abun['S'][0] + elem_abun['S'][1]
+        print '        they compare as: Izotov/Garnett = ', S_tot/abS
+        print '                          Garnett + err = ', S_tot + S_toterr
         print '                          Izotov - err  = ', abS - erS
         R = S_tot / Otot
         Ratio = numpy.log10(R)
         Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Ototerr/Otot)**2)
         Ratioerr = Rerr / (2.303 * R)
+        elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr, Ratio, Ratioerr]   
         print '    S/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Chlorine
@@ -1725,7 +1737,6 @@ class AdvancedOps:
                     Cl_errp = (Cl_toterr/Cl_tot)*100
                     logele = 12+numpy.log10(Cl_tot)
                     logeleerr = numpy.log10((100+Cl_errp) / (100-Cl_errp))/2.0
-                    elem_abun['Cl'] = [Cl_tot, Cl_toterr, Cl_errp, logele, logeleerr]   
                     print '    Cl_toterr = ', Cl_toterr, '=', Cl_errp, '%'
                     print '    ICF(Cl)=%0.2f ,   Cl_tot = %0.2f +- %0.2f' % (Cl_icf, logele, logeleerr)
                     # For comparison also clculate abundances with Izotov et al (2006)
@@ -1737,6 +1748,7 @@ class AdvancedOps:
                     R = Cl_tot / Otot
                     Ratio = numpy.log10(R)
                     Rerr = R * numpy.sqrt((Cl_toterr/Cl_tot)**2 + (Ototerr/Otot)**2)
+                    elem_abun['Cl'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
                     Ratioerr = Rerr / (2.303 * R)
             else:
                 print '    Assuming ICF(Cl) from Izotov et al. (2006)'
@@ -1744,15 +1756,15 @@ class AdvancedOps:
                 print '    Cl_toterr = ', er, '=', perr, '%'
                 logele = 12+numpy.log10(ab)
                 logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
-                elem_abun['Cl'] = [ab, er, perr, logele, logeleerr]   
                 print '    Cl_tot = %0.2f +- %0.2f' % (logele, logeleerr)
                 R = ab /Otot
                 Ratio = numpy.log(R)
                 Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
                 Ratioerr = Rerr / (2.303 * R)
+                elem_abun['Cl'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
             print '    Cl/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
-            elem_abun['Cl'] = [0.0, 0.0]
+            elem_abun['Cl'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             print '    No Cl abundance available.'            
         
         # Argon
@@ -1783,7 +1795,6 @@ class AdvancedOps:
             print '    Ar_toterr = ', Ar_toterr, '=', Ar_errp, '%'
             logele = 12+numpy.log10(Ar_tot)
             logeleerr = numpy.log10((100+Ar_errp) / (100-Ar_errp))/2.0
-            elem_abun['Ar'] = [Ar_tot, Ar_toterr, Ar_errp, logele, logeleerr]
             print '    ICF(Ar)=%0.2f ,   Ar_tot = %0.2f +- %0.2f' % (Ar_icf, logele, logeleerr)
             # For comparison also clculate abundances with Izotov et al (2006) when we have both
             if logOtot <= 7.2:
@@ -1808,18 +1819,19 @@ class AdvancedOps:
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((Ar_toterr/Ar_tot)**2 + (Ototerr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
+            elem_abun['Ar'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
         else:
             print '    Assuming ICF(Ar) from Izotov et al. (2006)'
             perr = er/ab * 100.0
             print '    Ar_toterr = ', er, '=', perr, '%'
             logele = 12+numpy.log10(ab)
             logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
-            elem_abun['Ar'] = [ab, er, perr, logele, logeleerr]
             print '    Ar_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
+            elem_abun['Ar'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
         print '    Ar/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Iron
@@ -1840,15 +1852,15 @@ class AdvancedOps:
             print '    Fe_toterr = ', er, '=', perr, '%'
             logele = 12+numpy.log10(ab)
             logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
-            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr]
             print '    Fe_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
+            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
             print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
-            elem_abun['Fe'] = [0.0, 0.0]
+            elem_abun['Fe'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             print '    No Fe abundance available.'  
                       
         '''
@@ -1872,15 +1884,15 @@ class AdvancedOps:
             print '    Fe_toterr = ', er, '=', perr, '%'
             logele = 12+numpy.log10(ab)
             logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
-            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr]
             print '    Fe_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = ab / Otot
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
+            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
             print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
-            elem_abun['Fe'] = [0.0, 0.0]
+            elem_abun['Fe'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             print '    No Fe abundance available.'  
         '''
             
@@ -1891,11 +1903,12 @@ class AdvancedOps:
             print >> outf, ('{:<5} {:>12} {:>12} {:>7} {:>10} {:>7} {:>10} {:>7}'.format('# Element', 'abundance', 'abs error', '% err', 
                                                                                    'LOGabund', 'LOGerr', 'X/O', 'err'))
             for ele, vals in elem_abun.items():
-                XO = vals[0] / Otot
-                XOerr = XO * numpy.sqrt((Ototerr/Otot)**2 + (vals[1]/vals[0])**2)
-                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>7.0f} {:>10.2f} {:>7.2f} {:>10.4f} {:>7.4f}'.format(ele, vals[0], vals[1], 
+                # ratio and error with absolute values
+                #XO = vals[0] / Otot
+                #XOerr = XO * numpy.sqrt((Ototerr/Otot)**2 + (vals[1]/vals[0])**2)
+                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>7.0f} {:>10.2f} {:>7.2f} {:>10.2f} {:>7.2f}'.format(ele, vals[0], vals[1], 
                                                                                                                   vals[2], vals[3], vals[4], 
-                                                                                                                  XO, XOerr))
+                                                                                                                  vals[5], vals[6]))
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
