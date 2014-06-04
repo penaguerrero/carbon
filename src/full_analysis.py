@@ -19,7 +19,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # Write the text file with line info?
-create_txt_lineinfo = True
+create_txt_lineinfo = False
 # Do deblend of 3727?
 deblend3727 = False
 deblend6563 = False
@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 ############################################################################################################################################
 
