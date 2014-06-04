@@ -71,10 +71,11 @@ or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
-                            #        6              7                 8                9               10               11
+                            #        6              7                 8                9              10               11
                             [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
+                            #       12             13                14               15              16               17                            
                             [2.0, 7.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
-#                                 12             13                14               15              16               17                            
+
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
@@ -343,7 +344,7 @@ RedCor_file.close()
 if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
-advops = metallicity.AdvancedOps(object_name, cHbeta, case, writeouts=create_txt_temdenabunds, verbose=False)
+advops = metallicity.AdvancedOps(object_name, cHbeta, case, use_Chbeta, writeouts=create_txt_temdenabunds, verbose=False)
 forceTe = None#11200.0 #18600.0
 forceNe = None#500.0  #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe)
