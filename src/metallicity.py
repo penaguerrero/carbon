@@ -675,7 +675,8 @@ class AdvancedOps:
         # Variables defined in the class
         self.lines_pyneb_matches = []
         # Define the string added to the name of the text files to be written according to the reddening process used
-        if use_Chbeta:
+        self.use_Chbeta = use_Chbeta
+        if self.use_Chbeta:
             self.RedCorType = 'CHbeta'
         else:
             self.RedCorType = 'Ebv'
@@ -706,7 +707,7 @@ class AdvancedOps:
         self.percerrew = []
         cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         # Read the info from the text file that contains IDs, dered info, and errors (this is the object_redCor.txt)
-        cols_in_file = spectrum.readlines_from_lineinfo(path_inputfile, cols_in_file)
+        self.cols_in_file = spectrum.readlines_from_lineinfo(path_inputfile, cols_in_file)
         self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
         tf = open(self.pynebIDstxt, 'w+')
         if verbose == True:
@@ -1913,14 +1914,18 @@ class AdvancedOps:
         if self.writeouts:
             outf.close()
         
-    def corr_ColExcit(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, verbose=False):
+    def corr_ColExcit(self, verbose=False, Hlines=None):
         '''
         This function is the second iteration of reddening correction. It fits the observed H lines given to the theoretical
         ones found with INTRAT by Storey & Hummer (1995).
-        # Idered = first iteration of reddening correction
         # Hlines = list of the hydrogen wavelengths to look for (typically from Halpha to H12).
-        # theoCE = theoretical hydrogen intensities corrected for collisional excitation.
         '''
+        # Hydrogen lines to be considered for correction
+        #        Halpha,  H5,   H6,   H7,   H8,   H9,  H10,   H11,  H12
+        #Hlines = [6563, 4340, 4101, 3967, 3889, 3835, 3798, 3771, 3750]
+        # HOWERVER H7 and H8 are contaminated by HeI (H8 is also contaminated with [NeIII]
+        if Hlines == None:
+            Hlines = [6563, 4340, 4102, 3967, 3798, 3771, 3750]
         ### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
         # Table 1
         # Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
@@ -1930,7 +1935,7 @@ class AdvancedOps:
         # x_lambda = I_col/I_tot
         # now do the interpolation according to the [OII] temperature
         xL = []
-        xalpha_interp = numpy.interp(TO2gar, TeOII, xalpha)
+        xalpha_interp = numpy.interp(self.TO2gar, TeOII, xalpha)
         xL.append(xalpha_interp)
         xbeta = xalpha_interp * 0.67
         xL.append(xbeta)
@@ -1942,7 +1947,7 @@ class AdvancedOps:
         norm_IcorrCE = [] #intensities corrected for collisional excitation
         obs_ratios = []
         found_Hlines = []
-        for w, el, I in zip(catalog_lines, element_lines, Idered):
+        for w, el, I in zip(self.wavelength, self.element, self.intensity):
             for h, l in zip(Hlines, xL):
                 if (w == h) and (el == 'H'):
                     found_Hlines.append(h)
@@ -1956,18 +1961,18 @@ class AdvancedOps:
                         norm_H6theo = normI
         return norm_IcorrCE, obs_ratios, found_Hlines, norm_H6theo
     
-    def find_Chi_of_CE(self, TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert, verbose=False):
+    def find_Chi_of_CE(self, Hlines, theoCE, verbose=False):
         # Correct for collisional excitation
-        IcorrCE, obs_ratios, found_Hlines, norm_H6theo = self.corr_ColExcit(TO2gar, catalog_lines, element_lines, Idered, Hlines)
+        IcorrCE, obs_ratios, found_Hlines, norm_H6theo = self.corr_ColExcit(Hlines, verbose)
         # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them 
         # with the theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
         uncert = []
         for H, Ic, obsr in zip(found_Hlines, IcorrCE, obs_ratios):
             idx = Hlines.index(H)
-            if H in catalog_lines:
-                H_index = catalog_lines.index(H)
-                u = (1 - (obsr / theoCE[idx])) * 100.0 / percent_Iuncert[H_index]
-                I = Idered[H_index]
+            if H in self.wavelength:
+                H_index = self.wavelength.index(H)
+                u = (1 - (obsr / theoCE[idx])) * 100.0 / self.percerrinten[H_index]
+                I = self.intensity[H_index]
                 if verbose == True:
                     print H, 'theo_ratio =', theoCE[idx], 'obs_ratio', obsr, '   Icorr =', Ic, '   Idered = ', I#, '   percent_Iuncert[H_index]=', percent_Iuncert[H_index]
                     print '   error de excitacion colisional = ', u 
@@ -1998,6 +2003,7 @@ class AdvancedOps:
         H6_idx = catalog_lines.index(4102)
         dif_TheoObs_H6Hb_values = []
         # Find the faintest detected emission line: get rid of negative fluxes
+        cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         if em_lines:
             catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
         else:
@@ -2136,6 +2142,8 @@ class AdvancedOps:
         
     def perform_advanced_ops(self, forceTe, forceNe):
         lines_pyneb_matches = self.writeRedCorrFile()
+        if self.use_Chbeta:
+            self.corr_ColExcit()
         self.get_tempsdens()
         self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
