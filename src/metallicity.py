@@ -1382,6 +1382,7 @@ class AdvancedOps:
                     te_low = self.TO2gar
             if te_low[0] == 9000.00:
                 print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
+            self.te_low = te_low
                 
             if math.isnan(self.TS3[0]):
                 te_verylow = [8500.0, 9000.0]
@@ -1935,7 +1936,8 @@ class AdvancedOps:
         # x_lambda = I_col/I_tot
         # now do the interpolation according to the [OII] temperature
         xL = []
-        xalpha_interp = numpy.interp(self.TO2gar, TeOII, xalpha)
+        TeLow = self.te_low[0]
+        xalpha_interp = numpy.interp(TeLow, TeOII, xalpha)
         xL.append(xalpha_interp)
         xbeta = xalpha_interp * 0.67
         xL.append(xbeta)
