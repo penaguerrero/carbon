@@ -18,7 +18,7 @@ from collections import OrderedDict
 This program contains various classes that together determine the object's metallicity.
 '''
 
-def round_cat_wavs(catalog_wavelength):
+def round_wavs(catalog_wavelength):
     ### Round all catalog lines to make it easier to find lines
     rounded_catalog_wavelength = []
     for item in catalog_wavelength:
@@ -546,7 +546,7 @@ class BasicOps:
         cHbeta = self.cHbeta
         I_theo_HaHb = self.I_theo_HaHb
         catalog_wavelength = self.catalog_wavelength
-        rounded_catalog_wavelength = round_cat_wavs(catalog_wavelength)
+        rounded_catalog_wavelength = round_wavs(catalog_wavelength)
         observed_wavelength = self.observed_wavelength
         element = self.element
         ion = self.ion
@@ -664,8 +664,11 @@ class BasicOps:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
-class AdvancedOps:
-    def __init__(self, object_name, cHbeta, case, use_Chbeta, writeouts=False, verbose=False):
+class AdvancedOps(BasicOps):
+    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs, #variables from parent class
+                 object_name, cHbeta, case, use_Chbeta, writeouts=False, verbose=False): #variables from child class
+        # Initialize the inherited class
+        BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
         # Inputs:
         self.object_name = object_name
         self.cHbeta = cHbeta
@@ -1357,6 +1360,7 @@ class AdvancedOps:
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
             te_low = [teL, teLerr]
+            self.te_low = te_low
             teVLerr = teVL + (teVL * perr)
             te_verylow = [teVL, teVLerr]
             print '   High ionization degree temperature forced to be:      ', te_high[0], '+-', te_high[1]-te_high[0]
@@ -1936,7 +1940,10 @@ class AdvancedOps:
         # x_lambda = I_col/I_tot
         # now do the interpolation according to the [OII] temperature
         xL = []
-        TeLow = self.te_low[0]
+        if math.isnan(self.TO2gar[0]):
+            TeLow = self.te_low[0]
+        else:
+            TeLow = self.TO2gar[0]
         xalpha_interp = numpy.interp(TeLow, TeOII, xalpha)
         xL.append(xalpha_interp)
         xbeta = xalpha_interp * 0.67
@@ -1949,7 +1956,8 @@ class AdvancedOps:
         norm_IcorrCE = [] #intensities corrected for collisional excitation
         obs_ratios = []
         found_Hlines = []
-        for w, el, I in zip(self.wavelength, self.element, self.intensity):
+        rounded_wavelengths = round_wavs(self.wavelength)
+        for w, el, I in zip(rounded_wavelengths, self.element, self.intensity):
             for h, l in zip(Hlines, xL):
                 if (w == h) and (el == 'H'):
                     found_Hlines.append(h)
@@ -1964,6 +1972,8 @@ class AdvancedOps:
         return norm_IcorrCE, obs_ratios, found_Hlines, norm_H6theo
     
     def find_Chi_of_CE(self, Hlines, theoCE, verbose=False):
+        ''' This function find the best combination of CHbeta and EW of Hbeta
+        # theoCE = theoretical hydrogen intensities corrected for collisional excitation. '''
         # Correct for collisional excitation
         IcorrCE, obs_ratios, found_Hlines, norm_H6theo = self.corr_ColExcit(Hlines, verbose)
         # Recalculate the intensities of the most prominent hydrogen lines (Halpha through H12) to match them 
@@ -1976,7 +1986,7 @@ class AdvancedOps:
                 u = (1 - (obsr / theoCE[idx])) * 100.0 / self.percerrinten[H_index]
                 I = self.intensity[H_index]
                 if verbose == True:
-                    print H, 'theo_ratio =', theoCE[idx], 'obs_ratio', obsr, '   Icorr =', Ic, '   Idered = ', I#, '   percent_Iuncert[H_index]=', percent_Iuncert[H_index]
+                    print H, 'theo_ratio =', theoCE[idx], 'obs_ratio', obsr, '   Icorr =', Ic, '   Idered = ', I, '   percent_Iuncert[H_index]=', self.percerrinten[H_index]
                     print '   error de excitacion colisional = ', u 
                 uncert.append(u)
         # In order to find the best combination of C_Hbeta and EWabsHbeta determine chi squared
@@ -1987,11 +1997,20 @@ class AdvancedOps:
         Chi_sq = sum(sqs)
         return Chi_sq, norm_H6theo
         
-    def redcor2(self, I_theo_HaHb, theoCE, Hlines, TO2gar, Idered, C_Hbeta, EWabsHbeta, catalog_lines, corr_undelyingAbs_EWs, 
-                rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, 
+    def redcor2(self, theoCE, Hlines, 
+                element, ion, forbidden, how_forbidden, flux, 
                 intensities, EW, continuum, all_err_cont_fit, em_lines=False):
         '''This function is only used if C(Hbeta) was used for reddening correction. If E(B-v) was used instead, this
         function will be skiped.'''
+        # Variables obtained from parent class
+        I_theo_HaHb = BasicOps.I_theo_HaHb
+        C_Hbeta = BasicOps.cHbeta / 0.434
+        EWabsHbeta = BasicOps.EWabsHbeta
+        corr_undelyingAbs_EWs = BasicOps.corr_undelyingAbs_EWs
+        all_err_cont_fit = BasicOps.errs_list
+        observed_wavelength = BasicOps.observed_wavelength
+        continuum = BasicOps.continuum
+        
         number_iterations = 14 #this number must be even
         EWabsHbeta_increase = 0.1
         C_Hbeta_increase = 0.01
@@ -2000,24 +2019,26 @@ class AdvancedOps:
         EWabsHbeta_values.append(EWabsHbeta)
         C_Hbeta_values = []
         C_Hbeta_values.append(C_Hbeta)
-        Halpha_idx = catalog_lines.index(6563.)
-        Hbeta_idx = catalog_lines.index(4861.)
-        H6_idx = catalog_lines.index(4102)
+        rounded_wavelengths = round_wavs(self.wavelength)
+        Halpha_idx = rounded_wavelengths.index(6563.)
+        Hbeta_idx = rounded_wavelengths.index(4861.)
+        H6_idx = rounded_wavelengths.index(4102)
         dif_TheoObs_H6Hb_values = []
+        verbose = False
         # Find the faintest detected emission line: get rid of negative fluxes
         cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         if em_lines:
-            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)
+            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = find_emission_lines(rounded_wavelengths, self.element, self.ion, self.forbidden, self.howforb, observed_wavelength, self.flux, self.intensity, self.ew, continuum)
         else:
-            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = normalize_lines(rounded_catalog_wavelength, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
+            catalog_lines, _, element_lines, _, _, _, normfluxes, _, norm_intensities, _ = normalize_lines(rounded_wavelengths, element, ion, forbidden, how_forbidden, observed_wavelength, flux, intensities, EW, continuum)        
         I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
         # Determine uncertainties
         percent_Iuncert, _, _ = BasicOps.get_uncertainties(catalog_lines, normfluxes, all_err_cont_fit)
-        Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+        Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(Hlines, theoCE, verbose)
         Chi_sq_models.append(Chi_sq)
         dif_TheoObs_H6Hb = numpy.fabs(I_theo_H6Hb - I_obs_H6Hb) 
         dif_TheoObs_H6Hb_values.append(dif_TheoObs_H6Hb)
-        I_obs_HaHb = Idered[Halpha_idx] / Idered[Hbeta_idx]
+        I_obs_HaHb = self.intensity[Halpha_idx] / self.intensity[Hbeta_idx]
         print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
         diff_HaHb_values = []
         diff_HaHb = numpy.fabs(I_theo_HaHb - I_obs_HaHb)
@@ -2044,7 +2065,7 @@ class AdvancedOps:
             cHbeta = 0.434*C_Hbeta
             Idered, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_lines, normfluxes, norm_intensities)
             I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
-            Chi_sq, norm_H6theo = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(Hlines, theoCE, verbose)
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
@@ -2075,7 +2096,7 @@ class AdvancedOps:
             # Dered again and find the Chi_squared of that model
             Idered, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, catalog_lines, normfluxes, norm_intensities)
             I_obs_H6Hb = catalog_lines[H6_idx] / catalog_lines[Hbeta_idx]
-            Chi_sq, norm_H6theo = self.find_Chi_of_CE(TO2gar, catalog_lines, element_lines, Idered, Hlines, theoCE, percent_Iuncert)
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(Hlines, theoCE, verbose)
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
@@ -2144,9 +2165,10 @@ class AdvancedOps:
         
     def perform_advanced_ops(self, forceTe, forceNe):
         lines_pyneb_matches = self.writeRedCorrFile()
-        if self.use_Chbeta:
-            self.corr_ColExcit()
         self.get_tempsdens()
+        if self.use_Chbeta:
+            print '    Corecting for collisional excitation...'
+            self.corr_ColExcit()
         self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
 
