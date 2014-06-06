@@ -344,7 +344,8 @@ RedCor_file.close()
 if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format
-advops = metallicity.AdvancedOps(object_name, cHbeta, case, use_Chbeta, writeouts=create_txt_temdenabunds, verbose=False)
+advops = metallicity.AdvancedOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
+                                 object_name, case, use_Chbeta, writeouts=create_txt_temdenabunds, do_errs=flxEW_errs, verbose=False)
 forceTe = None#11200.0 #18600.0
 forceNe = None#500.0  #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe)
