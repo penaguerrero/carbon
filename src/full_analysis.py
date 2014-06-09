@@ -345,6 +345,7 @@ if first_redcorr == True:
     exit()
 # Write the first round of reddeding correction in pyneb readable format or correct for collisional excitation if
 # asked to use CHbeta instead of E(B-V).
+Hlines = None
 # SBS1319       Halpha, H5,   H6,   H7,    H8,     H9,     H10,    H11,    H12
 theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.109, 0.0760, 0.0553, 0.0415, 0.0320]
 theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.105, 0.733, 0.0532, 0.0398, 0.0306]
@@ -353,11 +354,14 @@ if case == 'A':
 elif case == 'B':
     theoCE = theoCE_caseB    
 #advops = metallicity.AdvancedOps(object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=create_txt_temdenabunds, verbose=False)
-advops = metallicity.AdvancedOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
-                                 object_name, case, use_Chbeta, theoCE, writeouts=create_txt_temdenabunds, do_errs=None, verbose=False)
+do_errs = None
+writeouts=create_txt_temdenabunds
+verbose=False
+advops = metallicity.AdvancedOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs,
+                                 object_name, case, use_Chbeta, theoCE, writeouts, verbose)
 forceTe = None#11200.0 #18600.0
 forceNe = None#500.0  #1000.0
-lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE)
+lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE, )
 
 
 print '\n Code finished!'
