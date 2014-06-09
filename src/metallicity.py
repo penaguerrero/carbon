@@ -672,9 +672,11 @@ class BasicOps:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
-class AdvancedOps(BasicOps):
+class AdvancedOps(BasicOps):    
+    #def __init__(self, object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=False, verbose=False):
     def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs, #variables from parent class
-                 object_name, case, use_Chbeta, writeouts=False, verbose=False): #variables from child class
+                 object_name, case, use_Chbeta, writeouts=False, verbose=False):  #variables from child class
+        super(AdvancedOps, self).__init__()
         # Initialize the inherited class
         BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
         # Inputs:
@@ -2150,8 +2152,16 @@ class AdvancedOps(BasicOps):
         flambdas = find_flambdas(cHbeta, I_dered_norCorUndAbs, norm_fluxes)
         dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
         # Determine uncertainties    
-        data2process = [catalog_lines, flux, self.errflux, norm_fluxes, norm_Idered]
-        percent_Iuncert, absolute_Iuncert, S2N = BasicOps.get_uncertainties(data2process)
+        #data2process = [catalog_lines, flux, self.errflux, norm_fluxes, norm_Idered]
+        #percent_Iuncert, absolute_Iuncert, S2N = BasicOps.get_uncertainties(data2process)
+        percent_Iuncert = self.percerrinten
+        absolute_Iuncert = []
+        S2N = []
+        for I, perIu in zip(norm_Idered, percent_Iuncert):
+            errI = I * (perIu/100.0)
+            absolute_Iuncert.append(errI)
+            sn = I / errI
+            S2N.append(sn)
         uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
         I_obs_HaHb = norm_Idered[Halpha_idx] / norm_Idered[Hbeta_idx]
         print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
@@ -2162,12 +2172,12 @@ class AdvancedOps(BasicOps):
         return (lines_info, dereddening_info, uncertainties_info)
         
         
-    def perform_advanced_ops(self, forceTe, forceNe):
+    def perform_advanced_ops(self, forceTe, forceNe, theoCE):
         lines_pyneb_matches = self.writeRedCorrFile()
         self.get_tempsdens()
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
-            lines_info, dereddening_info, uncertainties_info = self.redcor2()
+            lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, Hlines=None, verbose=False, em_lines=False)
             exit()
         self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
