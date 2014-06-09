@@ -506,7 +506,7 @@ class BasicOps:
         #pn.atomicData.printAllSources()            # Returns the bibliographic reference of the source paper
         #raw_input()
         
-    def underlyingAbsCorr(self):
+    def underlyingAbsCorr(self, return_Is=False):
         catalog_wavelength = self.catalog_wavelength
         continuum = self.continuum
         flux = self.flux
@@ -539,6 +539,8 @@ class BasicOps:
             I = EWabsLine * EWabsHbeta * cont + flx
             corr_intensities.append(I)
         self.intensities_corr_undelyingAbs = corr_intensities
+        if return_Is:
+            return corr_intensities
     
     def Halpha2Hbeta_dered(self, av, ebv):
         ''' Function to deredd and obtain the Halpha/Hbeta ratio nicely printed along with the redden values to compare. '''
@@ -675,8 +677,7 @@ class BasicOps:
 class AdvancedOps(BasicOps):    
     #def __init__(self, object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=False, verbose=False):
     def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs, #variables from parent class
-                 object_name, case, use_Chbeta, writeouts=False, verbose=False):  #variables from child class
-        super(AdvancedOps, self).__init__()
+                 object_name, case, use_Chbeta, theoCE, writeouts=False, verbose=False):  #variables from child class
         # Initialize the inherited class
         BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
         # Inputs:
@@ -1929,7 +1930,7 @@ class AdvancedOps(BasicOps):
         if self.writeouts:
             outf.close()
         
-    def corr_ColExcit(self, Idered_norm, verbose=False, Hlines=None):
+    def corr_ColExcit(self, Idered_norm, Hlines=None, verbose=False):
         '''
         This function is the second iteration of reddening correction. It fits the observed H lines given to the theoretical
         ones found with INTRAT by Storey & Hummer (1995).
@@ -1940,11 +1941,11 @@ class AdvancedOps(BasicOps):
         #Hlines = [6563, 4340, 4101, 3967, 3889, 3835, 3798, 3771, 3750]
         # HOWERVER H7 and H8 are contaminated by HeI (H8 is also contaminated with [NeIII]
         if Hlines == None:
-            Hlines = [6563, 4340, 4102, 3967, 3798, 3771, 3750]
+            Hlines = [6563.0, 4340.0, 4102.0, 3967.0, 3798.0, 3771.0, 3750.0]
         ### For collisional excitation, interpolate from Table 1 of Peimbert, Luridiana, Peimbert (2007, ApJ, 666, 636)
         # Table 1
         # Objects = NGC346, NGC2363, Haro29, SBS0335-052, IZw18
-        TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400]
+        TeOII = [12600.0, 13800.0, 14000.0, 15600.0, 15400.0]
         xalpha = [0.011, 0.037, 0.033, 0.086, 0.070]
         #xbeta = [0.007, 0.027, 0.021, 0.066, 0.053]
         # x_lambda = I_col/I_tot
@@ -1968,8 +1969,11 @@ class AdvancedOps(BasicOps):
         found_Hlines = []
         rounded_wavelengths = round_wavs(self.wavelength)
         for w, el, I in zip(rounded_wavelengths, self.element, Idered_norm):
+            #print 'w, el, I', w, el, I
             for h, l in zip(Hlines, xL):
+                #print 'h, l', h, l
                 if (w == h) and (el == 'H'):
+                    #print 'FOUND ONE!', h
                     found_Hlines.append(h)
                     newI = I * (1-l)
                     normI = newI/100.
@@ -1981,7 +1985,7 @@ class AdvancedOps(BasicOps):
                         norm_H6theo = normI
         return norm_IcorrCE, obs_ratios, found_Hlines, norm_H6theo
     
-    def find_Chi_of_CE(self, Idered_norm, Hlines, theoCE, verbose=False):
+    def find_Chi_of_CE(self, Idered_norm, theoCE, Hlines=None, verbose=False):
         ''' This function find the best combination of CHbeta and EW of Hbeta
         # theoCE = theoretical hydrogen intensities corrected for collisional excitation. '''
         # Correct for collisional excitation
@@ -2007,17 +2011,18 @@ class AdvancedOps(BasicOps):
         Chi_sq = sum(sqs)
         return Chi_sq, norm_H6theo
         
-    def redcor2(self, theoCE, Hlines, verbose=False, em_lines=False):
+    def redcor2(self, theoCE, verbose=False, em_lines=False):
         '''This function is only used if C(Hbeta) was used for reddening correction. If E(B-v) was used instead, this
         function will be skiped.'''
         # Variables obtained from parent class
-        I_theo_HaHb = BasicOps.I_theo_HaHb
-        C_Hbeta = BasicOps.cHbeta / 0.434
-        EWabsHbeta = BasicOps.EWabsHbeta
-        corr_undelyingAbs_EWs = BasicOps.corr_undelyingAbs_EWs
-        continuum = BasicOps.continuum
-        flux = BasicOps.flux
-        observed_wavelength = BasicOps.observed_wavelength
+        I_theo_HaHb = self.I_theo_HaHb
+        C_Hbeta = self.cHbeta / 0.434
+        EWabsHbeta = self.EWabsHbeta
+        corr_undelyingAbs_EWs = self.underlyingAbsCorr(return_Is=True)
+        continuum = self.continuum
+        flux = self.flux
+        observed_wavelength = self.observed_wavelength
+        intensities = self.intensity
         #cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         # Variables used and defined for this function
         number_iterations = 14 #this number must be even
@@ -2033,10 +2038,10 @@ class AdvancedOps(BasicOps):
         Hbeta_idx = rounded_wavelengths.index(4861.)
         H6_idx = rounded_wavelengths.index(4102)
         dif_TheoObs_H6Hb_values = []        
-        
+        Hlines=None
         # Find the the Chi squared of the first round dereddened intensities 
         I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
-        Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(self.intensities, Hlines, theoCE, verbose)
+        Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(intensities, theoCE, Hlines, verbose)
         Chi_sq_models.append(Chi_sq)
         dif_TheoObs_H6Hb = numpy.fabs(I_theo_H6Hb - I_obs_H6Hb) 
         dif_TheoObs_H6Hb_values.append(dif_TheoObs_H6Hb)
@@ -2066,7 +2071,7 @@ class AdvancedOps(BasicOps):
             cHbeta = 0.434*C_Hbeta
             Idered_norm, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, rounded_wavelengths, norm_fluxes, norm_intensities)
             I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
-            Chi_sq, norm_H6theo = self.find_Chi_of_CE(Idered_norm, Hlines, theoCE, verbose)
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(intensities, theoCE, Hlines, verbose)
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
@@ -2096,7 +2101,7 @@ class AdvancedOps(BasicOps):
             # Dered again and find the Chi_squared of that model
             Idered_norm, _ = self.Halpha2Hbeta_dered(I_theo_HaHb, cHbeta, rounded_wavelengths, norm_fluxes, norm_intensities)
             I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
-            Chi_sq, norm_H6theo = self.find_Chi_of_CE(Hlines, theoCE, verbose)
+            Chi_sq, norm_H6theo = self.find_Chi_of_CE(intensities, theoCE, Hlines, verbose)
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
@@ -2154,6 +2159,7 @@ class AdvancedOps(BasicOps):
         # Determine uncertainties    
         #data2process = [catalog_lines, flux, self.errflux, norm_fluxes, norm_Idered]
         #percent_Iuncert, absolute_Iuncert, S2N = BasicOps.get_uncertainties(data2process)
+        #cols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         percent_Iuncert = self.percerrinten
         absolute_Iuncert = []
         S2N = []
@@ -2177,8 +2183,7 @@ class AdvancedOps(BasicOps):
         self.get_tempsdens()
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
-            lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, Hlines=None, verbose=False, em_lines=False)
-            exit()
+            lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, verbose=False, em_lines=False)
         self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
 
