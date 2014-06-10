@@ -347,8 +347,11 @@ if first_redcorr == True:
 # asked to use CHbeta instead of E(B-V).
 Hlines = None
 # SBS1319       Halpha, H5,   H6,   H7,    H8,     H9,     H10,    H11,    H12
-theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.109, 0.0760, 0.0553, 0.0415, 0.0320]
-theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.105, 0.733, 0.0532, 0.0398, 0.0306]
+#theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.109, 0.0760, 0.0553, 0.0415, 0.0320]
+#theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.105, 0.733, 0.0532, 0.0398, 0.0306]
+# HOWERVER H8 and H9 are contaminated by HeI (H8 is also contaminated with [NeIII]), and H12 is too weak.
+theoCE_caseA = [2.80, 0.47, 0.265, 0.164, 0.0553, 0.0415]
+theoCE_caseB = [2.85, 0.469, 0.260, 0.160, 0.0532, 0.0398]
 if case == 'A':
     theoCE = theoCE_caseA
 elif case == 'B':
