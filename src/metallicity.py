@@ -1344,22 +1344,13 @@ class AdvancedOps(BasicOps):
             print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
             if self.writeouts:
                 print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2gar[0], self.TO2gar[1], TO2gar_err)
+        else:
+            self.TO2gar = [0.0, 0.0]
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
-        print ''
-        
-    def get_iontotabs(self, forceTeH=None, forceNe=None):
-        ''' With the available temperatures determine ionic and total abundances
-        forceTeH = specific high ionization region temperature to be used to determine abundances.
-                    It can be either one value or a list of value and error.
-        forceNe = specific density to be used 
-                    It can be either one value or a list of value and error.
-        '''
-        # Define the string added to the name of the text files to be written according to the reddening process used
-        RedCorType = self.RedCorType
-        # Define the high and lo ionization zones temperatures and densities
-        print 'Temperatures being used for estimation of abundances:'
+            
+    def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceNe=None):
         if (forceTeH != None):
             if type(forceTeH) is not list:
                 # error is not defined, use a default value of 25% of the given temperature
@@ -1382,7 +1373,6 @@ class AdvancedOps(BasicOps):
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
             te_low = [teL, teLerr]
-            self.te_low = te_low
             teVLerr = teVL + (teVL * perr)
             te_verylow = [teVL, teVLerr]
             print '   High ionization degree temperature forced to be:      ', te_high[0], '+-', te_high[1]-te_high[0]
@@ -1392,6 +1382,7 @@ class AdvancedOps(BasicOps):
         else:
             if math.isnan(self.temO2[0]):
                 te_low = [9000.000, 9500.0]
+                print 'temO2 is nan'
             else:
                 te_low = self.temO2
                 print '   Te_low (O2) =', te_low
@@ -1408,8 +1399,6 @@ class AdvancedOps(BasicOps):
                     te_low = self.TO2gar
             if te_low[0] == 9000.00:
                 print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
-            self.te_low = te_low
-                
             if math.isnan(self.TS3[0]):
                 te_verylow = [8500.0, 9000.0]
                 print '   Te[S 3] not available, using default value:   te_Verylow = 8,500 +- 500.0'
@@ -1422,7 +1411,6 @@ class AdvancedOps(BasicOps):
                 te_verylow = [teVlow, teVlow+teVlow*perS3]
                 print self.TS3, perS3
                 print '   Te[S 3] > Te[O 3], using default value:   te_Verylow = Te[O 3]*0.85 +-  % err of Te[S 3] =', te_verylow
-            
         print 'Densitiy being used for calculations:'
         if forceNe != None:
             if type(forceNe) is not list:
@@ -1450,6 +1438,28 @@ class AdvancedOps(BasicOps):
                     ne[1] = ne[0] + ne[0]*0.1
                 dens = ne
                 print 'ne =', dens, '\n'
+        print ''
+        # Define the temperatures and density for the class. 
+        self.te_high = te_high        
+        self.te_low = te_low        
+        self.te_verylow = te_verylow       
+        self.dens = dens         
+        
+    def get_iontotabs(self, forceTeH=None, forceNe=None):
+        ''' With the available temperatures determine ionic and total abundances
+        forceTeH = specific high ionization region temperature to be used to determine abundances.
+                    It can be either one value or a list of value and error.
+        forceNe = specific density to be used 
+                    It can be either one value or a list of value and error.
+        '''
+        # Define the string added to the name of the text files to be written according to the reddening process used
+        RedCorType = self.RedCorType
+        # Define the high and lo ionization zones temperatures and densities
+        print 'Temperatures being used for estimation of abundances:'
+        te_high = self.te_high        
+        te_low = self.te_low        
+        te_verylow = self.te_verylow       
+        dens = self.dens         
                 
         print '\n  Calculating abundances.... \n'
             
@@ -1565,8 +1575,6 @@ class AdvancedOps(BasicOps):
         err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
         #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
         N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
-        #if N2toO2 < 0.0: 
-        #    N2toO2 = 0.0
         print '\nC2/O2 = ', C2toO2, '+-', C2toO2_err
         print 'N2/O2 = ', N2toO2, '+-', N2toO2_err,'\n'
 
@@ -1600,7 +1608,7 @@ class AdvancedOps(BasicOps):
                     erlogionerr = 0.0
                 print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
             print >> outf, '#####'
-            print >> outf, '# RATIOS -- using equations from Garnet et al. (1995)'
+            print >> outf, '# RATIOS -- using equations from Garnett et al. (1995)'
             print >> outf, ('{:<6} {:>11} {:>11} {:>10}'.format('# Ion ratio', 'Line ratio', 'Value', 'Abs err'))
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C2/O2', '1909/1666', C2toO2, C2toO2_err))
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '1752/1666', N2toO2, N2toO2_err))
@@ -1776,7 +1784,7 @@ class AdvancedOps(BasicOps):
                     R = Cl_tot / Otot
                     Ratio = numpy.log10(R)
                     Rerr = R * numpy.sqrt((Cl_toterr/Cl_tot)**2 + (Ototerr/Otot)**2)
-                    elem_abun['Cl'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
+                    elem_abun['Cl'] = [ab, er, Cl_errp, logele, logeleerr, Ratio, Ratioerr]
                     Ratioerr = Rerr / (2.303 * R)
             else:
                 print '    Assuming ICF(Cl) from Izotov et al. (2006)'
@@ -1847,7 +1855,7 @@ class AdvancedOps(BasicOps):
             Ratio = numpy.log10(R)
             Rerr = R * numpy.sqrt((Ar_toterr/Ar_tot)**2 + (Ototerr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
-            elem_abun['Ar'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
+            elem_abun['Ar'] = [ab, er, Ar_errp, logele, logeleerr, Ratio, Ratioerr]
         else:
             print '    Assuming ICF(Ar) from Izotov et al. (2006)'
             perr = er/ab * 100.0
@@ -1962,7 +1970,7 @@ class AdvancedOps(BasicOps):
         # x_lambda = I_col/I_tot
         # now do the interpolation according to the [OII] temperature
         xL = []
-        if math.isnan(self.TO2gar[0]):
+        if self.TO2gar[0] == 0.0:
             TeLow = self.te_low[0]
         else:
             TeLow = self.TO2gar[0]
@@ -2212,6 +2220,7 @@ class AdvancedOps(BasicOps):
     def perform_advanced_ops(self, forceTe, forceNe, theoCE):
         lines_pyneb_matches = self.writeRedCorrFile()
         self.get_tempsdens()
+        self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, verbose=False, em_lines=False)
