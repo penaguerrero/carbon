@@ -2009,14 +2009,10 @@ class AdvancedOps(BasicOps):
         # with the theoretical ratios given by INTRAT (Storey & Hummer, 1995, MNRAS, 272, 41).
         uncert = []
         rounded_wavelengths = round_wavs(self.wavelength)
-        
-        verbose = True
-        
         for H, Ic, obsr in zip(found_Hlines, IcorrCE, obs_ratios):
             idx = Hlines.index(H)
             if H in rounded_wavelengths:
                 H_index = rounded_wavelengths.index(H)
-                #print H, obsr, theoCE[idx], self.percerrinten[H_index], (1 -(obsr/theoCE[idx]))*100/self.percerrinten[H_index]
                 u = (1 - (obsr / theoCE[idx])) * 100.0 / self.percerrinten[H_index]
                 I = self.intensity[H_index]
                 if verbose:
@@ -2060,9 +2056,6 @@ class AdvancedOps(BasicOps):
         H6_idx = rounded_wavelengths.index(4102)
         dif_TheoObs_H6Hb_values = []        
         Hlines=None
-            
-        print '6563', intensities[Halpha_idx], raw_input()
-            
         # Find the the Chi squared of the first round dereddened intensities 
         I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
         Chi_sq, I_theo_H6Hb = self.find_Chi_of_CE(intensities, theoCE, Hlines, verbose)
@@ -2097,12 +2090,9 @@ class AdvancedOps(BasicOps):
                 norm_intensities = intensities
             # Dered again and find the Chi_squared of that model
             cHbeta = 0.434*C_Hbeta
-            Idered_norm, _, _ = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
+            _, Idered_norm, _ = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
             I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
             Chi_sq, norm_H6theo = self.find_Chi_of_CE(Idered_norm, theoCE, Hlines, verbose)
-            
-            print '6563', intensities[Halpha_idx], raw_input()
-            
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
@@ -2134,12 +2124,9 @@ class AdvancedOps(BasicOps):
                 norm_fluxes = flux
                 norm_intensities = intensities
             # Dered again and find the Chi_squared of that model
-            Idered_norm, _, _ = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
+            _, Idered_norm, _ = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
             I_obs_H6Hb = rounded_wavelengths[H6_idx] / rounded_wavelengths[Hbeta_idx]
             Chi_sq, norm_H6theo = self.find_Chi_of_CE(Idered_norm, theoCE, Hlines, verbose)
-            
-            print '6563', intensities[Halpha_idx], raw_input()
-            
             Chi_sq_models.append(Chi_sq)
             dif_TheoObs_HaHb = numpy.fabs(norm_H6theo - I_obs_H6Hb) 
             dif_TheoObs_H6Hb_values.append(dif_TheoObs_HaHb)
