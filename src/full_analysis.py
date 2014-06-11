@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 17
+object_number = 12
 
 # Write the text file with line info?
 create_txt_lineinfo = False
@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 ############################################################################################################################################
 
@@ -356,14 +356,13 @@ if case == 'A':
     theoCE = theoCE_caseA
 elif case == 'B':
     theoCE = theoCE_caseB    
-#advops = metallicity.AdvancedOps(object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=create_txt_temdenabunds, verbose=False)
 do_errs = None
 writeouts=create_txt_temdenabunds
 verbose=False
 advops = metallicity.AdvancedOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs,
                                  object_name, case, use_Chbeta, theoCE, writeouts, verbose)
-forceTe = None#11200.0 #18600.0
-forceNe = None#500.0  #1000.0
+forceTe = None #18600.0
+forceNe = None #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE, )
 
 
