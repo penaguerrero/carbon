@@ -1575,8 +1575,14 @@ class AdvancedOps(BasicOps):
         err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
         #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
         N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
-        print '\nC2/O2 = ', C2toO2, '+-', C2toO2_err
-        print 'N2/O2 = ', N2toO2, '+-', N2toO2_err,'\n'
+        # Find the fraction of O++/Otot
+        op = sorted_atoms.index('O2')
+        opp = sorted_atoms.index('O3')
+        Ofrac = totabs_ions_list[opp][0] / (totabs_ions_list[op][0] + totabs_ions_list[opp][0])
+        print '\n X(O++) = %0.3f' % Ofrac
+        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
+        print ' N++/O++ = %0.3f +- %0.03f' % (N2toO2, N2toO2_err)
+        #raw_input()
 
         # Write results in text file
         if self.writeouts:
@@ -1610,14 +1616,15 @@ class AdvancedOps(BasicOps):
             print >> outf, '#####'
             print >> outf, '# RATIOS -- using equations from Garnett et al. (1995)'
             print >> outf, ('{:<6} {:>11} {:>11} {:>10}'.format('# Ion ratio', 'Line ratio', 'Value', 'Abs err'))
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C2/O2', '1909/1666', C2toO2, C2toO2_err))
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '1752/1666', N2toO2, N2toO2_err))
-            n2 = sorted_atoms.index('N2')
-            o2 = sorted_atoms.index('O2')
-            n2too2 = totabs_ions_list[n2][0]/totabs_ions_list[o2][0]
-            n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[n2][1]/totabs_ions_list[n2][0])**2 + (totabs_ions_list[o2][1]/totabs_ions_list[o2][0])**2)
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N2/O2', '6548/5007', n2too2, n2too2_err))
-        
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C++/O++', '1909/1666', C2toO2, C2toO2_err))
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '1752/1666', N2toO2, N2toO2_err))
+            '''
+            npp = sorted_atoms.index('N3')
+            opp = sorted_atoms.index('O3')
+            n2too2 = totabs_ions_list[npp][0]/totabs_ions_list[opp][0]
+            n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[npp][1]/totabs_ions_list[npp][0])**2 + (totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2)
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '6548/5007', n2too2, n2too2_err))
+            '''
         ### TOTAL abundances
         icf = pn.ICF()
         icf.getAvailableICFs() # get all available ICFs
