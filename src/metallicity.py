@@ -1492,8 +1492,8 @@ class AdvancedOps(BasicOps):
          
         # ions of zones of high and medium ionization degree are combined
         ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca5', 'Cl2', 'Cl3', 'Cl4', 'Fe3', 'K4', 'K5', 'Mg5', 
-                   'N3', 'Ne3', 'Ne4', 'Ne5', 'Na4', 'Na6', 'Ne3', 'Ne5', 'O3', 'S3']
-        ab_low = ['Al2', 'N1', 'N2', 'O1', 'O2', 'S2', 'Si2', 'Si3']
+                   'N3', 'Ne3', 'Ne4', 'Ne5', 'Na4', 'Na6', 'Ne3', 'Ne5', 'O3', 'S3', 'He2']
+        ab_low = ['Al2', 'N1', 'N2', 'O1', 'O2', 'S2', 'Si2', 'Si3', 'He1']
         # create two lists: 1) all atoms list, 2) empty list with all ions to be filled with the total ionic abundances
         atoms_list = []
         totabs_ions_list = []
@@ -1514,7 +1514,9 @@ class AdvancedOps(BasicOps):
                              # K4     K5      Mg5     N1      N2      N3      Na4     Na6     Ne3     Ne4     Ne5     
                              '6796', '4163', '2783', '5200', '6548', '1752', '3362', '2970', '3869', '2425', '3346',
                              # O1     O2     O3      S2      S3      Si2     Si3
-                             '6300', '3727', '5007', '6731', '9531', '2345', '1892']
+                             '6300', '3727', '5007', '6731', '9531', '2345', '1892',
+                             # He1     He2
+                             '6678A', '4686A'] 
         for label in line_label_list:
             for line in strong_lines_list:
                 if line in label:
@@ -1564,6 +1566,37 @@ class AdvancedOps(BasicOps):
         #    C2toO2 = 0.0
         # Equation 3 for C^{++}/O^{++}
         #I_1759 = self.I_1749
+        # Find the fraction of O++/Otot
+        op = sorted_atoms.index('O2')
+        opp = sorted_atoms.index('O3')
+        Otot = totabs_ions_list[op][0] + totabs_ions_list[opp][0]
+        Ofrac = totabs_ions_list[opp][0] / Otot
+        print '\n X(O++) = %0.3f' % Ofrac
+        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
+        # now determine the metallicity of the object: Z
+        # We know that 1/X = (X + Y + Z)/X = 1 + Y/X + Z/X
+        # the ammount of helium is obtained from the HELIO10 code
+        #***
+        helio = 0.0827
+        YoverX = 4 * (helio)
+        # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
+        ZoverX = 32 * Otot
+        oneoverX = 1 + YoverX + ZoverX
+        X = 1 / oneoverX
+        # now solve for Z from Z/X 
+        Z = ZoverX * X
+        print ' The metallicity Z =', Z
+        raw_input()
+        # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
+        XCXO = 0.86
+        icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
+        print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
+        cpp = sorted_atoms.index('C3')
+        totC = totabs_ions_list[cpp][0] * icfC
+        print ' total C = ', totC
+        print ' 12+log(C) = ', 12+numpy.log10(totC)
+        raw_input()
+        
         I_1752 = self.I_1752
         N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
         # error calculation
@@ -1575,12 +1608,6 @@ class AdvancedOps(BasicOps):
         err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
         #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
         N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
-        # Find the fraction of O++/Otot
-        op = sorted_atoms.index('O2')
-        opp = sorted_atoms.index('O3')
-        Ofrac = totabs_ions_list[opp][0] / (totabs_ions_list[op][0] + totabs_ions_list[opp][0])
-        print '\n X(O++) = %0.3f' % Ofrac
-        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
         print ' N++/O++ = %0.3f +- %0.03f' % (N2toO2, N2toO2_err)
         #raw_input()
 
@@ -1619,11 +1646,11 @@ class AdvancedOps(BasicOps):
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C++/O++', '1909/1666', C2toO2, C2toO2_err))
             print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '1752/1666', N2toO2, N2toO2_err))
             '''
-            npp = sorted_atoms.index('N3')
+            npp = sorted_atoms.index('N2')
             opp = sorted_atoms.index('O3')
             n2too2 = totabs_ions_list[npp][0]/totabs_ions_list[opp][0]
             n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[npp][1]/totabs_ions_list[npp][0])**2 + (totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2)
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '6548/5007', n2too2, n2too2_err))
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N+/O++', '6548/5007', n2too2, n2too2_err))
             '''
         ### TOTAL abundances
         icf = pn.ICF()
@@ -2223,6 +2250,27 @@ class AdvancedOps(BasicOps):
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
         return (lines_info, dereddening_info, uncertainties_info)
         
+    def get_avgT4helio10(self, Otot, Op, Opp, TOp, TOpp):
+        '''This function gets the temperature to use in the HELIO10 program.
+        # Otot =  sum of O ionic abundances
+        # Op = O+ = O2 abundance
+        # Opp = O++ = O3 abundance
+        # TOp = Temperature of O2
+        # TOpp = Temperature of O3
+        '''        
+        # Assuming that N(O++) + N(O+) = 100%
+        perOp = Op*1.0 / Otot
+        perOpp = Opp*1.0 / Otot
+        # The temperature is T = T(O++) * %  +  T(O+) * %
+        avgT = TOp*perOp + TOpp*perOpp
+        return avgT
+        
+    def t2_helio(self):
+        
+        pass
+    def t2_RLs(self):
+        pass
+
         
     def perform_advanced_ops(self, forceTe, forceNe, theoCE):
         lines_pyneb_matches = self.writeRedCorrFile()
@@ -2233,11 +2281,4 @@ class AdvancedOps(BasicOps):
             lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, verbose=False, em_lines=False)
         self.get_iontotabs(forceTe, forceNe)
         return lines_pyneb_matches
-
-
-class TemperatureStruct():
-    def t2_helio(self):
-        pass
-    def t2_RLs(self):
-        pass
 
