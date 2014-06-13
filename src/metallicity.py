@@ -1577,6 +1577,11 @@ class AdvancedOps(BasicOps):
         # We know that 1/X = (X + Y + Z)/X = 1 + Y/X + Z/X
         # the ammount of helium is obtained from the HELIO10 code
         #***
+        Tavg, delt = self.get_avgTandDelta4helio10(Otot, totabs_ions_list[op][0], totabs_ions_list[opp][0], te_low, te_high)
+        print ' This is the weighted temperature between O+ and O++: ', Tavg
+        print '    and this is the value of detla: ', delt
+        self.get_logIs4_helio10()
+        #***
         helio = 0.0827
         YoverX = 4 * (helio)
         # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
@@ -2250,7 +2255,7 @@ class AdvancedOps(BasicOps):
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
         return (lines_info, dereddening_info, uncertainties_info)
         
-    def get_avgT4helio10(self, Otot, Op, Opp, TOp, TOpp):
+    def get_avgTandDelta4helio10(self, Otot, Op, Opp, TOp, TOpp):
         '''This function gets the temperature to use in the HELIO10 program.
         # Otot =  sum of O ionic abundances
         # Op = O+ = O2 abundance
@@ -2262,12 +2267,31 @@ class AdvancedOps(BasicOps):
         perOp = Op*1.0 / Otot
         perOpp = Opp*1.0 / Otot
         # The temperature is T = T(O++) * %  +  T(O+) * %
-        avgT = TOp*perOp + TOpp*perOpp
-        return avgT
+        avgT = (TOp*perOp + TOpp*perOpp) / 10000.0
+        # now get the value of delta using the equation given by Antonio Peimbert
+        delt = 0.65 * (Op/Otot)
+        return avgT, delt
         
-    def t2_helio(self):
+    def get_logIs4_helio10(self):
+        ''' This function obtains the log(Intensities) +- err for the helium lines needed in HELIO10. '''
+        object_name = self.object_name
+        use_Chbeta = self.use_Chbeta
+        # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
+        results_path = "../results/"
+        # but just to make sure we are in the right place, get and work with full paths
+        full_results_path = os.path.abspath(results_path)
+        # Go into the object folder and get the file
+        results4object_path = os.path.join(full_results_path, object_name)
+        if use_Chbeta:
+            RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
+        else:
+            RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
+        # Load the data of interest
+        wavs, intensities, errs, perrs = numpy.loadtxt(RedCor_file, skiprows=(1), usecols=(0,9,10,11), unpack=True)
+        w4He = [2945.0, 3188.0, 3614.0, 3819.0, 3889.0, 3965.0, 4026.0, 4121.0, 4338.0, 4471.0, 4713.0, 4922.0,
+                5016.0, 5048.0, 5876.0, 6678.0, 7065.0, 7281.0, 9464.0]
+
         
-        pass
     def t2_RLs(self):
         pass
 
