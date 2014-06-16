@@ -958,6 +958,11 @@ class AdvancedOps(BasicOps):
                 I_6102 = line.corrIntens  
             elif line.wave == 6796:
                 I_6796 = line.corrIntens  
+            # Helium
+            elif line.wave == 7065:         # He 1
+                self.I_7065= line.corrIntens                               
+            elif line.wave == 4686:         # He 2
+                self.I_4686 = line.corrIntens  
         # simultaneously compute temperature and density from pairs of line ratios
         # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
         diags = pn.Diagnostics()   # Instantiate the Diagnostics class
@@ -1490,10 +1495,24 @@ class AdvancedOps(BasicOps):
         except (RuntimeError, TypeError, NameError):
             pass
          
+        # recombination atoms
+        He1 = pn.RecAtom('He', 1)
+        He2 = pn.RecAtom('He', 2)
+        pn.atomicData.getDataFile(data_type='rec')
+        try:
+            abhe1 = He1.getIonAbundance(int_ratio=self.I_7065, tem=te_low, den=dens, wave='7065A')
+            abhe2 = He2.getIonAbundance(int_ratio=self.I_4686, tem=te_high, den=dens, wave='4686A')
+            print 'He1 abundance =', abhe1
+            print 'He2 abundance =', abhe2
+        except (RuntimeError, TypeError, NameError):
+            pass
+        raw_input('HELIUM ABUNDANCES...')
+        
         # ions of zones of high and medium ionization degree are combined
         ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca5', 'Cl2', 'Cl3', 'Cl4', 'Fe3', 'K4', 'K5', 'Mg5', 
                    'N3', 'Ne3', 'Ne4', 'Ne5', 'Na4', 'Na6', 'Ne3', 'Ne5', 'O3', 'S3', 'He2']
         ab_low = ['Al2', 'N1', 'N2', 'O1', 'O2', 'S2', 'Si2', 'Si3', 'He1']
+        
         # create two lists: 1) all atoms list, 2) empty list with all ions to be filled with the total ionic abundances
         atoms_list = []
         totabs_ions_list = []
@@ -1516,7 +1535,7 @@ class AdvancedOps(BasicOps):
                              # O1     O2     O3      S2      S3      Si2     Si3
                              '6300', '3727', '5007', '6731', '9531', '2345', '1892',
                              # He1     He2
-                             '6678A', '4686A'] 
+                             '7065A', '4686A'] 
         for label in line_label_list:
             for line in strong_lines_list:
                 if line in label:
@@ -1581,6 +1600,9 @@ class AdvancedOps(BasicOps):
         print ' This is the weighted temperature between O+ and O++: ', Tavg
         print '    and this is the value of detla: ', delt
         self.get_logIs4_helio10()
+        wavsHe, logInts, logErrs = self.get_logIs4_helio10()
+        for w, lI, le in zip(wavsHe, logInts, logErrs):
+            print 'For', w, 'log Intensity =', lI, '+-', le
         #***
         helio = 0.0827
         YoverX = 4 * (helio)
@@ -2268,6 +2290,7 @@ class AdvancedOps(BasicOps):
         perOpp = Opp*1.0 / Otot
         # The temperature is T = T(O++) * %  +  T(O+) * %
         avgT = (TOp*perOp + TOpp*perOpp) / 10000.0
+        print ' fraction of O+ = ', perOp, '     fraction of O++ = ', perOpp
         # now get the value of delta using the equation given by Antonio Peimbert
         delt = 0.65 * (Op/Otot)
         return avgT, delt
@@ -2287,10 +2310,29 @@ class AdvancedOps(BasicOps):
         else:
             RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
         # Load the data of interest
-        wavs, intensities, errs, perrs = numpy.loadtxt(RedCor_file, skiprows=(1), usecols=(0,9,10,11), unpack=True)
-        w4He = [2945.0, 3188.0, 3614.0, 3819.0, 3889.0, 3965.0, 4026.0, 4121.0, 4338.0, 4471.0, 4713.0, 4922.0,
-                5016.0, 5048.0, 5876.0, 6678.0, 7065.0, 7281.0, 9464.0]
-
+        wavs, intensities, errs = numpy.loadtxt(RedCor_file, skiprows=(1), usecols=(0,9,10), unpack=True)
+        w4He = [2945.0, 3188.0, 3614.0, 3819.0, 3889.0, 3965.0, 4026.0, 4121.0, 4388.0, 4438.0, 
+                4471.0, 4713.0, 4922.0, 5016.0, 5048.0, 5876.0, 6678.0, 7065.0, 7281.0, 9464.0]
+        rounded_wavs = round_wavs(wavs)
+        logInts = []
+        logErrs = []
+        wavsHe = []
+        for w, I, e in zip(rounded_wavs, intensities, errs):
+            if w in w4He:
+                if I < 0.0:
+                    logI = -1.000
+                    loge = 99.000
+                else:
+                    logI = numpy.log10(I/100.0)
+                    loge = 0.5 * numpy.log10((I+e)/(I-e))
+                    if w == 3889.0:
+                        logI = numpy.log10((I-10.6)/100.0)
+                        loge = 0.5 * numpy.log10((I-10.6+e)/(I-10.6-e))
+                wavsHe.append(w)
+                logInts.append(logI)
+                logErrs.append(loge)
+        return wavsHe, logInts, logErrs 
+                
         
     def t2_RLs(self):
         pass
