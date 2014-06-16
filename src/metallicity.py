@@ -959,6 +959,8 @@ class AdvancedOps(BasicOps):
             elif line.wave == 6796:
                 I_6796 = line.corrIntens  
             # Helium
+            elif line.wave == 5876:         # He 1
+                self.I_5876 = line.corrIntens
             elif line.wave == 7065:         # He 1
                 self.I_7065= line.corrIntens                               
             elif line.wave == 4686:         # He 2
@@ -1450,12 +1452,18 @@ class AdvancedOps(BasicOps):
         self.te_verylow = te_verylow       
         self.dens = dens         
         
-    def get_iontotabs(self, forceTeH=None, forceNe=None):
+    def get_iontotabs(self, forceTeH=None, forceNe=None, data2use=None):
         ''' With the available temperatures determine ionic and total abundances
         forceTeH = specific high ionization region temperature to be used to determine abundances.
                     It can be either one value or a list of value and error.
         forceNe = specific density to be used 
                     It can be either one value or a list of value and error.
+        data2use = is only different to None when correcting for collisional excitation. It is a list of
+                    [lines_info, dereddening_info, uncertainties_info]  where
+                    lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines,  
+                                  how_forbidden_lines, norm_fluxes, norm_intensities, EW_lines]
+                    dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
+                    uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
         '''
         # Define the string added to the name of the text files to be written according to the reddening process used
         RedCorType = self.RedCorType
@@ -1499,14 +1507,26 @@ class AdvancedOps(BasicOps):
         He1 = pn.RecAtom('He', 1)
         He2 = pn.RecAtom('He', 2)
         pn.atomicData.getDataFile(data_type='rec')
+        print 'HELIUM ABUNDANCES...'
         try:
-            abhe1 = He1.getIonAbundance(int_ratio=self.I_7065, tem=te_low, den=dens, wave='7065A')
-            abhe2 = He2.getIonAbundance(int_ratio=self.I_4686, tem=te_high, den=dens, wave='4686A')
+            abhe1 = He1.getIonAbundance(int_ratio=self.I_5876, tem=te_high, den=dens, wave=5876)
             print 'He1 abundance =', abhe1
-            print 'He2 abundance =', abhe2
         except (RuntimeError, TypeError, NameError):
+            print 'Could not find He1 abundance.'
             pass
-        raw_input('HELIUM ABUNDANCES...')
+        try:
+            abhe2 = He1.getIonAbundance(int_ratio=self.I_7065, tem=te_high, den=dens, wave=7065)
+            print 'He1 abundance =', abhe2
+        except (RuntimeError, TypeError, NameError):
+            print 'Could not find He1 abundance.'
+            pass
+        try:
+            abhe3 = He2.getIonAbundance(int_ratio=self.I_4686, tem=te_high, den=dens, wave=4686)
+            print 'He2 abundance =', abhe3
+        except (RuntimeError, TypeError, NameError):
+            print 'Could not find He2 abundance.'
+            pass
+        raw_input(' ***  press enter to continue')
         
         # ions of zones of high and medium ionization degree are combined
         ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca5', 'Cl2', 'Cl3', 'Cl4', 'Fe3', 'K4', 'K5', 'Mg5', 
@@ -1535,7 +1555,7 @@ class AdvancedOps(BasicOps):
                              # O1     O2     O3      S2      S3      Si2     Si3
                              '6300', '3727', '5007', '6731', '9531', '2345', '1892',
                              # He1     He2
-                             '7065A', '4686A'] 
+                             '7065', '4686'] 
         for label in line_label_list:
             for line in strong_lines_list:
                 if line in label:
@@ -1559,9 +1579,6 @@ class AdvancedOps(BasicOps):
                 logab = 12+numpy.log10(ab[0])
             print ion, ab, logab
         
-        #Oab = self.O3.getIonAbundance(4.15, te_high, dens, to_eval='L(1661)')
-        #print Oab        
-
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
         # Equation 2 for C^{++}/O^{++}
         tc = te_high[0]/10000.0         # central temp
@@ -1613,15 +1630,36 @@ class AdvancedOps(BasicOps):
         # now solve for Z from Z/X 
         Z = ZoverX * X
         print ' The metallicity Z =', Z
-        raw_input()
+        raw_input(' ***  press enter to continue')
         # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
         XCXO = 0.86
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
         print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
         cpp = sorted_atoms.index('C3')
-        totC = totabs_ions_list[cpp][0] * icfC
-        print ' total C = ', totC
-        print ' 12+log(C) = ', 12+numpy.log10(totC)
+        totC_garnett = totabs_ions_list[cpp][0] * icfC     
+        # now determine carbon abundance with my thesis method
+        if data2use != None:
+            if self.use_Chbeta:
+                lines_info, dereddening_info, uncertainties_info = data2use
+                catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, _, EW_lines = lines_info
+                EWabsHbeta, C_Hbeta, _, _, flambdas = dereddening_info
+                percent_Iuncert, _, _ = uncertainties_info
+                abs_Funcert = []
+                for F, pIu in zip(norm_fluxes, percent_Iuncert):
+                    au = F * pIu
+                    abs_Funcert.append(au)
+                
+                useful_lists = [catalog_lines, flambdas, norm_fluxes, abs_Funcert]
+            else:
+                #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+                self.AdvOpscols_in_file
+        
+        #Oab = self.O3.getIonAbundance(4.15, te_high, dens, to_eval='L(1661)')
+        #print Oab        
+
+           
+        print ' total C = ', totC_garnett
+        print ' 12+log(C) = ', 12+numpy.log10(totC_garnett)
         raw_input()
         
         I_1752 = self.I_1752
@@ -2258,6 +2296,9 @@ class AdvancedOps(BasicOps):
         # Dered again and find the Chi_squared of that model
         _, norm_Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
         flambdas = find_flambdas(cHbeta, catalog_lines, I_dered_norCorUndAbs, norm_fluxes)
+        print 'Flambda values per wavelength'
+        for w, l in zip(catalog_lines, flambdas):
+            print w, l
         dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
         # Determine uncertainties    
         percent_Iuncert = self.percerrinten
@@ -2345,6 +2386,7 @@ class AdvancedOps(BasicOps):
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, verbose=False, em_lines=False)
-        self.get_iontotabs(forceTe, forceNe)
+            data2use = [lines_info, dereddening_info, uncertainties_info]
+        self.get_iontotabs(forceTe, forceNe, data2use)
         return lines_pyneb_matches
 
