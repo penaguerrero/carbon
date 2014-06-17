@@ -109,6 +109,17 @@ def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
             flambdas.append(f)
     return flambdas
 
+def write_RedCorfile(object_name, path_and_name_outfile, cols_in_file):
+    # Columns to be written in the text file: 
+    # catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW
+    catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW = cols_in_file
+    RedCor_file = open(path_and_name_outfile, 'w+')
+    print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
+    for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW):
+        eewp = (eew * 100.) / numpy.abs(ew)
+        print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
+    RedCor_file.close()
+    print 'Text file with corrected intensities written in: ', path_and_name_outfile
 
 class OneDspecs:
     '''
@@ -452,7 +463,10 @@ class BasicOps:
     - underlying stellar absorption correction
     - line intensity measurement, equivalent widths, and FWHM
     '''
-    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=None):
+    def __init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
+                 path_and_name_RedCoroutfile, do_errs=None):
+        self.object_name = object_name
+        self.path_and_name_RedCoroutfile = path_and_name_RedCoroutfile
         if not isinstance(redlaw, str):
             print 'redlaw should be a string, got ', type(redlaw)
         if not isinstance(cols_in_file, list):
@@ -679,18 +693,20 @@ class BasicOps:
         if self.errs_list != None:
             errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = self.get_uncertainties()
             return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
+            flambdas = find_flambdas(self.cHbeta, self.catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
+            cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, self.EW, self.err_EW]
+            write_RedCorfile(self.object_name, self.path_and_name_RedCoroutfile, cols_2write_in_file)
         else:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
 class AdvancedOps(BasicOps):    
     #def __init__(self, object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=False, verbose=False):
-    def __init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs, #variables from parent class
-                 object_name, case, use_Chbeta, theoCE, writeouts=False, verbose=False):  #variables from child class
+    def __init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs, #variables from parent class
+                 case, use_Chbeta, theoCE, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
         # Initialize the inherited class
-        BasicOps.__init__(self, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs)
+        BasicOps.__init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs)
         # Inputs:
-        self.object_name = object_name
         self.cHbeta = cHbeta
         self.case = case                        # this is the Case used through out the class
         self.verbose = verbose                  # if True print midpoints in order to know what is the code working on
@@ -703,8 +719,10 @@ class AdvancedOps(BasicOps):
             self.RedCorType = 'CHbeta'
         else:
             self.RedCorType = 'Ebv'
+        # If performing the collisional excitation correction, tfile2ndRedCor is the name of the text file with the corrected intensities.
+        self.tfile2ndRedCor = tfile2ndRedCor
 
-    
+
     def writeRedCorrFile(self, verbose=None):
         ''' This function writes a text file in a pyneb readable format... Necessary to find the temperatures and densities. '''
         object_name = self.object_name
@@ -2001,34 +2019,6 @@ class AdvancedOps(BasicOps):
         '''
         # Aluminum STILL PENDING BECAUSE NO SOURCE OF ICF FOR HII REGIONS.
         print '\n ALUMINUM'
-        icf.getAvailableICFs('Al3') # get all available ICFs
-        exit()
-        if self.atom_abun['Fe3'][0] > 0.0:
-            # Use Izotov et al (2006)
-            if logOtot <= 7.2:
-                rule = 'Ial06_41a'
-            elif (logOtot > 7.2) and (logOtot < 8.2):
-                rule = 'Ial06_24b'
-            elif logOtot >= 8.2:
-                rule = 'Ial06_24c'
-            ab_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
-            ab = ab_Ial06[rule][0]
-            er = ab_Ial06[rule][1]
-            print '    Assuming ICF(Fe) from Izotov et al. (2006)'
-            perr = er/ab * 100.0
-            print '    Fe_toterr = ', er, '=', perr, '%'
-            logele = 12+numpy.log10(ab)
-            logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
-            print '    Fe_tot = %0.2f +- %0.2f' % (logele, logeleerr)
-            R = ab / Otot
-            Ratio = numpy.log10(R)
-            Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
-            Ratioerr = Rerr / (2.303 * R)
-            elem_abun['Fe'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
-            print '    Fe/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
-        else:
-            elem_abun['Fe'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            print '    No Fe abundance available.'  
         '''
             
         # print total abundances in file
@@ -2292,14 +2282,14 @@ class AdvancedOps(BasicOps):
             norm_fluxes = flux
             norm_intensities = intensities
             EW_lines = self.AdvOpscols_in_file[12]
-        lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, norm_intensities, EW_lines]
+        #lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, norm_intensities, EW_lines]
         # Dered again and find the Chi_squared of that model
         _, norm_Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
         flambdas = find_flambdas(cHbeta, catalog_lines, I_dered_norCorUndAbs, norm_fluxes)
         print 'Flambda values per wavelength'
         for w, l in zip(catalog_lines, flambdas):
             print w, l
-        dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
+        #dereddening_info = [EWabsHbeta, C_Hbeta, norm_Idered, I_dered_norCorUndAbs, flambdas]
         # Determine uncertainties    
         percent_Iuncert = self.percerrinten
         absolute_Iuncert = []
@@ -2309,14 +2299,16 @@ class AdvancedOps(BasicOps):
             absolute_Iuncert.append(errI)
             sn = I / errI
             S2N.append(sn)
-        uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
+        #uncertainties_info = [percent_Iuncert, absolute_Iuncert, S2N]
         I_obs_HaHb = norm_Idered[Halpha_idx] / norm_Idered[Hbeta_idx]
         print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb =', I_obs_HaHb
         print''
         print 'First iteration of reddening correction:   EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta_values[0], C_Hbeta_values[0])
         print '    The best combination was:              EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta, C_Hbeta)
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
-        return (lines_info, dereddening_info, uncertainties_info)
+        # Now define the columns to be written in the text file
+        cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, percent_Iuncert, absolute_Iuncert, self.EW, self.err_EW]
+        return (cols_2write_in_file)
         
     def get_avgTandDelta4helio10(self, Otot, Op, Opp, TOp, TOpp):
         '''This function gets the temperature to use in the HELIO10 program.
@@ -2385,8 +2377,9 @@ class AdvancedOps(BasicOps):
         self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
-            lines_info, dereddening_info, uncertainties_info = self.redcor2(theoCE, verbose=False, em_lines=False)
-            data2use = [lines_info, dereddening_info, uncertainties_info]
+            cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
+            write_RedCorfile(self.object_name, self.tfile2ndRedCor, cols_2write_in_file)
+
         self.get_iontotabs(forceTe, forceNe, data2use)
         return lines_pyneb_matches
 
