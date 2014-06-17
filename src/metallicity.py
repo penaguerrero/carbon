@@ -111,12 +111,10 @@ def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
 
 def write_RedCorfile(object_name, path_and_name_outfile, cols_in_file):
     # Columns to be written in the text file: 
-    # catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW
-    catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW = cols_in_file
+    catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW, perrEW = cols_in_file
     RedCor_file = open(path_and_name_outfile, 'w+')
     print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
-    for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW):
-        eewp = (eew * 100.) / numpy.abs(ew)
+    for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW, perrEW):
         print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
     RedCor_file.close()
     print 'Text file with corrected intensities written in: ', path_and_name_outfile
@@ -1658,19 +1656,16 @@ class AdvancedOps(BasicOps):
         # now determine carbon abundance with my thesis method
         if data2use != None:
             if self.use_Chbeta:
-                lines_info, dereddening_info, uncertainties_info = data2use
-                catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, _, EW_lines = lines_info
-                EWabsHbeta, C_Hbeta, _, _, flambdas = dereddening_info
-                percent_Iuncert, _, _ = uncertainties_info
-                abs_Funcert = []
-                for F, pIu in zip(norm_fluxes, percent_Iuncert):
-                    au = F * pIu
-                    abs_Funcert.append(au)
-                
-                useful_lists = [catalog_lines, flambdas, norm_fluxes, abs_Funcert]
+                catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx = data2use
             else:
                 #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
-                self.AdvOpscols_in_file
+                catalog_wavelength = self.AdvOpscols_in_file[0]
+                flambdas = self.AdvOpscols_in_file[1]
+                element = self.AdvOpscols_in_file[2]
+                ion = self.AdvOpscols_in_file[3]
+                norm_fluxes = self.AdvOpscols_in_file[7]
+                errflux = self.AdvOpscols_in_file[8]
+                percerrflx = self.AdvOpscols_in_file[9]
         
         #Oab = self.O3.getIonAbundance(4.15, te_high, dens, to_eval='L(1661)')
         #print Oab        
@@ -2307,7 +2302,8 @@ class AdvancedOps(BasicOps):
         print '    The best combination was:              EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta, C_Hbeta)
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
         # Now define the columns to be written in the text file
-        cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, percent_Iuncert, absolute_Iuncert, self.EW, self.err_EW]
+        #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+        cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, self.errew, self.percerrew]
         return (cols_2write_in_file)
         
     def get_avgTandDelta4helio10(self, Otot, Op, Opp, TOp, TOpp):
@@ -2369,7 +2365,8 @@ class AdvancedOps(BasicOps):
         
     def t2_RLs(self):
         pass
-
+    
+    
         
     def perform_advanced_ops(self, forceTe, forceNe, theoCE):
         lines_pyneb_matches = self.writeRedCorrFile()
@@ -2379,7 +2376,13 @@ class AdvancedOps(BasicOps):
             print '    Performing second iteration of extinction correction ... \n'
             cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
             write_RedCorfile(self.object_name, self.tfile2ndRedCor, cols_2write_in_file)
-
+            # cols_2write_in_file contains the following columns:
+            # catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, norm_fluxes, errflux, percerrflx, 
+            # norm_Idered, percent_Iuncert, absolute_Iuncert, EW, err_EW, perrEW
+            catalog_wavelength, flambdas, element, ion, _, _, norm_fluxes, errflux, percerrflx, _, _, _, _, _, _ = cols_2write_in_file
+            data2use = [catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx]
+        else:
+            data2use = None
         self.get_iontotabs(forceTe, forceNe, data2use)
         return lines_pyneb_matches
 
