@@ -314,30 +314,22 @@ redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
 #redlaw = 'LMC G 03'   ## Gordon et al. (2003, ApJ, 594,279)
 #redlaw = 'B 07'       ## Blagrave et al 2007, ApJ, 655, 299
 cHbeta = 0.434*C_Hbeta
-kk = metallicity.BasicOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs=flxEW_errs)
+# Names of the text files with the results with errors
+if use_Chbeta:
+    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
+    tfile2ndRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_2ndRedCor_CHbeta.txt")
+else:
+    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
+    tfile2ndRedCor = None
+kk = metallicity.BasicOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
-flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
+#flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
 if use_Chbeta:
     idx4861 = catalog_wavelength.index(4861.33)
     idx6563 = catalog_wavelength.index(6562.820)
     new_ratio = Idered[idx6563]/Idered[idx4861]
     print '  new Halpha/Hbeta = %0.2f' % new_ratio
     #raw_input()
-
-# Write the results with errors
-if use_Chbeta:
-    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
-    tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor_CHbeta.txt")
-else:
-    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
-    tfile1stRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_1stRedCor_Ebv.txt")
-    
-RedCor_file = open(RedCor_file, 'w+')
-print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
-for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW):
-    eewp = (eew * 100.) / numpy.abs(ew)
-    print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
-RedCor_file.close()
 
 # Do collisional excitation correction
 # If still fitting the C_Hbeta and EW_abs_Hbeta the code will stop here
@@ -359,8 +351,8 @@ elif case == 'B':
 do_errs = None
 writeouts=create_txt_temdenabunds
 verbose=False
-advops = metallicity.AdvancedOps(redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, do_errs,
-                                 object_name, case, use_Chbeta, theoCE, writeouts, verbose)
+advops = metallicity.AdvancedOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
+                                 case, use_Chbeta, theoCE, writeouts, verbose, tfile2ndRedCor)
 forceTe = None #18600.0
 forceNe = None #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE, )
