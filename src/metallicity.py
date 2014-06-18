@@ -1653,27 +1653,51 @@ class AdvancedOps(BasicOps):
         print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
         cpp = sorted_atoms.index('C3')
         totC_garnett = totabs_ions_list[cpp][0] * icfC     
+        print '  C++ = ', totabs_ions_list[cpp][0]
+        print ' total C = ', totC_garnett
+        print ' 12+log(C) = ', 12+numpy.log10(totC_garnett)
         # now determine carbon abundance with my thesis method
         if data2use != None:
             if self.use_Chbeta:
-                catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx = data2use
+                # data2use = CHbeta, catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx, norm_intenties, errinten
+                CHbeta, catalog_wavelength, flambdas, _, _, norm_fluxes, _, _, norm_intenties, errinten = data2use
             else:
                 #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+                CHbeta = self.cHbeta / 0.434
                 catalog_wavelength = self.AdvOpscols_in_file[0]
                 flambdas = self.AdvOpscols_in_file[1]
-                element = self.AdvOpscols_in_file[2]
                 ion = self.AdvOpscols_in_file[3]
                 norm_fluxes = self.AdvOpscols_in_file[7]
-                errflux = self.AdvOpscols_in_file[8]
-                percerrflx = self.AdvOpscols_in_file[9]
-        
-        #Oab = self.O3.getIonAbundance(4.15, te_high, dens, to_eval='L(1661)')
-        #print Oab        
-
+                norm_intenties = self.AdvOpscols_in_file[10]
+                errinten = self.AdvOpscols_in_file[11]        
+            # We are interested in the flambda values in order to obtain the C(lambda) to correct the flux of that wavelength range
+            rounded_catwavs = round_wavs(catalog_wavelength)
+            idx1661 = rounded_catwavs.index(1661.0)
+            idx1907 = rounded_catwavs.index(1907.0)
+            deltaflambda = numpy.abs(flambdas[idx1907] - flambdas[idx1661])
+            avgC = 10**(CHbeta*deltaflambda)
+            IC3IO3_ratio = norm_fluxes[idx1907] / norm_fluxes[idx1661] * avgC
+            # Since we do not trust the 1666 measurement enough, we will use the optical part to back it up
+            idx4959 = rounded_catwavs.index(4959.0)
+            # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
+            ionic_ratio = 3.519e-23 / 2.032e-21
+            I1661 = norm_intenties[idx4959] * ionic_ratio
+            err_I1661 = errinten[idx4959] * ionic_ratio
+            # now from the IC3IO3_ratio equation, solve for the I1661 intensity and use the optical 4959 to find C3] 1907
+            corrI1907 = IC3IO3_ratio * I1661
+            err_corrI1907 = IC3IO3_ratio * err_I1661 
+            I_1907 = numpy.array([corrI1907, err_corrI1907])
+            C3_thesis = self.C3.getIonAbundance(I_1907, te_high, dens, to_eval='L(1907)')
+            print 'This is the ionic abundance of C++ with my thesis method', C3_thesis 
+            # now, using the correction factor given by Garnett '95
+            Ctot_thesis = icfC*C3_thesis
+            C_errp = (Ctot_thesis[1]/Ctot_thesis[0])*100
+            logele = 12+numpy.log10(Ctot_thesis[0])
+            logeleerr = numpy.log10((100+C_errp) / (100-C_errp))/2.0
+            print ' total abundance with thesis method, Ctot =', Ctot_thesis
+            print ' 12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele, logeleerr)
            
-        print ' total C = ', totC_garnett
-        print ' 12+log(C) = ', 12+numpy.log10(totC_garnett)
-        raw_input()
+        raw_input(' ***  press enter to continue')
         
         I_1752 = self.I_1752
         N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
@@ -2304,7 +2328,7 @@ class AdvancedOps(BasicOps):
         # Now define the columns to be written in the text file
         #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, self.errew, self.percerrew]
-        return (cols_2write_in_file)
+        return (C_Hbeta, cols_2write_in_file)
         
     def get_avgTandDelta4helio10(self, Otot, Op, Opp, TOp, TOpp):
         '''This function gets the temperature to use in the HELIO10 program.
@@ -2374,13 +2398,13 @@ class AdvancedOps(BasicOps):
         self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
-            cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
+            CHbeta, cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
             write_RedCorfile(self.object_name, self.tfile2ndRedCor, cols_2write_in_file)
             # cols_2write_in_file contains the following columns:
             # catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, norm_fluxes, errflux, percerrflx, 
             # norm_Idered, percent_Iuncert, absolute_Iuncert, EW, err_EW, perrEW
-            catalog_wavelength, flambdas, element, ion, _, _, norm_fluxes, errflux, percerrflx, _, _, _, _, _, _ = cols_2write_in_file
-            data2use = [catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx]
+            catalog_wavelength, flambdas, element, ion, _, _, norm_fluxes, errflux, percerrflx, norm_intenties, errinten, _, _, _, _ = cols_2write_in_file
+            data2use = [CHbeta, catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx, norm_intenties, errinten]
         else:
             data2use = None
         self.get_iontotabs(forceTe, forceNe, data2use)
