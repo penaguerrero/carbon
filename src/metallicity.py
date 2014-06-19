@@ -1595,166 +1595,13 @@ class AdvancedOps(BasicOps):
                 logab = 12+numpy.log10(ab[0])
             print ion, ab, logab
         
-        # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
-        # Equation 2 for C^{++}/O^{++}
-        tc = te_high[0]/10000.0         # central temp
-        tpluserr = te_high[1]/10000.0   # central temp plus error
-        if self.I_1666[0] < 0.0:
-            I_1663 = self.I_1661
-        else:
-            I_1663 = self.I_1666
-        I_1909 = self.I_1909
-        C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_1909[0]/I_1663[0])
-        # error calculation
-        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_1909[0]/I_1663[0])
-        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_1909[0]/I_1663[0])
-        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
-        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
-        err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
-        err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
-        #C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
-        C2toO2_err = (err_C2toO2_temp + err_C2toO2_lines) / 2.0
-        #if C2toO2 < 0.0:
-        #    C2toO2 = 0.0
-        # Equation 3 for C^{++}/O^{++}
-        #I_1759 = self.I_1749
-        # Find the fraction of O++/Otot
-        op = sorted_atoms.index('O2')
-        opp = sorted_atoms.index('O3')
-        Otot = totabs_ions_list[op][0] + totabs_ions_list[opp][0]
-        Ofrac = totabs_ions_list[opp][0] / Otot
-        print '\n X(O++) = %0.3f' % Ofrac
-        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
-        # now determine the metallicity of the object: Z
-        # We know that 1/X = (X + Y + Z)/X = 1 + Y/X + Z/X
-        # the ammount of helium is obtained from the HELIO10 code
-        #***
-        Tavg, delt = self.get_avgTandDelta4helio10(Otot, totabs_ions_list[op][0], totabs_ions_list[opp][0], te_low, te_high)
-        print ' This is the weighted temperature between O+ and O++: ', Tavg
-        print '    and this is the value of detla: ', delt
-        self.get_logIs4_helio10()
-        wavsHe, logInts, logErrs = self.get_logIs4_helio10()
-        for w, lI, le in zip(wavsHe, logInts, logErrs):
-            print 'For', w, 'log Intensity =', lI, '+-', le
-        #***
-        helio = 0.0827
-        YoverX = 4 * (helio)
-        # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
-        ZoverX = 32 * Otot
-        oneoverX = 1 + YoverX + ZoverX
-        X = 1 / oneoverX
-        # now solve for Z from Z/X 
-        Z = ZoverX * X
-        print ' The metallicity Z =', Z
-        raw_input(' ***  press enter to continue')
-        # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
-        XCXO = 0.86
-        icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
-        print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
-        cpp = sorted_atoms.index('C3')
-        totC_garnett = totabs_ions_list[cpp][0] * icfC     
-        print '  C++ = ', totabs_ions_list[cpp][0]
-        print ' total C = ', totC_garnett
-        print ' 12+log(C) = ', 12+numpy.log10(totC_garnett)
-        # now determine carbon abundance with my thesis method
-        if data2use != None:
-            if self.use_Chbeta:
-                # data2use = CHbeta, catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx, norm_intenties, errinten
-                CHbeta, catalog_wavelength, flambdas, _, _, norm_fluxes, _, _, norm_intenties, errinten = data2use
-            else:
-                #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
-                CHbeta = self.cHbeta / 0.434
-                catalog_wavelength = self.AdvOpscols_in_file[0]
-                flambdas = self.AdvOpscols_in_file[1]
-                ion = self.AdvOpscols_in_file[3]
-                norm_fluxes = self.AdvOpscols_in_file[7]
-                norm_intenties = self.AdvOpscols_in_file[10]
-                errinten = self.AdvOpscols_in_file[11]        
-            # We are interested in the flambda values in order to obtain the C(lambda) to correct the flux of that wavelength range
-            rounded_catwavs = round_wavs(catalog_wavelength)
-            idx1661 = rounded_catwavs.index(1661.0)
-            idx1907 = rounded_catwavs.index(1907.0)
-            deltaflambda = numpy.abs(flambdas[idx1907] - flambdas[idx1661])
-            avgC = 10**(CHbeta*deltaflambda)
-            IC3IO3_ratio = norm_fluxes[idx1907] / norm_fluxes[idx1661] * avgC
-            # Since we do not trust the 1666 measurement enough, we will use the optical part to back it up
-            idx4959 = rounded_catwavs.index(4959.0)
-            # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
-            ionic_ratio = 3.519e-23 / 2.032e-21
-            I1661 = norm_intenties[idx4959] * ionic_ratio
-            err_I1661 = errinten[idx4959] * ionic_ratio
-            # now from the IC3IO3_ratio equation, solve for the I1661 intensity and use the optical 4959 to find C3] 1907
-            corrI1907 = IC3IO3_ratio * I1661
-            err_corrI1907 = IC3IO3_ratio * err_I1661 
-            I_1907 = numpy.array([corrI1907, err_corrI1907])
-            C3_thesis = self.C3.getIonAbundance(I_1907, te_high, dens, to_eval='L(1907)')
-            print 'This is the ionic abundance of C++ with my thesis method', C3_thesis 
-            # now, using the correction factor given by Garnett '95
-            Ctot_thesis = icfC*C3_thesis
-            C_errp = (Ctot_thesis[1]/Ctot_thesis[0])*100
-            logele = 12+numpy.log10(Ctot_thesis[0])
-            logeleerr = numpy.log10((100+C_errp) / (100-C_errp))/2.0
-            print ' total abundance with thesis method, Ctot =', Ctot_thesis
-            print ' 12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele, logeleerr)
-           
-        raw_input(' ***  press enter to continue')
+        # Define the dictionary with the elements that I want to have total abundances for
+        #elements = ['Ar', 'Cl', 'N', 'Ne', 'O', 'S',   # using pyneb ICF with traditional way
+        #            'C', 'He',                         # using different ICF not in pyneb 
+        #            'Al', 'Ca', 'K', 'Mg', 'Na','Si']  # pyneb does not have ICF for HII regions for these elements
+        elem_abun = OrderedDict()
         
-        I_1752 = self.I_1752
-        N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
-        # error calculation
-        uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/tpluserr) * (I_1752[0]/I_1663[0])
-        lolimN2toO2_temp =  0.212 * numpy.exp(-0.43/(tc-numpy.abs(tpluserr-tc))) * (I_1752[0]/I_1663[0])
-        uplimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] + I_1752[1])/(I_1663[0] + I_1663[1]))
-        lolimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] - I_1752[1])/(I_1663[0] - I_1663[1]))
-        err_N2toO2_temp = numpy.sqrt((uplimN2toO2_temp - N2toO2)**2 + (N2toO2 - lolimN2toO2_temp)**2)
-        err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
-        #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
-        N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
-        print ' N++/O++ = %0.3f +- %0.03f' % (N2toO2, N2toO2_err)
-        #raw_input()
-
-        # Write results in text file
-        if self.writeouts:
-            out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
-            path_object = '../results/'+self.object_name
-            fullpath_outfile = os.path.join(path_object, out_file)
-            outf = open(fullpath_outfile, 'w+')
-            print >> outf, ('{:<45} {:>10} {:>6}'.format('# Temperatures used [K]', 'High =', int(te_high[0]))+'{:>30} {:>6}'.format('Low =', int(te_low[0]))+
-                            '{:>35} {:>6}'.format('Very_low =', int(te_verylow[0])))
-            print >> outf, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'abH', 'abH_err', 
-                                                                                            'abL', 'abL_err', 'abVL', 'abVL_err'))
-            for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab_high_list, ab_low_list, ab_very_low):
-                percent_I = (I[1] * 100.)/I[0]
-                print >> outf, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
-                                                                                                                              ab2[0], ab2[1], ab3[0], ab3[1]))
-            print >> outf, '#####'
-            print >> outf, '# IONIC ABUNDANCES'
-            print >> outf, ('{:<6} {:>15} {:>12} {:>10} {:>7}'.format('# Ion', 'abundance', 'abs error', 'LOGabund', 'LOGerr'))
-            for a, abund in zip(sorted_atoms, totabs_ions_list):
-                if abund[0] > 0.0:
-                    ionab = abund[0]
-                    ionerr = abund[1]
-                    logionab = 12 + numpy.log10(ionab)
-                    erlogionerr = (numpy.log10(ionab+ionerr) - numpy.log10(ionab-ionerr)) /2
-                else:
-                    ionab = 0.0
-                    ionerr = 0.0
-                    logionab = 0.0
-                    erlogionerr = 0.0
-                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
-            print >> outf, '#####'
-            print >> outf, '# RATIOS -- using equations from Garnett et al. (1995)'
-            print >> outf, ('{:<6} {:>11} {:>11} {:>10}'.format('# Ion ratio', 'Line ratio', 'Value', 'Abs err'))
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C++/O++', '1909/1666', C2toO2, C2toO2_err))
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '1752/1666', N2toO2, N2toO2_err))
-            '''
-            npp = sorted_atoms.index('N2')
-            opp = sorted_atoms.index('O3')
-            n2too2 = totabs_ions_list[npp][0]/totabs_ions_list[opp][0]
-            n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[npp][1]/totabs_ions_list[npp][0])**2 + (totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2)
-            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N+/O++', '6548/5007', n2too2, n2too2_err))
-            '''
-        ### TOTAL abundances
+        ### TOTAL abundances with ICFs in pyneb
         icf = pn.ICF()
         icf.getAvailableICFs() # get all available ICFs
         icf.printAllICFs(type_=['HII']) # print out the ICFs only for HII regions
@@ -1773,8 +1620,6 @@ class AdvancedOps(BasicOps):
         #icf.printInfo('Ial06_20a')
         #print 'elem_abunIal06_22a', elem_abunIal06_22a#['Ial06_22a']
         
-        #elements = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'K', 'Mg', 'N', 'Na', 'Ne', 'O', 'S', 'Si']
-        elem_abun = OrderedDict()
         # Oxygen
         print '\n OXYGEN'
         Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
@@ -2039,9 +1884,184 @@ class AdvancedOps(BasicOps):
         # Aluminum STILL PENDING BECAUSE NO SOURCE OF ICF FOR HII REGIONS.
         print '\n ALUMINUM'
         '''
+        
+        # METHODS NOT IN PYNEB
+        
+        # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
+        # Equation 2 for C^{++}/O^{++}
+        tc = te_high[0]/10000.0         # central temp
+        tpluserr = te_high[1]/10000.0   # central temp plus error
+        if self.I_1666[0] < 0.0:
+            I_1663 = self.I_1661
+        else:
+            I_1663 = self.I_1666
+        I_1909 = self.I_1909
+        C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_1909[0]/I_1663[0])
+        # error calculation
+        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_1909[0]/I_1663[0])
+        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_1909[0]/I_1663[0])
+        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
+        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
+        err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
+        err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
+        #C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
+        C2toO2_err = (err_C2toO2_temp + err_C2toO2_lines) / 2.0
+        #if C2toO2 < 0.0:
+        #    C2toO2 = 0.0
+        # Equation 3 for C^{++}/O^{++}
+        #I_1759 = self.I_1749
+        # Find the fraction of O++/Otot
+        op = sorted_atoms.index('O2')
+        opp = sorted_atoms.index('O3')
+        Ofrac = totabs_ions_list[opp][0] / Otot
+        print '\n X(O++) = %0.3f' % Ofrac
+        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
+        # now determine the metallicity of the object: Z
+        # We know that 1/X = (X + Y + Z)/X = 1 + Y/X + Z/X
+        # the ammount of helium is obtained from the HELIO10 code
+        #***
+        Tavg, delt = self.get_avgTandDelta4helio10(Otot, totabs_ions_list[op][0], totabs_ions_list[opp][0], te_low, te_high)
+        print ' This is the weighted temperature between O+ and O++: ', Tavg
+        print '    and this is the value of detla: ', delt
+        self.get_logIs4_helio10()
+        wavsHe, logInts, logErrs = self.get_logIs4_helio10()
+        for w, lI, le in zip(wavsHe, logInts, logErrs):
+            print 'For', w, 'log Intensity =', lI, '+-', le
+        #***
+        helio = 0.298
+        YoverX = 4 * (helio)
+        # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
+        ZoverX = 32 * Otot
+        oneoverX = 1 + YoverX + ZoverX
+        X = 1 / oneoverX
+        # now solve for Z from Z/X 
+        Z = ZoverX * X
+        print ' The metallicity Z =', Z
+        raw_input(' ***  press enter to continue')
+        # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
+        XCXO = 0.9#0.86
+        icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
+        print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
+        cpp = sorted_atoms.index('C3')
+        totC_garnett = totabs_ions_list[cpp] * icfC     
+        logele_gar = 12+numpy.log10(totC_garnett[0])
+        logeleerr_gar = totC_garnett[1] / (2.303 * totC_garnett[0])
+        print '  C++ = ', totabs_ions_list[cpp]
+        print ' total C = ', totC_garnett
+        print ' 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
+        # now determine carbon abundance with my thesis method
+        if data2use != None:
+            if self.use_Chbeta:
+                # data2use = CHbeta, catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx, norm_intenties, errinten
+                CHbeta, catalog_wavelength, flambdas, _, _, norm_fluxes, _, _, norm_intenties, errinten = data2use
+        else:
+            #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+            CHbeta = self.cHbeta / 0.434
+            catalog_wavelength = self.AdvOpscols_in_file[0]
+            flambdas = self.AdvOpscols_in_file[1]
+            ion = self.AdvOpscols_in_file[3]
+            norm_fluxes = self.AdvOpscols_in_file[7]
+            norm_intenties = self.AdvOpscols_in_file[10]
+            errinten = self.AdvOpscols_in_file[11]        
+        # We are interested in the flambda values in order to obtain the C(lambda) to correct the flux of that wavelength range
+        rounded_catwavs = round_wavs(catalog_wavelength)
+        idx1661 = rounded_catwavs.index(1661.0)
+        idx1907 = rounded_catwavs.index(1907.0)
+        deltaflambda = numpy.abs(flambdas[idx1907] - flambdas[idx1661])
+        avgC = 10**(CHbeta*deltaflambda)
+        IC3IO3_ratio = norm_fluxes[idx1907] / norm_fluxes[idx1661] * avgC
+        # Since we do not trust the 1666 measurement enough, we will use the optical part to back it up
+        idx4959 = rounded_catwavs.index(4959.0)
+        # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
+        ionic_ratio = 3.519e-23 / 2.032e-21
+        I1661 = norm_intenties[idx4959] * ionic_ratio
+        err_I1661 = errinten[idx4959] * ionic_ratio
+        # now from the IC3IO3_ratio equation, solve for the I1661 intensity and use the optical 4959 to find C3] 1907
+        corrI1907 = IC3IO3_ratio * I1661
+        err_corrI1907 = IC3IO3_ratio * err_I1661 
+        I_1907 = numpy.array([corrI1907, err_corrI1907])
+        C3_thesis = self.C3.getIonAbundance(I_1907, te_high, dens, to_eval='L(1907)')
+        print 'This is the ionic abundance of C++ with my thesis method', C3_thesis 
+        # now, using the correction factor given by Garnett '95
+        Ctot_thesis = icfC*C3_thesis
+        logele_thes = 12+numpy.log10(Ctot_thesis[0])
+        #logeleerr = numpy.log10((100+C_errp) / (100-C_errp))/2.0
+        logeleerr_thes = Ctot_thesis[1] / (2.303 * Ctot_thesis[0])
+        print ' total abundance with thesis method, Ctot =', Ctot_thesis
+        print ' 12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele_thes, logeleerr_thes)
+        
+        # But only print the correct value: if CHbeta take the one from my thesis, else use the ebv one
+        if data2use != None:
+            Ctot = Ctot_thesis
+            logele = logele_thes
+            logeleerr = logeleerr_thes
+        else:
+            Ctot = totC_garnett
+            logele = logele_gar
+            logeleerr = logeleerr_gar
+        C_errp = (Ctot[1]/Ctot[0])*100
+        R = Ctot[0] / Otot
+        Ratio = numpy.log(R)
+        Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303 * R)            
+        elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
+        raw_input(' ***  press enter to continue')
+        
+        I_1752 = self.I_1752
+        N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
+        # error calculation
+        uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/tpluserr) * (I_1752[0]/I_1663[0])
+        lolimN2toO2_temp =  0.212 * numpy.exp(-0.43/(tc-numpy.abs(tpluserr-tc))) * (I_1752[0]/I_1663[0])
+        uplimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] + I_1752[1])/(I_1663[0] + I_1663[1]))
+        lolimN2toO2_lines =  0.212 * numpy.exp(-0.43/tc) * ((I_1752[0] - I_1752[1])/(I_1663[0] - I_1663[1]))
+        err_N2toO2_temp = numpy.sqrt((uplimN2toO2_temp - N2toO2)**2 + (N2toO2 - lolimN2toO2_temp)**2)
+        err_N2toO2_lines = numpy.sqrt((uplimN2toO2_lines - N2toO2)**2 + (N2toO2 - lolimN2toO2_lines)**2)
+        #N2toO2_err = numpy.sqrt(err_N2toO2_temp**2 + err_N2toO2_lines**2)
+        N2toO2_err = (err_N2toO2_temp + err_N2toO2_lines) / 2.0
+        print ' N++/O++ = %0.3f +- %0.03f' % (N2toO2, N2toO2_err)
+        #raw_input()
             
-        # print total abundances in file
+        # Write results in text file
         if self.writeouts:
+            out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
+            path_object = '../results/'+self.object_name
+            fullpath_outfile = os.path.join(path_object, out_file)
+            outf = open(fullpath_outfile, 'w+')
+            print >> outf, ('{:<45} {:>10} {:>6}'.format('# Temperatures used [K]', 'High =', int(te_high[0]))+'{:>30} {:>6}'.format('Low =', int(te_low[0]))+
+                            '{:>35} {:>6}'.format('Very_low =', int(te_verylow[0])))
+            print >> outf, ('{:<9} {:>13} {:>13} {:>10} {:>17} {:>18} {:>17} {:>18} {:>17}'.format('# Line_label', 'Intensity', 'percent_err', 'abH', 'abH_err', 
+                                                                                            'abL', 'abL_err', 'abVL', 'abVL_err'))
+            for l, I, ab1, ab2, ab3 in zip(line_label_list, line_I_list, ab_high_list, ab_low_list, ab_very_low):
+                percent_I = (I[1] * 100.)/I[0]
+                print >> outf, ('{:<9} {:>15.3f} {:>8.3f} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e} {:>20.5e} {:>15.5e}'.format(l, I[0], percent_I, ab1[0], ab1[1], 
+                                                                                                                              ab2[0], ab2[1], ab3[0], ab3[1]))
+            print >> outf, '#####'
+            print >> outf, '# IONIC ABUNDANCES'
+            print >> outf, ('{:<6} {:>15} {:>12} {:>10} {:>7}'.format('# Ion', 'abundance', 'abs error', 'LOGabund', 'LOGerr'))
+            for a, abund in zip(sorted_atoms, totabs_ions_list):
+                if abund[0] > 0.0:
+                    ionab = abund[0]
+                    ionerr = abund[1]
+                    logionab = 12 + numpy.log10(ionab)
+                    erlogionerr = (numpy.log10(ionab+ionerr) - numpy.log10(ionab-ionerr)) /2
+                else:
+                    ionab = 0.0
+                    ionerr = 0.0
+                    logionab = 0.0
+                    erlogionerr = 0.0
+                print >> outf, ('{:<6} {:>15.3e} {:>12.3e} {:>10.2f} {:>7.2f}'.format(a, ionab, ionerr, logionab, erlogionerr))
+            print >> outf, '#####'
+            print >> outf, '# RATIOS -- using equations from Garnett et al. (1995)'
+            print >> outf, ('{:<6} {:>11} {:>11} {:>10}'.format('# Ion ratio', 'Line ratio', 'Value', 'Abs err'))
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('C++/O++', '1909/1666', C2toO2, C2toO2_err))
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N++/O++', '1752/1666', N2toO2, N2toO2_err))
+            '''
+            npp = sorted_atoms.index('N2')
+            opp = sorted_atoms.index('O3')
+            n2too2 = totabs_ions_list[npp][0]/totabs_ions_list[opp][0]
+            n2too2_err = n2too2 * numpy.sqrt((totabs_ions_list[npp][1]/totabs_ions_list[npp][0])**2 + (totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2)
+            print >> outf, ('{:<6} {:>15} {:>12.3f} {:>10.3f}'.format('N+/O++', '6548/5007', n2too2, n2too2_err))
+            '''
+            # print total abundances in file
             print >> outf, '#####'
             print >> outf, '# TOTAL ABUNDANCES '
             print >> outf, ('{:<5} {:>12} {:>12} {:>7} {:>10} {:>7} {:>10} {:>7}'.format('# Element', 'abundance', 'abs error', '% err', 
