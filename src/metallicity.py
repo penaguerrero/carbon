@@ -2408,6 +2408,15 @@ class AdvancedOps(BasicOps):
                 
         
     def t2_RLs(self):
+        '''This function determines the value of t^2 using recombination lines.'''
+        # Oxygen recombination lines (ORLs)
+        # The multiplet 1 has eight lines of which only two doublets are usually observed:
+        ORLs = [4640.0,     # blending of 4638.86 and 4641.81, known as 4639+42
+                4650.0]     # blending of 4649.13 and 4659.84, known as 4649+51
+        
+        # Carbon recombination lines (CRLs)
+        # In the optical, there is only two line that is measurable:
+        CRLs = [4267.0, 7231]
         pass
     
     
