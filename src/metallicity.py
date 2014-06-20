@@ -2410,9 +2410,22 @@ class AdvancedOps(BasicOps):
     def t2_RLs(self):
         '''This function determines the value of t^2 using recombination lines.'''
         # Oxygen recombination lines (ORLs)
-        # The multiplet 1 has eight lines of which only two doublets are usually observed:
+        # The multiplet 1 has eight lines (4639, 42, 49, 51, 62, 74,76, and 4696) of which only two doublets are usually observed:
         ORLs = [4640.0,     # blending of 4638.86 and 4641.81, known as 4639+42
                 4650.0]     # blending of 4649.13 and 4659.84, known as 4649+51
+        # For low density regions (n_e <= 300 cm^-3), the sum of the observed intensities is ~70%, whis is translated
+        # into a factor of 1.43 due to the 30% we do not see (Ruiz et al. 2003).
+        
+        # The method I followed in my thesis was using a proportionallity relation with the well known 30 Dor:
+        # [ I(ORLmultiplet)/I(Hbeta) / N(O++)/N(H+) ]_object = [I(ORLmultiplet)/I(Hbeta) / N(O++)/N(H+) ]_30Dor * [T^0.9/T^0.8],
+        # ORLabund_obj = ORLabund_30Dor * TRL
+        # where the last term, TRL, is the temperature dependence of the oxygen lines to hydrogen lines, 
+        # TRL = T^0.9 / T^0.8 = T^0.1, since it is very small, we will disregard it.  
+        ORLsumoverHbeta_30Dor = 0.003385   # sum of the 8 oxygen recombination lines in 30 Dor
+        OppoverHp_30Dor = 0.0002888        # abundance of O++ with respect to H+ in 30 Dor
+        ORLabund_30Dor = ORLsumoverHbeta_30Dor/OppoverHp_30Dor   # this turns into a constant for the equation, hence:
+        # OppoverHp_30Dor = ORLsumoverHbeta_object  /  ORLabund_30Dor
+        # In order to determine ORLsumoverHbeta_object, we need the sum of the intensities of the ORLs and the 
         
         # Carbon recombination lines (CRLs)
         # In the optical, there is only two line that is measurable:
