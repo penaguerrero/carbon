@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = True
+use_Chbeta = False
 
 ############################################################################################################################################
 
@@ -207,6 +207,7 @@ for d, cd, s in zip(data, cont_data, specs):
     vacuum = False
     # in case manual changes need to be done to the line fluxes change use_mod_lineinfo_files to True
     if create_txt_lineinfo == False:
+        print ' lineinfo file crated already...  using previous files...'
         lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
         object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
     else:    
