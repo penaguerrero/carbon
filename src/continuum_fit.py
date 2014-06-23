@@ -44,7 +44,7 @@ plot = True
 text_table = False
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = False
+correct_redshift = True
 rebin = True
 
 ############################################################################################################################################
