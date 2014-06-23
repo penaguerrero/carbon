@@ -19,7 +19,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # Write the text file with line info?
-create_txt_lineinfo = False
+create_txt_lineinfo = True
 # Do deblend of 3727?
 deblend3727 = False
 deblend6563 = False
