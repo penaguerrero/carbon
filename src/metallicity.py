@@ -1374,6 +1374,7 @@ class AdvancedOps(BasicOps):
             outf.close()
             
     def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceNe=None):
+        print '\n These are the temperatures and density that will be used to determine abundances...'
         if (forceTeH != None):
             if type(forceTeH) is not list:
                 # error is not defined, use a default value of 25% of the given temperature
@@ -1489,6 +1490,11 @@ class AdvancedOps(BasicOps):
         te_low = self.te_low        
         te_verylow = self.te_verylow       
         dens = self.dens         
+        print 'te_high =', te_high
+        print 'te_low =', te_low
+        print 'te_verylow = ', te_verylow
+        print 'density =', dens
+        #raw_input()
                 
         print '\n  Calculating abundances.... \n'
             
@@ -2410,6 +2416,39 @@ class AdvancedOps(BasicOps):
     def t2_RLs(self):
         '''This function determines the value of t^2 using recombination lines.'''
         # Oxygen recombination lines (ORLs)
+        # The O++ abundance can be determined from the equation of recombination lines intensities:
+        # dens(O++)    alpha_effHbeta * h nu_ORLs * dens(O++) * n_e * V_eff * integral(4*pi*radius^2)
+        # --------- = --------------------------------------------------------------------------------
+        # dens(H+)     alpha_effORLs * h nu_Hbeta * dens(H+)  * n_e * V_eff * integral(4*pi*radius^2)
+        # the electron densities, volumes, and the integrals cancel out because the observed region is the 
+        # same, and since nu is inversely proportional to lambda, hence:
+        #              alpha_effHbeta * lambda_Hbeta * dens(O++)
+        #           = ------------------------------------------- ,   now solving for dens(O++)/dens(H+)
+        #              alpha_effHbeta * lambda_ORLs * dens(O++)
+        # dens(O++)/dens(H+) = I(ORLs)/I(Hbeta) * alpha_eff(Hbeta)/alpha_eff(ORLs) * lambda_Hbeta/lambda_ORLs
+        # The value of alpha_eff(Hbeta) can be obtained from Osterbrock & Ferland (2006, pp22, Table 2.1)
+        # and Storey & Hummer (1995, MNRAS, 272, 41):
+        alpha_effHbeta = 2.59e-13  # cm^3 s^-1
+        # The value of alpha_eff(ORLs) can be obtained from Storey (1994, A&A, 282, 999), equation 7:
+        # alpha_effORLs = 10^-14 * a * t_4^b (1 + c * (1 - t_4) + d * (1-t_4^2))
+        t_4 = self.te_high / 10000.0 # temperatures are in Kelvin
+        # The values for constants a, b, c, and d can be obtained from table 3 for 4652 Angstroms, Case B: 
+        a = 36.2
+        b = -0.736
+        c = 0.033
+        d = 0.077
+        alpha_effORLs = 1e-14 * a * t_4**b (1 + c * (1 - t_4) + d * (1-t_4**2))
+        # Now find the sum of the observed lines of the multiplet 1:
+        # lambda_ORLs / lambda_Hbeta = ((4639+4642+4649+4651)/4) / 4861 = 4645.25/4861 = 0.956
+        lambdaORLs_over_lambdaHbeta = 0.956
+        # Now obtain the sum of the intensities of the ORLs observed
+        #IsumORLs
+        #IORLs_over_Hbeta 
+        #densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
+        
+        
+        
+        
         # The multiplet 1 has eight lines (4639, 42, 49, 51, 62, 74,76, and 4696) of which only two doublets are usually observed:
         ORLs = [4640.0,     # blending of 4638.86 and 4641.81, known as 4639+42
                 4650.0]     # blending of 4649.13 and 4659.84, known as 4649+51
