@@ -70,11 +70,11 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
-#altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
+altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
 #altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
-#w, f = numpy.loadtxt(altern, unpack=True)
-#data = [numpy.array([w,f])]
+w, f = numpy.loadtxt(altern, unpack=True)
+data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
@@ -93,7 +93,7 @@ or3 = originals[2]
 desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
                             [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
-                            [2.0, 7.0, 8.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
+                            [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
 #                                 12             13                14               15              16               17                            
 desired_disp_list = desired_disp_listoflists[object_number]
 
@@ -137,7 +137,7 @@ for d, s in zip(data, specs):
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
     splot_text = False
-    part_of_spec = 'nir'
+    part_of_spec = 'opt'
     if splot_text == True:
         if rebin:
             name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_REBINNED.txt")
