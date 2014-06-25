@@ -195,7 +195,13 @@ for d, cd, s in zip(data, cont_data, specs):
     #print '    *** Wavelengths corrected for redshift.'
     w_corr = rebinned_arr[0] / (1+float(z))
     object_spectra = numpy.array([w_corr, rebinned_arr[1]]) 
-    contum_spectra = numpy.array([w_corr, rebinned_cont[1]]) 
+    #contum_spectra = numpy.array([w_corr, rebinned_cont[1]])     # this is in case we want to rebin the continuum 
+    cont = []
+    for wrd in w_corr:
+        fcd = numpy.interp(wrd, cd[0], cd[1])
+        cont.append(fcd)
+    contum_spectra = numpy.array([w_corr, cont]) 
+    #print 'shapes of arrays after rebin:  object_spectra=', numpy.shape(object_spectra), '   contum_spectra=', numpy.shape(contum_spectra)
         
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
@@ -211,7 +217,7 @@ for d, cd, s in zip(data, cont_data, specs):
         lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
         object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
     else:    
-        print ' created a lineinfo file'
+        print ' created a lineinfo file for region', spectrum_region[s]
         object_lines_info = make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, create_txt_lineinfo, vacuum, faintObj, lineinfo_text_file, err_lists)
     # line_info: 0=catalog_wavs_found, 1=central_wavelength_list, 2=width_list, 3=net_fluxes_list, 4=continuum_list, 5=EWs_list
     if s == 1:
