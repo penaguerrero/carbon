@@ -20,7 +20,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [2]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
@@ -38,14 +38,14 @@ order = 1
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = True
+plot = False
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
-rebin = True
+correct_redshift = False
+rebin = False
 
 ############################################################################################################################################
 
@@ -70,11 +70,11 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
-altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
+#altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
 #altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
-w, f = numpy.loadtxt(altern, unpack=True)
-data = [numpy.array([w,f])]
+#w, f = numpy.loadtxt(altern, unpack=True)
+#data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
