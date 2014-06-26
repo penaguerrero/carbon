@@ -60,7 +60,7 @@ EWabsHbeta = combo[0]
 C_Hbeta = combo[1]
 
 # Are you using already rebinned data?  Then set perform_rebin=False
-perform_rebin = True
+perform_rebin = False
 # Desired Angstroms per pixel
 # Mrk 1087: 2.0, 8.0, 8.0
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
@@ -195,14 +195,15 @@ for d, cd, s in zip(data, cont_data, specs):
     #print '    *** Wavelengths corrected for redshift.'
     w_corr = rebinned_arr[0] / (1+float(z))
     object_spectra = numpy.array([w_corr, rebinned_arr[1]]) 
-    #contum_spectra = numpy.array([w_corr, rebinned_cont[1]])     # this is in case we want to rebin the continuum 
+    contum_spectra = numpy.array([w_corr, rebinned_cont[1]])     # this is in case we want to rebin the continuum 
+    ''' # This commented section is used when we do not want the continuum to be rebinned, instead interpolate...
     cont = []
     for wrd in w_corr:
         fcd = numpy.interp(wrd, cd[0], cd[1])
         cont.append(fcd)
     contum_spectra = numpy.array([w_corr, cont]) 
     #print 'shapes of arrays after rebin:  object_spectra=', numpy.shape(object_spectra), '   contum_spectra=', numpy.shape(contum_spectra)
-        
+    '''    
     # Obtain the lines net fluxes and EWs
     new_file_name = object_name+"_lineinfo"+spectrum_region[s]+".txt"
     lineinfo_text_file = os.path.join(results4object_path, new_file_name)
