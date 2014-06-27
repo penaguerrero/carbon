@@ -644,9 +644,9 @@ class BasicOps:
             flux = self.flux
             norm_flx = self.normfluxes
             norm_Idered = self.Idered
-            errs_Flx, _, _ = self.errs_list   #errs_Flx, errs_EW, cont_errs = self.errs_list  
+            errs_Flx, errs_EW, _ = self.errs_list   #errs_Flx, errs_EW, cont_errs = self.errs_list  
         else:
-            wavs, flux, errs_Flx, norm_flx, norm_Idered = data2process
+            wavs, flux, errs_Flx, norm_flx, norm_Idered, errs_EW = data2process
         errs_Idered = []
         perc_errs_I_dered = []
         errs_normfluxes = []
@@ -683,17 +683,22 @@ class BasicOps:
             perc_errs_I_dered.append(perc_errIdered)
             #print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', nI, ' err=', errIdered, ' err%=', perc_errIdered 
         #print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
-        return errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
+        return errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, errs_EW
     
     def do_ops(self):
         self.underlyingAbsCorr()
         normfluxes, Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(self.av, self.ebv)
         if self.errs_list != None:
-            errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = self.get_uncertainties()
-            return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
+            errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, errs_EW = self.get_uncertainties()
             flambdas = find_flambdas(self.cHbeta, self.catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
-            cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, self.EW, self.err_EW]
+            perrEW = []
+            for ew, ewe in zip(self.EW, errs_EW):
+                erp = ewe*100.0 / ew
+                perrEW.append(erp)  
+            cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, self.EW, errs_EW, perrEW]
+            print numpy.shape(cols_2write_in_file)
             write_RedCorfile(self.object_name, self.path_and_name_RedCoroutfile, cols_2write_in_file)
+            return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
         else:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
@@ -1934,7 +1939,7 @@ class AdvancedOps(BasicOps):
         for w, lI, le in zip(wavsHe, logInts, logErrs):
             print 'For', w, 'log Intensity =', lI, '+-', le
         #***
-        helio = 0.298
+        helio = 0.278 #0.298
         YoverX = 4 * (helio)
         # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
         ZoverX = 32 * Otot
@@ -2313,20 +2318,16 @@ class AdvancedOps(BasicOps):
         #print 'dif_TheoObs_H6Hb_values', dif_TheoObs_H6Hb_values
         cHbeta = 0.434*C_Hbeta
         intensities = self.underlyingAbsCorr(return_Is=True, EWabsHbeta=EWabsHbeta)
-        # Find the faintest detected emission line: get rid of negative fluxes
-        if em_lines:
-            catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, _, norm_intensities, EW_lines = find_emission_lines(rounded_wavelengths, self.element, self.ion, self.forbidden, self.howforb, observed_wavelength, flux, intensities, self.AdvOpscols_in_file[12], continuum)
-        else:
-            #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
-            catalog_lines = rounded_wavelengths
-            wavs_lines = observed_wavelength
-            element_lines = self.AdvOpscols_in_file[2]
-            ion_lines = self.AdvOpscols_in_file[3]
-            forbidden_lines = self.AdvOpscols_in_file[4]
-            how_forbidden_lines = self.AdvOpscols_in_file[5]
-            norm_fluxes = flux
-            norm_intensities = intensities
-            EW_lines = self.AdvOpscols_in_file[12]
+        #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+        catalog_lines = rounded_wavelengths
+        #wavs_lines = observed_wavelength
+        #element_lines = self.AdvOpscols_in_file[2]
+        #ion_lines = self.AdvOpscols_in_file[3]
+        #forbidden_lines = self.AdvOpscols_in_file[4]
+        #how_forbidden_lines = self.AdvOpscols_in_file[5]
+        norm_fluxes = flux
+        norm_intensities = intensities
+        #EW_lines = self.AdvOpscols_in_file[12]
         #lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines, how_forbidden_lines, norm_fluxes, norm_intensities, EW_lines]
         # Dered again and find the Chi_squared of that model
         _, norm_Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(cHbeta=cHbeta, fluxes=norm_fluxes, intensities=norm_intensities)
@@ -2352,8 +2353,7 @@ class AdvancedOps(BasicOps):
         print '    The best combination was:              EWabsHbeta = %0.3f  C_Hbeta = %0.3f' % (EWabsHbeta, C_Hbeta)
         print '                                                     this means cHbeta = %0.3f' % (cHbeta)
         # Now define the columns to be written in the text file
-        #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
-        cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, self.errew, self.percerrew]
+        cols_2write_in_file = [catalog_lines, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, self.errew, self.percerrew]
         return (C_Hbeta, cols_2write_in_file)
         
     def get_avgTandDelta4helio10(self, Otot, Op, Opp, TOp, TOpp):
@@ -2444,7 +2444,7 @@ class AdvancedOps(BasicOps):
         # Now obtain the sum of the intensities of the ORLs observed
         #IsumORLs
         #IORLs_over_Hbeta 
-        #densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
+        densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
         
         
         
