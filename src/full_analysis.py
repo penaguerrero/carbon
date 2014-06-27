@@ -19,7 +19,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 12
 
 # Write the text file with line info?
-create_txt_lineinfo = True
+create_txt_lineinfo = False
 # Do deblend of 3727?
 deblend3727 = False
 deblend6563 = False
@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 ############################################################################################################################################
 
@@ -60,7 +60,7 @@ EWabsHbeta = combo[0]
 C_Hbeta = combo[1]
 
 # Are you using already rebinned data?  Then set perform_rebin=False
-perform_rebin = False
+perform_rebin = True
 # Desired Angstroms per pixel
 # Mrk 1087: 2.0, 8.0, 8.0
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
@@ -244,13 +244,13 @@ for d, cd, s in zip(data, cont_data, specs):
             real3726 = K * measured3726
             real3729 = K * measured3729
             # insert these fluxes and new equivalent wids in the corresponding places
-            #print 'PREVIOUS flux:  3726 = %0.3e    3729 = %0.3e    sum = %0.3e' % (object_lines_info[3][idx3726], object_lines_info[3][idx3729], object_lines_info[3][idx3726]+object_lines_info[3][idx3729])
-            #print '          EWs:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
+            print 'PREVIOUS flux:  3726 = %0.3e    3729 = %0.3e    sum = %0.3e' % (object_lines_info[3][idx3726], object_lines_info[3][idx3729], object_lines_info[3][idx3726]+object_lines_info[3][idx3729])
+            print '           ew:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
             object_lines_info[3][idx3729] = real3729
             object_lines_info[5][idx3726] = real3726 / object_lines_info[4][idx3726]
             object_lines_info[5][idx3729] = real3729 / object_lines_info[4][idx3729]
             print '   NEW   flux:  3726 = %0.3e    3729 = %0.3e    sum = %0.3e' % (object_lines_info[3][idx3726], object_lines_info[3][idx3729], object_lines_info[3][idx3726]+object_lines_info[3][idx3729])
-            print '          EWs:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
+            print '           ew:         %0.3f              %0.3f             %0.3f' % (object_lines_info[5][idx3726], object_lines_info[5][idx3729], object_lines_info[5][idx3726]+object_lines_info[5][idx3729])
             raw_input()
     if s == 2:
         if deblend6563:
@@ -329,6 +329,7 @@ if use_Chbeta:
 else:
     RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
     tfile2ndRedCor = None
+print '     Reddening corrected intensities wrote on file:', RedCor_file
 kk = metallicity.BasicOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
 #flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
