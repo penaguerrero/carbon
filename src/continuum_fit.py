@@ -38,14 +38,14 @@ order = 1
 window = 550
 
 # 7) Do you want to see the plots of the fitted continuum?
-plot = False
+plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = True
+text_table = False
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = False
-rebin = False
+correct_redshift = True
+rebin = True
 
 ############################################################################################################################################
 
