@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = True
+use_Chbeta = False
 
 ############################################################################################################################################
 
