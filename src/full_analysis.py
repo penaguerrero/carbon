@@ -49,7 +49,7 @@ I_theo_HaHb = 2.86
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
 combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [2.8, 0.01]]
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -359,11 +359,11 @@ elif case == 'B':
     theoCE = theoCE_caseB    
 do_errs = None
 writeouts=create_txt_temdenabunds
-verbose=False
+verbose = False
 advops = metallicity.AdvancedOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
                                  case, use_Chbeta, theoCE, writeouts, verbose, tfile2ndRedCor)
-forceTe = None #18600.0
-forceNe = None #1000.0
+forceTe = None#15500.0
+forceNe = 500.0 #1000.0
 lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE, )
 
 
