@@ -1552,7 +1552,7 @@ class AdvancedOps(BasicOps):
         except (RuntimeError, TypeError, NameError):
             print 'Could not find He2 abundance.'
             pass
-        raw_input(' ***  press enter to continue')
+        #raw_input(' ***  press enter to continue')
         
         # ions of zones of high and medium ionization degree are combined
         ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca5', 'Cl2', 'Cl3', 'Cl4', 'Fe3', 'K4', 'K5', 'Mg5', 
@@ -1603,7 +1603,7 @@ class AdvancedOps(BasicOps):
                 logab = 0.0
             else:
                 logab = 12+numpy.log10(ab[0])
-            print ion, ab, logab
+            print ion, ab, '    12+log(X+i/H+) =', logab
         
         # Define the dictionary with the elements that I want to have total abundances for
         #elements = ['Ar', 'Cl', 'N', 'Ne', 'O', 'S',   # using pyneb ICF with traditional way
@@ -1614,7 +1614,7 @@ class AdvancedOps(BasicOps):
         ### TOTAL abundances with ICFs in pyneb
         icf = pn.ICF()
         icf.getAvailableICFs() # get all available ICFs
-        icf.printAllICFs(type_=['HII']) # print out the ICFs only for HII regions
+        #icf.printAllICFs(type_=['HII']) # print out the ICFs only for HII regions
         #r = icf.getReference('Ial06_22a')
         self.atom_abun = OrderedDict()
         #atom_abun = {}
@@ -1947,7 +1947,7 @@ class AdvancedOps(BasicOps):
         # now solve for Z from Z/X 
         Z = ZoverX * X
         print ' The metallicity Z =', Z
-        raw_input(' ***  press enter to continue')
+        #raw_input(' ***  press enter to continue')
         # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
         XCXO = 0.9#0.86
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
@@ -2030,7 +2030,7 @@ class AdvancedOps(BasicOps):
         print ' N++/O++ = %0.3f +- %0.03f' % (N2toO2, N2toO2_err)
         #raw_input(' ***  press enter to continue')
         
-        self.t2_RLs(dens, Otot, Ctot[0])
+        self.t2_RLs(dens, totabs_ions_list[opp][0], totabs_ions_list[cpp][0])
             
         # Write results in text file
         if self.writeouts:
@@ -2414,7 +2414,7 @@ class AdvancedOps(BasicOps):
         return wavsHe, logInts, logErrs 
                 
         
-    def t2_RLs(self, dens, Otot, Ctot):
+    def t2_RLs(self, dens, Opp, Cpp):
         '''This function determines the value of t^2 using recombination lines.'''
         print '\n***   Recombination Lines...' 
         # Oxygen recombination lines (ORLs)
@@ -2444,7 +2444,7 @@ class AdvancedOps(BasicOps):
         c = 0.033 #0.023
         d = 0.077 #0.074
         alpha_effORLs = 1e-14 * a * t_4**b * (1 + c * (1 - t_4) + d * (1 - t_4**2))
-        err_alpha_effORLs =  1e-14 * a * err_t4**b * (1 + c * (1 - err_t4) + d * (1 - err_t4**2))
+        err_alpha_effORLs = 1e-14 * a * err_t4**b * (1 + c * (1 - err_t4) + d * (1 - err_t4**2))
         # Now find the sum of the observed lines of the multiplet 1:
         # lambda_ORLs / lambda_Hbeta = ((4639+4642+4649+4651)/4) / 4861 = 4645.25/4861 = 0.956
         lambdaORLs_over_lambdaHbeta = 0.956
@@ -2505,19 +2505,19 @@ class AdvancedOps(BasicOps):
         #print 'lambdaORLs_over_lambdaHbeta = ', lambdaORLs_over_lambdaHbeta
         densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
         # error in ionic abundance
-        err_densOpp_over_densHp = densOpp_over_densHp * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2 + (err_lambdaORLs_over_lambdaHbeta/lambdaORLs_over_lambdaHbeta)**2)
-        #err_densOpp_over_densHp = densOpp_over_densHp * lambdaORLs_over_lambdaHbeta * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2)
+        #err_densOpp_over_densHp = densOpp_over_densHp * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2 + (err_lambdaORLs_over_lambdaHbeta/lambdaORLs_over_lambdaHbeta)**2)
+        err_densOpp_over_densHp = densOpp_over_densHp * lambdaORLs_over_lambdaHbeta * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2)
         #err_densOpp_over_densHp = err_IORLs_over_Hbeta * lambdaORLs_over_lambdaHbeta * alpha_effHbeta/alpha_effORLs        
         print '\n The O++ abundance determined from RLs is: %0.3e +- %0.3e' % (densOpp_over_densHp, err_densOpp_over_densHp)
         log_densOpp_over_densHp = 12 + numpy.log10(densOpp_over_densHp)
         logeleerr = err_densOpp_over_densHp / (2.303 * densOpp_over_densHp)
-        print '                           12+log(O++/H) = %0.2f +- %0.2f' % (log_densOpp_over_densHp, logeleerr)
+        print '                           12+log(O++/H+) = %0.2f +- %0.2f' % (log_densOpp_over_densHp, logeleerr)
         # To find approximate value of ADF, we divide the abundances found with CELs/RLs:
-        approxADF = 1.0 / (Otot/densOpp_over_densHp)
+        approxADF = densOpp_over_densHp/Opp
         print ' The approximate value of ADF is: '
-        print '            (O++_CELs / O++_RLs)^-1 = (', Otot, '/', densOpp_over_densHp, ')^-1 =', approxADF
+        print '            O++_RLs / O++_CELs =', densOpp_over_densHp, '/', Opp, ' =', approxADF
  
-        
+        '''
         # An alternative method (not so accurate) is using a proportionallity relation with the well known 30 Dor:
         # [ I(ORLmultiplet)/I(Hbeta) / N(O++)/N(H+) ]_object = [I(ORLmultiplet)/I(Hbeta) / N(O++)/N(H+) ]_30Dor * [T^0.9/T^0.8],
         # ORLabund_obj = ORLabund_30Dor * TRL
@@ -2528,7 +2528,7 @@ class AdvancedOps(BasicOps):
         ORLabund_30Dor = ORLsumoverHbeta_30Dor/OppoverHp_30Dor   # this turns into a constant for the equation, hence:
         ORLabund_object = ORLs * (1.0/ORLabund_30Dor)
         print '       --> other method O++ abundance:', ORLabund_object
-        
+        '''
         
         # Carbon recombination lines (CRLs)
         # In the optical, there is only one line that is measurable:
@@ -2543,6 +2543,7 @@ class AdvancedOps(BasicOps):
         f = -1.1416
         err = 0.15 #%
         alpha_CRL = 1e-14 * a * t_4**f * (1 + b*(1-t_4) + c*(1-t_4)**2 + d*(1-t_4)**3)
+        err_alpha_CRL =  1e-14 * a * err_t4**f * (1 + b*(1-err_t4) + c*(1-err_t4)**2 + d*(1-err_t4)**3)
         # Following the same recipy as for oxygen,
         lambdaCRL_over_lambdaHbeta = 4267.15/4861.33
         for w, F, err in zip(self.AdvOpscols_in_file[0], self.AdvOpscols_in_file[6], self.AdvOpscols_in_file[7]):
@@ -2556,7 +2557,7 @@ class AdvancedOps(BasicOps):
         CRLs_over_Hbeta =  CRLs / Hbeta[0]
         err_CRLs_over_Hbeta = numpy.sqrt((F_4267[1]/F_4267[0])**2 + (Hbeta[1]/Hbeta[0])**2)
         densCpp_over_densHp = CRLs_over_Hbeta * alpha_effHbeta/alpha_CRL * lambdaCRL_over_lambdaHbeta
-        err_densCpp_over_densHp = err_CRLs_over_Hbeta * alpha_effHbeta/alpha_CRL * lambdaCRL_over_lambdaHbeta
+        err_densCpp_over_densHp = densCpp_over_densHp * lambdaCRL_over_lambdaHbeta * numpy.sqrt((err_CRLs_over_Hbeta/CRLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_CRL)/(alpha_effHbeta/alpha_CRL))**2) 
         print '\n'
         print 'CRLs =', F_4267[0], '* 1.0/', percent_CRL_obs, '=', F_4267[0] * (1.0/percent_CRL_obs)
         print 'CRLs_over_Hbeta =', CRLs_over_Hbeta
@@ -2565,10 +2566,10 @@ class AdvancedOps(BasicOps):
         print '\n The C++ abundance determined from RLs is: %0.3e  +- %0.3e' % (densCpp_over_densHp, err_densCpp_over_densHp)
         log_densCpp_over_densHp = 12 + numpy.log10(densCpp_over_densHp)
         logeleerr = err_densCpp_over_densHp / (2.303 * densCpp_over_densHp)
-        print '                           12+log(O++/H) = %0.2f +- %0.2f' % (log_densCpp_over_densHp, logeleerr)
-        approxADF_C = 1.0 / (Ctot/densCpp_over_densHp)
+        print '                           12+log(C++/H+) = %0.2f +- %0.2f' % (log_densCpp_over_densHp, logeleerr)
+        approxADF_C = densCpp_over_densHp / Cpp
         print ' The approximate value of ADF is: '
-        print '            (C++_CELs / C++_RLs)^-1 = (', Ctot, '/', densCpp_over_densHp, ')^-1 =', approxADF_C
+        print '            C++_RLs / C++_CELs =', densCpp_over_densHp, '/', Cpp, ' =', approxADF_C
     
         
     def perform_advanced_ops(self, forceTe, forceNe, theoCE):
