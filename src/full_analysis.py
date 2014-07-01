@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 12
+object_number = 7
 
 # Write the text file with line info?
 create_txt_lineinfo = False
@@ -34,7 +34,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 ############################################################################################################################################
 
@@ -48,7 +48,7 @@ I_theo_HaHb = 2.86
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [1.5, 1.28], [2.5, 2.35], 
+combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [2.6, 0.96], [2.5, 2.35], 
                [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
@@ -80,7 +80,7 @@ desired_disp_list = desired_disp_listoflists[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
-faintObj_list = [False, True, True, False, True, True, False, False, False, 
+faintObj_list = [False, True, True, False, True, True, False, True, False, 
                  False, False, True, False, True, False, False, False, True]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
