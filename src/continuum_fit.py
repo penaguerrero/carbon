@@ -17,7 +17,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 # Choose parameters to run script
 
 # 1) Select a number from objects_list, i = :
-object_number = 12
+object_number = 8
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
 specs = [2]
@@ -29,7 +29,7 @@ vacuum = False
 normalize = False
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 2
+sigmas_away = 3
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
 order = 1
@@ -41,11 +41,11 @@ window = 550
 plot = True
 
 # 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
+text_table = True
 
 # Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
-rebin = True
+correct_redshift = False
+rebin = False
 
 ############################################################################################################################################
 
@@ -70,6 +70,10 @@ data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, 
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
+#altern = '../results/mrk1087/mrk1087_opt_corr.txt'
+#altern = '../results/mrk1087/mrk1087_nir_corr.txt'
+#altern = '../results/sbs0218/sbs0218_opt_corr.txt'
+#altern = '../results/pox4/pox4_opt_corr.txt'
 #altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
 #altern = '../results/tol9/tol9_opt21_fix.txt'
 #altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
