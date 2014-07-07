@@ -1498,7 +1498,7 @@ class AdvancedOps(BasicOps):
         print 'te_low =', te_low
         print 'te_verylow = ', te_verylow
         print 'density =', dens
-        #raw_input()
+        raw_input(' ***  press enter to continue')
                 
         print '\n  Calculating abundances.... \n'
             
