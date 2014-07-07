@@ -16,11 +16,15 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 7
+object_number = 1
+
+# Do you want to the data to be rebinned?
+perform_rebin = True
 
 # Write the text file with line info?
-create_txt_lineinfo = False
-# Do deblend of 3727?
+create_txt_lineinfo = True
+# Do deblend of lines?
+deblend4363 = True
 deblend3727 = False
 deblend6563 = False
 
@@ -34,7 +38,7 @@ create_txt_temdenabunds = True
 case = 'B'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = True
+use_Chbeta = False
 
 ############################################################################################################################################
 
@@ -59,8 +63,6 @@ EWabsHbeta = combo[0]
 # for HII region type objects there is no restriction to max but values MUST be positive
 C_Hbeta = combo[1]
 
-# Are you using already rebinned data?  Then set perform_rebin=False
-perform_rebin = True
 # Desired Angstroms per pixel
 # Mrk 1087: 2.0, 8.0, 8.0
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
@@ -70,7 +72,7 @@ or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[2.5, 8.0, 8.0], [2.0, 4.0, 8.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
+desired_disp_listoflists = [[or1, or2, or3], [1.6, 4.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9              10               11
                             [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
                             #       12             13                14               15              16               17                            
