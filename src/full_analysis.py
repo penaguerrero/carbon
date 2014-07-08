@@ -308,6 +308,13 @@ cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, na
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 err_flux, err_EW, cont_errs = flxEW_errs
 
+# Deblend lines
+lines2deblend = [4359.340, 4363.210]
+idx4359 = catalog_wavelength.index(lines2deblend[0])
+idx4363 = catalog_wavelength.index(lines2deblend[1])
+width_of_lines = [observed_wavelength[idx4359], observed_wavelength[idx4363]]
+spectrum.deblend_line(object_spectra, catalog_wavelength, observed_wavelength, flux, continuum, lines2deblend, width_of_lines, plot_fit=True)
+
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
 if use_Chbeta:
