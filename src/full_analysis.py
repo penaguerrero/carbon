@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 1
+object_number = 12
 
 # Do you want to the data to be rebinned?
 perform_rebin = True
@@ -182,6 +182,10 @@ def make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, text_table,
                                              vacuum, faintObj, linesinfo_file_name, do_errs)
     return object_lines_info
 
+object_wavelengths = []
+object_fluxes = []
+object_continuum = []
+
 for d, cd, s in zip(data, cont_data, specs):
     # Rebin the spectra to the corresponding dispersion
     desired_dispersion = desired_disp_list[s]
@@ -198,6 +202,12 @@ for d, cd, s in zip(data, cont_data, specs):
     w_corr = rebinned_arr[0] / (1+float(z))
     object_spectra = numpy.array([w_corr, rebinned_arr[1]]) 
     contum_spectra = numpy.array([w_corr, rebinned_cont[1]])     # this is in case we want to rebin the continuum 
+    # Save the redshift corrected whole spectra with the rebinned fluxes and continua
+    for wa, fl, co in zip(w_corr, rebinned_arr[1], rebinned_cont[1]):
+        object_wavelengths.append(wa)
+        object_fluxes.append(fl)
+        object_continuum.append(co)
+
     ''' # This commented section is used when we do not want the continuum to be rebinned, instead interpolate...
     cont = []
     for wrd in w_corr:
@@ -310,10 +320,16 @@ err_flux, err_EW, cont_errs = flxEW_errs
 
 # Deblend lines
 lines2deblend = [4359.340, 4363.210]
-idx4359 = catalog_wavelength.index(lines2deblend[0])
+# the width is the same for all the components
 idx4363 = catalog_wavelength.index(lines2deblend[1])
-width_of_lines = [observed_wavelength[idx4359], observed_wavelength[idx4363]]
-spectrum.deblend_line(object_spectra, catalog_wavelength, observed_wavelength, flux, continuum, lines2deblend, width_of_lines, plot_fit=True)
+width_of_lines = width[idx4363]
+tot_flx = flux[idx4363]
+tot_cont = continuum[idx4363]
+# Turn into arrays the whole object data
+whole_object_data = numpy.array([object_wavelengths, object_fluxes])
+whole_object_continua = numpy.array([object_wavelengths, object_continuum])
+spectrum.deblend_line(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
+exit()
 
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
