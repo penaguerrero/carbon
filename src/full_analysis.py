@@ -16,7 +16,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-object_number = 12
+object_number = 1
 
 # Do you want to the data to be rebinned?
 perform_rebin = True
@@ -329,6 +329,7 @@ tot_cont = continuum[idx4363]
 whole_object_data = numpy.array([object_wavelengths, object_fluxes])
 whole_object_continua = numpy.array([object_wavelengths, object_continuum])
 spectrum.deblend_line(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
+#spectrum.deblend_with_gauss(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
 exit()
 
 # Determine the corresponding E(B-V) value for each object
