@@ -19,7 +19,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 1
 
 # Do you want to the data to be rebinned?
-perform_rebin = True
+perform_rebin = False
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -72,7 +72,7 @@ or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[or1, or2, or3], [1.6, 4.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
+desired_disp_listoflists = [[or1, or2, or3], [1.6, 6.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9              10               11
                             [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
                             #       12             13                14               15              16               17                            
@@ -328,9 +328,9 @@ tot_cont = continuum[idx4363]
 # Turn into arrays the whole object data
 whole_object_data = numpy.array([object_wavelengths, object_fluxes])
 whole_object_continua = numpy.array([object_wavelengths, object_continuum])
-spectrum.deblend_line(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
+#spectrum.deblend_line(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
 #spectrum.deblend_with_gauss(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
-exit()
+#exit()
 
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
