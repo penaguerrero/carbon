@@ -20,22 +20,22 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 object_number = 1
 
 # 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 
 # 3) Do you want to use Vacuum wavelengths?
 vacuum = False
 
 # 4) Do you want to normalize the spectra to the continuum?
-normalize = False
+normalize = True
 
 # 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 3
+sigmas_away = 2
 
 # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 3
+order = 8
 
 # 6) What is the width of the window to use to find local continuum?
-window = 400
+window = 70
 # Do you want to consider the first 150 A? If yes, set to False
 nullfirst150 = True
 
@@ -97,7 +97,7 @@ or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[2.5, 8.0, 8.0], [1.6, 4.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
+desired_disp_listoflists = [[2.5, 8.0, 8.0], [1.6, 6.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
                             #        6              7                 8                9               10               11
                             [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
                             [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
@@ -141,13 +141,17 @@ for d, s in zip(data, specs):
 
     ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
     # of the spectra to appear in the title of the text file
-    splot_text = False
-    part_of_spec = 'opt'
+    splot_text = True
+    part_of_spec = 'nuv'
     if splot_text == True:
+        name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
+        if normalize:
+            name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_NORMALIZED.txt")
         if rebin:
-            name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_REBINNED.txt")
-        else:
-            name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
+            if normalize:
+                name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_NORMandREBIN.txt")
+            else:
+                name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_REBINNED.txt")
         fout = open(name_out_file, 'w+')
         wavs, fluxs = object_spectra
         for w, f in zip(wavs, fluxs):
