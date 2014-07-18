@@ -6,6 +6,7 @@ import numpy
 import string
 import copy
 import math
+import collections
 import pyneb as pn
 import PIL.Image as Image
 from uncertainties import unumpy
@@ -18,13 +19,308 @@ from collections import OrderedDict
 This program contains various classes that together determine the object's metallicity.
 '''
 
-def round_wavs(catalog_wavelength):
+def round_wavs(catalog_wavelength, decimals=None):
     ### Round all catalog lines to make it easier to find lines
     rounded_catalog_wavelength = []
     for item in catalog_wavelength:
-        rw = numpy.round(item)
-        rounded_catalog_wavelength.append(rw)
+        if decimals != None:
+            roundwav = numpy.round(item, decimals=decimals)
+        else:
+            roundwav = numpy.round(item)
+        rounded_catalog_wavelength.append(roundwav)
     return rounded_catalog_wavelength
+
+def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, cont_data, err_stis_list, all_err_cont_fit, reject=0.0, start_w=None, name_out_file=None, create_txt=True):
+    all_wavs, all_flxs, all_cont, all_ews = read_measured_lineinfo_files(object_file, specs, cont_data)
+    wavelengths, fluxes, continua, ews = gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject, start_w)
+    data_arrays_list = [wavelengths, fluxes, continua, ews]
+    cols_in_file, flxEW_errs = find_matching_lines_with_catalog(data_arrays_list, faintObj, Halpha_width, err_stis_list, all_err_cont_fit)
+    # cols_in_file contains: catalog_wavs_found, central_wavelength_list, found_element, found_ion, found_ion_forbidden, found_ion_how_forbidden, 
+    #                        width_list, net_fluxes_list, continuum_list, EWs_list 
+    # flxEW_errs contains: errs_net_fluxes, errs_ews, errs_conts
+    return cols_in_file, flxEW_errs
+  
+def read_measured_lineinfo_files(object_file, specs, cont_data):
+    # object_file is the full path of the object in study
+    # specs is a list of the spectral regions to be considered (i.e. specs=[0,1,2] )
+    # cont_data is a list of numpy arrays of wavs and continuum fluxes for the specs in study
+    add_str = '_measured_lineinfo'
+    text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
+    all_wavs = []
+    all_flxs = []
+    all_cont = []
+    all_ews = []
+    #print 'err_stis_list, all_err_cont_fit: ', err_stis_list, all_err_cont_fit
+    for i in specs:
+        # Load the text files with the measured lines and equivalent widths
+        mwavs, normconts, normflxs, mews = numpy.loadtxt(text_file_list[i], unpack=True)
+        mews = mews * -1   # this is to take the measured equivalent widths to the same formalism as the rest of the work
+        realcont = cont_data[i] # this is the numpy array of wavs and flux continuum before normalization 
+        # get the the flux and continuum values un-normalized and determine the errors in the fluxes and equivalent widths
+        measuredflxs = numpy.array([])
+        measuredconts = numpy.array([])
+        for mw, nf, nc in zip(mwavs, normflxs, normconts):
+            c = numpy.interp(mw, realcont[0], realcont[1])
+            mc = c * nc
+            mf = c * nf
+            measuredconts = numpy.append(measuredconts, mc)
+            measuredflxs = numpy.append(measuredflxs, mf)
+        all_wavs.append(mwavs)
+        all_flxs.append(measuredflxs)
+        all_cont.append(measuredconts)
+        all_ews.append(mews)
+    return all_wavs, all_flxs, all_cont, all_ews  # these are all lists of numpy arrays
+
+def gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject=0.0, start_w=None):
+    '''This function gathers the infro read from the measured lineinfo files and returns 4 single numpy arrays for all the
+    observed spectral range.'''
+    wavelengths = numpy.array([])
+    fluxes = numpy.array([])
+    continua = numpy.array([])
+    ews = numpy.array([])
+    # The input are expected to be lists of numpy arrays
+    for i in range(len(all_wavs)):  # loop through the lists
+        for _ in zip(all_wavs[i], all_flxs[i], all_cont[i], all_ews[i]):
+            if start_w == None:
+                ini_wav = all_wavs[i][0]+reject
+            else:
+                # Make sure to start the right array and leave the others with the regular reject
+                if start_w <= 2000.0:
+                    if i == 0:
+                        ini_wav = start_w
+                    else:
+                        ini_wav = all_wavs[i][0]+reject                
+                if (start_w > 2000.0) and (start_w < 5000.0):
+                    if i == 1:
+                        ini_wav = start_w
+                    else:
+                        ini_wav = all_wavs[i][0]+reject                
+                if start_w >= 5000.0:
+                    if i == 2:
+                        ini_wav = start_w
+                    else:
+                        ini_wav = all_wavs[i][0]+reject                
+            initial_wav, initial_idx = spectrum.find_nearest(all_wavs[i], ini_wav)
+            _, ending_idx = spectrum.find_nearest(all_wavs[i], all_wavs[i][-1]+reject)
+            wavelengths = numpy.append(wavelengths, initial_wav)
+            fluxes = numpy.append(fluxes, all_flxs[i][initial_idx])
+            continua = numpy.append(continua, all_cont[i][initial_idx])
+            ews = numpy.append(ews, all_ews[i][initial_idx])
+        # In order to have a single array, every single item must be added to the array 
+        for j in range(len(all_wavs[i][initial_idx : ending_idx])):
+            idx = initial_idx + j 
+            print all_wavs[i][idx]
+            wavelengths = numpy.append(wavelengths, all_wavs[i][idx])
+            fluxes = numpy.append(fluxes, all_flxs[i][idx])
+            continua = numpy.append(continua, all_cont[i][idx])
+            ews = numpy.append(ews, all_ews[i][idx])
+    print wavelengths
+    # Choose the right intensities if lines are repeated
+    # Because the sensibility of the detector is better with the g430l than with the g230l, we want to keep OPT the lines.
+    # Because the sensibility of the detector is better with the g750l than with the g430l, we want to keep NIR the lines.
+    rounded_obs_wavs = round_wavs(wavelengths, decimals=2)
+    print wavelengths, rounded_obs_wavs, raw_input()    
+    repeated_lines = collections.Counter(rounded_obs_wavs)
+    rl_list = [i for i in repeated_lines if repeated_lines[i]>1]
+    list_of_indeces_to_remove =[]
+    for i in range(len(rounded_obs_wavs)):
+        if rounded_obs_wavs[i] in rl_list:
+            if (rounded_obs_wavs[i] > 3015.0) and (rounded_obs_wavs[i] < 3150.0) or (rounded_obs_wavs[i] > 5000.0) and (rounded_obs_wavs[i] < 5600.0):
+                list_of_indeces_to_remove.append(i)
+    # Remove the first occurence
+    wavelengths = numpy.delete(wavelengths, list_of_indeces_to_remove)
+    fluxes = numpy.delete(fluxes, list_of_indeces_to_remove)
+    continua = numpy.delete(continua, list_of_indeces_to_remove)
+    ews = numpy.delete(ews, list_of_indeces_to_remove)   
+    return wavelengths, fluxes, continua, ews
+            
+def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, err_stis_list, all_err_cont_fit, name_out_file=None, create_txt=False):
+    ''' Find the lines that match the measured lines
+    # err_stis_list is the documented error for that spectral region
+    # all_err_cont_fit is the list of errors of the fitted continua
+    # faintObj is a true or false
+    # Halpha_width is the width of Halpha
+    '''
+    # Read the line_catalog file, assuming that the path is the same:
+    # '/Users/name_of_home_directory/Documents/AptanaStudio3/science/science/spectrum/lines_catalog.txt'
+    line_catalog_path = os.path.abspath('../../science/science/spectrum/lines_catalog.txt')
+    measured_wavs, measured_flxs, measured_conts, measured_ews = measured_data        
+    # Define the columns of the catalog file
+    catalog_wavelength = []
+    element = []
+    ion =[]
+    forbidden = []
+    how_forbidden = []
+    transition = []
+    strong_line = []
+    cols_in_file = [catalog_wavelength, element, ion, forbidden, how_forbidden, transition, strong_line]
+    # Define the list of the files to be read
+    text_file_list = [line_catalog_path]
+    # Read the catalog files
+    data, widths_faintObj, widths_strongObj  = spectrum.readlines_from_lineinfo(text_file_list, cols_in_file)
+    catalog_wavelength, element, ion, forbidden, how_forbidden, transition, strong_line = data
+    # If the wavelength is grater than 2000 correct the theoretical air wavelengths to vacuum using the IAU
+    # standard for conversion from air to vacuum wavelengths is given in Morton (1991, ApJS, 77, 119). To
+    # correct find the refraction index for that wavelength and then use:
+    #       wav_vac / wav_air -1 = n - 1
+    # (To start I usded NIST, n=0.999271)
+    wavs_air = []
+    wavs_vacuum = []
+    for w in catalog_wavelength:
+        # separate air and vacuum wavelengths into 2 lists
+        if w < 2000.0:
+            # For keeping all vacuum wavelengths
+            wavs_vacuum.append(w)
+            # For converting vaccuum to air
+            wav_refraction_index = spectrum.n4airvac_conversion(w)
+            #print 'Refraction index  n = %f' % (wav_refraction_index)
+            wair = w / (2 - wav_refraction_index)
+            wavs_air.append(wair)
+        elif w >= 2000.0:
+            # For converting to vacuum wavelengths
+            wav_refraction_index = spectrum.n4airvac_conversion(w)
+            wvac = w * (2 - wav_refraction_index)
+            wavs_vacuum.append(wvac)
+            wavs_air.append(w)
+    # Determine the strength of the lines: 
+    width = []
+    for sline in strong_line:
+        if faintObj == True: 
+            if sline == "nw":
+                s = widths_faintObj[0]
+            elif sline == "no":
+                s = widths_faintObj[1]
+            elif sline == "weak":
+                s = widths_faintObj[2]
+            elif sline == "medium":
+                s = widths_faintObj[3]
+            elif sline == "yes":
+                s = widths_faintObj[4]
+            elif sline == "super":
+                s = widths_faintObj[5]
+            elif sline == "Halpha":
+                s = Halpha_width
+            width.append(s)
+        else:
+            if sline == "nw":
+                s = widths_strongObj[0]
+            elif sline == "no":
+                s = widths_strongObj[1]
+            elif sline == "weak":
+                s = widths_strongObj[2]
+            elif sline == "medium":
+                s = widths_strongObj[3]
+            elif sline == "yes":
+                s = widths_strongObj[4]
+            elif sline == "super":
+                s = widths_strongObj[5]
+            elif sline == "Halpha":
+                s = Halpha_width
+            width.append(s)
+    # Search in the object given for the lines in the lines_catalog
+    lines_catalog = (wavs_air, wavs_vacuum, element, ion, forbidden, how_forbidden, transition, width)
+    net_fluxes_list = []
+    EWs_list = []
+    central_wavelength_list =[]
+    catalog_wavs_found = []
+    continuum_list =[]
+    width_list = []
+    found_element = []
+    found_ion = []
+    found_ion_forbidden = []
+    found_ion_how_forbidden = []
+    errs_net_fluxes = []
+    errs_conts = []
+    errs_ews = [] 
+    # but choose the right wavelength column
+    vacuum = False  # wavelengths are expected to be in AIR
+    if vacuum == True:
+        use_wavs = 1
+        use_wavs_text = '# Used VACUUM wavelengths to find lines from line_catalog.txt'
+    if vacuum == False:
+        use_wavs = 0
+        use_wavs_text = '# Used AIR wavelengths to find lines from line_catalog.txt'
+    #print 'vacuum was set to %s, %s' % (vacuum, use_wavs_text)
+    for i in range(len(lines_catalog[0])):
+        # find the line in the catalog that is closest to a 
+        line_looked_for = lines_catalog[use_wavs][i]
+        #nearest2line, idx = spectrum.find_nearest(measured_wavs, line_looked_for)
+        nearest2line = spectrum.find_nearest_within(measured_wavs, line_looked_for, 15.0)
+        nearest2line_idx = numpy.where(measured_wavs == nearest2line)
+        idx = nearest2line_idx[0]
+        if nearest2line > 0.0:  
+            catalog_wavs_found.append(line_looked_for)
+            central_wavelength = float(measured_wavs[idx])
+            line_width = lines_catalog[7][i]
+            if (line_looked_for ==  4267.15) or (line_looked_for == 4640.0) or (line_looked_for == 4650.0):
+                line_width = 5.0 
+            if line_looked_for <= 3000.0:
+                err_stis = err_stis_list[0]
+                err_contfit = all_err_cont_fit[0]/100.0
+            if (line_looked_for > 3000.0) and (line_looked_for < 5500.0):
+                err_stis = err_stis_list[1]
+                err_contfit = all_err_cont_fit[1]/100.0
+            if line_looked_for >= 5500.0:
+                err_stis = err_stis_list[2]
+                err_contfit = all_err_cont_fit[2]/100.0
+            f = float(measured_flxs[idx])
+            c = float(measured_conts[idx])
+            e = float(measured_ews[idx])
+            ferr = err_stis * numpy.abs(f)
+            cerr = err_contfit * numpy.abs(c)  
+            ewerr = e * numpy.sqrt((ferr/f)**2 + (cerr/c)**2)
+            errs_net_fluxes.append(ferr)
+            errs_conts.append(cerr)
+            errs_ews.append(ewerr)
+            #print '\n Looking for:',  line_looked_for
+            #print nearest2line, '   flux =', f,'+-',ferr, '   cont =', c, '   ew =', e
+            #if line_looked_for ==  4861.33:
+            #    raw_input()
+            #if line_looked_for ==  4650.0:
+            #    raw_input()
+            width_list.append(line_width)
+            central_wavelength_list.append(central_wavelength)
+            continuum_list.append(c)
+            net_fluxes_list.append(f)
+            EWs_list.append(e) 
+            found_element.append(lines_catalog[2][i])
+            found_ion.append(lines_catalog[3][i])
+            found_ion_forbidden.append(lines_catalog[4][i])
+            found_ion_how_forbidden.append(lines_catalog[5][i])
+    # Create the table of Net Fluxes and EQWs
+    if name_out_file != None:
+        if create_txt == True:
+            #linesinfo_file_name = raw_input('Please type name of the .txt file containing the line info. Use the full path.')
+            txt_file = open(name_out_file, 'w+')
+            print >> txt_file,  use_wavs_text
+            print >> txt_file,   '# Positive EW = emission        Negative EW = absorption' 
+            print >> txt_file,   '# Percentage Errors of Continuum Fits: NUV, Opt, NIR = %0.2f, %0.2f, %0.2f' % (all_err_cont_fit[0], all_err_cont_fit[1], all_err_cont_fit[2])
+            print >> txt_file,   '#    NUV: wav <= 2000,   Opt: 2000 > wav < 5000,   NIR: wav >= 5000'
+            print >> txt_file,  ('{:<12} {:<12} {:>10} {:<4} {:<9} {:>8} {:<9} {:<12} {:<10} {:<7} {:<12} {:<7} {:<6} {:<6}'.format('# Catalog WL', 'Observed WL', 'Element', 
+                                                                                                                                    'Ion', 'Forbidden', 'HowForb', 'Width[A]', 
+                                                                                                                                    'Flux [cgs]', 'FluxErr', '%Err', 
+                                                                                                                                    'Continuum [cgs]', 'EW [A]', 'EWErr', '%Err'))
+            for cw, w, e, i, fd, h, s, F, Fe, C, ew, ewe in zip(catalog_wavs_found, central_wavelength_list, found_element, found_ion, found_ion_forbidden, 
+                                                       found_ion_how_forbidden, width_list, net_fluxes_list, errs_net_fluxes, continuum_list, EWs_list, errs_ews):
+                Fep = (Fe * 100.) / numpy.abs(F)
+                ewep = (ewe * 100.) / numpy.abs(ew)
+                print >> txt_file,  ('{:<12.3f} {:<12.3f} {:>10} {:<6} {:<8} {:<8} {:<6} {:>12.3e} {:>10.3e} {:>6.1f} {:>13.3e} {:>10.3f} {:>6.3f} {:>6.1f}'.format(cw, w, e, i, fd, h, s, F, Fe, Fep, C, ew, ewe, ewep))
+            txt_file.close()
+            print 'File   %s   writen!' % name_out_file
+    elif create_txt == False:
+        print '# Positive EW = emission        Negative EW = absorption' 
+        print  ('{:<12} {:<12} {:>10} {:<4} {:<9} {:>8} {:<9} {:<12} {:<10} {:<7} {:<12} {:<7} {:<6} {:<6}'.format('# Catalog WL', 'Observed WL', 'Element', 
+                                                                                                                                'Ion', 'Forbidden', 'HowForb', 'Width[A]', 
+                                                                                                                                'Flux [cgs]', 'FluxErr', '%Err', 
+                                                                                                                                'Continuum [cgs]', 'EW [A]', 'EWErr', '%Err'))
+        for cw, w, e, i, fd, h, s, F, Fe, C, ew, ewe in zip(catalog_wavs_found, central_wavelength_list, found_element, found_ion, found_ion_forbidden, 
+                                                   found_ion_how_forbidden, width_list, net_fluxes_list, errs_net_fluxes, continuum_list, EWs_list, errs_ews):
+            Fep = (Fe * 100.) / numpy.abs(F)
+            ewep = (ewe * 100.) / numpy.abs(ew)
+            print ('{:<12.3f} {:<12.3f} {:>10} {:<6} {:<8} {:<8} {:<6} {:>12.3e} {:>10.3e} {:>6.1f} {:>13.3e} {:>10.3f} {:>6.3f} {:>6.1f}'.format(cw, w, e, i, fd, h, s, F, Fe, Fep, C, ew, ewe, ewep))
+    cols_in_file = [catalog_wavs_found, central_wavelength_list, found_element, found_ion, found_ion_forbidden, found_ion_how_forbidden, width_list, net_fluxes_list, continuum_list, EWs_list] 
+    flxEW_errs = [errs_net_fluxes, errs_ews, errs_conts]
+    return cols_in_file, flxEW_errs
 
 def normalize_lines(rounded_catalog_wavelength, element, ion, forbidden,
                         how_forbidden, observed_wavelength, flux, intensities, EW, continuum):
@@ -1092,6 +1388,7 @@ class AdvancedOps(BasicOps):
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[Mg 5]','(2783+2928)/2418', 'High', Te[0], Te[1], Terr)
         except Exception as e:
             (NameError,),e
+        self.TS3 = [0.0, 0.0]
         try:
             self.S3 = pn.Atom("S", "3")
             S3ratio = I_6312 / I_9531 
@@ -1396,8 +1693,8 @@ class AdvancedOps(BasicOps):
                     abserr = forceTeH[1] - teH
                 perr = (abserr * 1.0) / teH
                 teHerr = teH + abserr
-                teL = forceTeH[0] * 0.9         # 90% of the high temperature
-                teVL = forceTeH[0] * 0.8        # 80% of the high temperature
+                teL = forceTeH[0] * 0.95         # 95% of the high temperature
+                teVL = forceTeH[0] * 0.85        # 85% of the high temperature
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
             te_low = [teL, teLerr]
@@ -1414,7 +1711,6 @@ class AdvancedOps(BasicOps):
             else:
                 te_low = self.temO2
                 print '   Te_low (O2) =', te_low
-                
             if math.isnan(self.TO3[0]):
                 te_high = [10000.0, 10500.0]
                 print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
