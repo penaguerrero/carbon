@@ -30,26 +30,32 @@ def round_wavs(catalog_wavelength, decimals=None):
         rounded_catalog_wavelength.append(roundwav)
     return rounded_catalog_wavelength
 
-def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, cont_data, err_stis_list, all_err_cont_fit, reject=0.0, start_w=None, name_out_file=None, create_txt=True):
-    all_wavs, all_flxs, all_cont, all_ews = read_measured_lineinfo_files(object_file, specs, cont_data)
-    wavelengths, fluxes, continua, ews = gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject, start_w)
-    data_arrays_list = [wavelengths, fluxes, continua, ews]
-    cols_in_file, flxEW_errs = find_matching_lines_with_catalog(data_arrays_list, faintObj, Halpha_width, err_stis_list, all_err_cont_fit)
+def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data, cont_data, err_stis_list, all_err_cont_fit, reject=0.0, start_w=None, create_txt=False, name_out_file=None):
+    all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs = read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit)
+    data_arrays_list = [all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs]
+    wavelengths, fluxes, continua, ews, errfluxes, errcontinua, errews = gather_measured_lineinfo(data_arrays_list, reject, start_w)
+    data_arrays_list = [wavelengths, fluxes, continua, ews, errfluxes, errcontinua, errews]
+    cols_in_file, flxEW_errs = find_matching_lines_with_catalog(data_arrays_list, faintObj, Halpha_width, all_err_cont_fit, create_txt, name_out_file)
     # cols_in_file contains: catalog_wavs_found, central_wavelength_list, found_element, found_ion, found_ion_forbidden, found_ion_how_forbidden, 
     #                        width_list, net_fluxes_list, continuum_list, EWs_list 
     # flxEW_errs contains: errs_net_fluxes, errs_ews, errs_conts
     return cols_in_file, flxEW_errs
   
-def read_measured_lineinfo_files(object_file, specs, cont_data):
+def read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit):
     # object_file is the full path of the object in study
     # specs is a list of the spectral regions to be considered (i.e. specs=[0,1,2] )
     # cont_data is a list of numpy arrays of wavs and continuum fluxes for the specs in study
+    # err_stis_list is the list with the 3 documented STIS percentage errors
+    # all_err_cont_fit is the list of the 3 percentage errors from the continuum fit
     add_str = '_measured_lineinfo'
     text_file_list, _ = spectrum.get_obj_files2use(object_file, specs, add_str=add_str)
     all_wavs = []
     all_flxs = []
     all_cont = []
     all_ews = []
+    all_ferrs = []
+    all_cerrs = []
+    all_ewerrs = []
     #print 'err_stis_list, all_err_cont_fit: ', err_stis_list, all_err_cont_fit
     for i in specs:
         # Load the text files with the measured lines and equivalent widths
@@ -59,25 +65,59 @@ def read_measured_lineinfo_files(object_file, specs, cont_data):
         # get the the flux and continuum values un-normalized and determine the errors in the fluxes and equivalent widths
         measuredflxs = numpy.array([])
         measuredconts = numpy.array([])
-        for mw, nf, nc in zip(mwavs, normflxs, normconts):
+        measuredflxserrs = numpy.array([])
+        measuredcontserrs = numpy.array([])
+        measuredewserrs = numpy.array([])
+        for mw, nf, nc, mew in zip(mwavs, normflxs, normconts, mews):
             c = numpy.interp(mw, realcont[0], realcont[1])
-            mc = c * nc
-            mf = c * nf
+            mc = nc * c
+            mf = nf * numpy.abs(c)
             measuredconts = numpy.append(measuredconts, mc)
             measuredflxs = numpy.append(measuredflxs, mf)
+            # errors
+            err_contfit = all_err_cont_fit[i]/100.0
+            err_stis = err_stis_list[i]
+            cabserrdue2me = numpy.abs(nc - 1.0)                           # human error
+            cabserrdue2fit = err_contfit * numpy.abs(nc)                  # error due to the fit
+            # total error in the continuum 
+            cerr = numpy.sqrt(cabserrdue2me**2 + cabserrdue2fit**2) * numpy.abs(c)   
+            fabserr_due2instrument = err_stis * numpy.abs(nf)             # intrinsic instrument error
+            # I estimate that my error in determining where the line begins/ends is ~15%, hence I have to go little further in wavelength to determine
+            # how much that affects the flux.
+            object_wavsflx = data[i]
+            leftf = numpy.interp(mw-3.0, object_wavsflx[0], object_wavsflx[1]) / numpy.abs(c)
+            rightf = numpy.interp(mw+3.0, object_wavsflx[0], object_wavsflx[1]) / numpy.abs(c)
+            #fabserrdue2me = numpy.sqrt((leftf-nf)**2 + (rightf-nf)**2) * 0.15 
+            fabserrdue2me = (numpy.abs(leftf-nf) + numpy.abs(rightf-nf))/2 * 0.15   # this is assuming that the error is symmetric
+            ferr = numpy.sqrt(fabserr_due2instrument**2 + fabserrdue2me**2) * numpy.abs(c)
+            ewerr = mew * numpy.sqrt((ferr/mf)**2 + (cerr/mc)**2)
+            #print 'normflux=',nf, '  fabserr_due2instrument=', fabserr_due2instrument, '  fabserrdue2me=', fabserrdue2me
+            #print 'normcont=',nc,'  cabserrdue2me=', cabserrdue2me, '  cabserrdue2fit=', cabserrdue2fit
+            #print mw, 'f=',mf,'+-',ferr, (ferr*100)/mf, '  c=',mc,'+-',cerr,(cerr*100.)/mc, '  ew=', mew,'+-', ewerr, (ewerr*100.)/mew
+            measuredflxserrs = numpy.append(measuredflxserrs, ferr)
+            measuredcontserrs = numpy.append(measuredcontserrs, cerr)
+            measuredewserrs = numpy.append(measuredewserrs, ewerr)
+            #raw_input()
         all_wavs.append(mwavs)
         all_flxs.append(measuredflxs)
         all_cont.append(measuredconts)
         all_ews.append(mews)
-    return all_wavs, all_flxs, all_cont, all_ews  # these are all lists of numpy arrays
+        all_ferrs.append(measuredflxserrs)
+        all_cerrs.append(measuredcontserrs)
+        all_ewerrs.append(measuredewserrs)
+    return all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs   # these are all lists of numpy arrays
 
-def gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject=0.0, start_w=None):
-    '''This function gathers the infro read from the measured lineinfo files and returns 4 single numpy arrays for all the
+def gather_measured_lineinfo(data_arrays_list, reject=0.0, start_w=None):
+    '''This function gathers the infro read from the measured lineinfo files and returns 7 single numpy arrays for all the
     observed spectral range.'''
+    all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs = data_arrays_list
     wavelengths = numpy.array([])
     fluxes = numpy.array([])
     continua = numpy.array([])
     ews = numpy.array([])
+    errfluxes = numpy.array([])
+    errcontinua = numpy.array([])
+    errews = numpy.array([])
     # The input are expected to be lists of numpy arrays
     for i in range(len(all_wavs)):  # loop through the lists
         for _ in zip(all_wavs[i], all_flxs[i], all_cont[i], all_ews[i]):
@@ -86,40 +126,43 @@ def gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject=0.0, 
             else:
                 # Make sure to start the right array and leave the others with the regular reject
                 if start_w <= 2000.0:
-                    if i == 0:
+                    if i == 0:  # this is for the NUV spec
                         ini_wav = start_w
                     else:
                         ini_wav = all_wavs[i][0]+reject                
                 if (start_w > 2000.0) and (start_w < 5000.0):
-                    if i == 1:
+                    if i == 1:  # this is for the OPT spec
                         ini_wav = start_w
                     else:
                         ini_wav = all_wavs[i][0]+reject                
-                if start_w >= 5000.0:
+                if start_w >= 5000.0:  # this is for the NIR spec
                     if i == 2:
                         ini_wav = start_w
                     else:
-                        ini_wav = all_wavs[i][0]+reject                
-            initial_wav, initial_idx = spectrum.find_nearest(all_wavs[i], ini_wav)
-            _, ending_idx = spectrum.find_nearest(all_wavs[i], all_wavs[i][-1]+reject)
-            wavelengths = numpy.append(wavelengths, initial_wav)
-            fluxes = numpy.append(fluxes, all_flxs[i][initial_idx])
-            continua = numpy.append(continua, all_cont[i][initial_idx])
-            ews = numpy.append(ews, all_ews[i][initial_idx])
+                        ini_wav = all_wavs[i][0]+reject
+        initial_wav, initial_idx = spectrum.find_nearest(all_wavs[i], ini_wav)
+        _, ending_idx = spectrum.find_nearest(all_wavs[i], all_wavs[i][-1]+reject)
+        wavelengths = numpy.append(wavelengths, initial_wav)
+        fluxes = numpy.append(fluxes, all_flxs[i][initial_idx])
+        continua = numpy.append(continua, all_cont[i][initial_idx])
+        ews = numpy.append(ews, all_ews[i][initial_idx])
+        errfluxes = numpy.append(errfluxes, all_ferrs[i][initial_idx])
+        errcontinua = numpy.append(errcontinua, all_cerrs[i][initial_idx])
+        errews = numpy.append(errews, all_ewerrs[i][initial_idx])
         # In order to have a single array, every single item must be added to the array 
         for j in range(len(all_wavs[i][initial_idx : ending_idx])):
-            idx = initial_idx + j 
-            print all_wavs[i][idx]
+            idx = initial_idx+1 + j 
             wavelengths = numpy.append(wavelengths, all_wavs[i][idx])
             fluxes = numpy.append(fluxes, all_flxs[i][idx])
             continua = numpy.append(continua, all_cont[i][idx])
             ews = numpy.append(ews, all_ews[i][idx])
-    print wavelengths
+            errfluxes = numpy.append(errfluxes, all_ferrs[i][idx])
+            errcontinua = numpy.append(errcontinua, all_cerrs[i][idx])
+            errews = numpy.append(errews, all_ewerrs[i][idx])
     # Choose the right intensities if lines are repeated
     # Because the sensibility of the detector is better with the g430l than with the g230l, we want to keep OPT the lines.
     # Because the sensibility of the detector is better with the g750l than with the g430l, we want to keep NIR the lines.
-    rounded_obs_wavs = round_wavs(wavelengths, decimals=2)
-    print wavelengths, rounded_obs_wavs, raw_input()    
+    rounded_obs_wavs = round_wavs(wavelengths, decimals=0)
     repeated_lines = collections.Counter(rounded_obs_wavs)
     rl_list = [i for i in repeated_lines if repeated_lines[i]>1]
     list_of_indeces_to_remove =[]
@@ -132,19 +175,24 @@ def gather_measured_lineinfo(all_wavs, all_flxs, all_cont, all_ews, reject=0.0, 
     fluxes = numpy.delete(fluxes, list_of_indeces_to_remove)
     continua = numpy.delete(continua, list_of_indeces_to_remove)
     ews = numpy.delete(ews, list_of_indeces_to_remove)   
-    return wavelengths, fluxes, continua, ews
+    errfluxes = numpy.delete(errfluxes, list_of_indeces_to_remove)
+    errcontinua = numpy.delete(errcontinua, list_of_indeces_to_remove)
+    errews = numpy.delete(errews, list_of_indeces_to_remove)   
+    return wavelengths, fluxes, continua, ews, errfluxes, errcontinua, errews
             
-def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, err_stis_list, all_err_cont_fit, name_out_file=None, create_txt=False):
+def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, all_err_cont_fit, create_txt=False, name_out_file=None):
     ''' Find the lines that match the measured lines
     # err_stis_list is the documented error for that spectral region
     # all_err_cont_fit is the list of errors of the fitted continua
     # faintObj is a true or false
     # Halpha_width is the width of Halpha
+    # name_out_file is the name of the output file
+    # create_txt is expected to be a True or False argument
     '''
     # Read the line_catalog file, assuming that the path is the same:
     # '/Users/name_of_home_directory/Documents/AptanaStudio3/science/science/spectrum/lines_catalog.txt'
     line_catalog_path = os.path.abspath('../../science/science/spectrum/lines_catalog.txt')
-    measured_wavs, measured_flxs, measured_conts, measured_ews = measured_data        
+    measured_wavs, measured_flxs, measured_conts, measured_ews, errfluxes, errcontinua, errews = measured_data 
     # Define the columns of the catalog file
     catalog_wavelength = []
     element = []
@@ -244,8 +292,8 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, err_
     for i in range(len(lines_catalog[0])):
         # find the line in the catalog that is closest to a 
         line_looked_for = lines_catalog[use_wavs][i]
-        #nearest2line, idx = spectrum.find_nearest(measured_wavs, line_looked_for)
-        nearest2line = spectrum.find_nearest_within(measured_wavs, line_looked_for, 15.0)
+        nearest2line = spectrum.find_nearest_within(measured_wavs, line_looked_for, 10.0)
+        #print line_looked_for, nearest2line, measured_wavs
         nearest2line_idx = numpy.where(measured_wavs == nearest2line)
         idx = nearest2line_idx[0]
         if nearest2line > 0.0:  
@@ -254,26 +302,15 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, err_
             line_width = lines_catalog[7][i]
             if (line_looked_for ==  4267.15) or (line_looked_for == 4640.0) or (line_looked_for == 4650.0):
                 line_width = 5.0 
-            if line_looked_for <= 3000.0:
-                err_stis = err_stis_list[0]
-                err_contfit = all_err_cont_fit[0]/100.0
-            if (line_looked_for > 3000.0) and (line_looked_for < 5500.0):
-                err_stis = err_stis_list[1]
-                err_contfit = all_err_cont_fit[1]/100.0
-            if line_looked_for >= 5500.0:
-                err_stis = err_stis_list[2]
-                err_contfit = all_err_cont_fit[2]/100.0
             f = float(measured_flxs[idx])
             c = float(measured_conts[idx])
             e = float(measured_ews[idx])
-            ferr = err_stis * numpy.abs(f)
-            cerr = err_contfit * numpy.abs(c)  
-            ewerr = e * numpy.sqrt((ferr/f)**2 + (cerr/c)**2)
+            ferr = float(errfluxes[idx])
             errs_net_fluxes.append(ferr)
-            errs_conts.append(cerr)
-            errs_ews.append(ewerr)
-            #print '\n Looking for:',  line_looked_for
-            #print nearest2line, '   flux =', f,'+-',ferr, '   cont =', c, '   ew =', e
+            errs_conts.append(float(errcontinua[idx]))
+            errs_ews.append(float(errews[idx]))
+            print '\n Looking for:',  line_looked_for
+            print nearest2line, '   flux =', f,'+-',ferr, '   cont =', c, '   ew =', e
             #if line_looked_for ==  4861.33:
             #    raw_input()
             #if line_looked_for ==  4650.0:
@@ -289,7 +326,7 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, err_
             found_ion_how_forbidden.append(lines_catalog[5][i])
     # Create the table of Net Fluxes and EQWs
     if name_out_file != None:
-        if create_txt == True:
+        if create_txt:
             #linesinfo_file_name = raw_input('Please type name of the .txt file containing the line info. Use the full path.')
             txt_file = open(name_out_file, 'w+')
             print >> txt_file,  use_wavs_text
@@ -1017,6 +1054,9 @@ class AdvancedOps(BasicOps):
             self.RedCorType = 'CHbeta'
         else:
             self.RedCorType = 'Ebv'
+        self.used_measured_info = False
+        if 'measuredLI' in RedCor_file1:
+            self.used_measured_info = True
         # If performing the collisional excitation correction, tfile2ndRedCor is the name of the text file with the corrected intensities.
         self.tfile2ndRedCor = tfile2ndRedCor
 
@@ -1048,7 +1088,10 @@ class AdvancedOps(BasicOps):
         AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
         # Read the info from the text file that contains IDs, dered info, and errors (this is the object_redCor.txt)
         self.AdvOpscols_in_file = spectrum.readlines_from_lineinfo(path_inputfile, AdvOpscols_in_file)
-        self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
+        if self.used_measured_info:
+            self.pynebIDstxt = os.path.join(path_object, object_name+"_measuredLI_pynebIDs.txt")
+        else:
+            self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
         tf = open(self.pynebIDstxt, 'w+')
         if verbose == True:
             print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
@@ -1087,7 +1130,10 @@ class AdvancedOps(BasicOps):
         that are avaiable to veryfy with IRAF. The abundance determination can be turned off by setting iontotabs to False.
         '''
         RedCorType = self.RedCorType
-        out_file = self.object_name+'_TempDens_'+RedCorType+'.txt'
+        if self.used_measured_info:
+            out_file = self.object_name+'_measuredLI_TempDens_'+RedCorType+'.txt'
+        else:
+            out_file = self.object_name+'_TempDens_'+RedCorType+'.txt'
         path_object = '../results/'+self.object_name
         fullpath_outfile = os.path.join(path_object, out_file)
         if self.writeouts:
@@ -1099,6 +1145,13 @@ class AdvancedOps(BasicOps):
         self.obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
         ###obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows_err_cols', corrected=True)    # this option is not working
         # Intensities
+        # He 1
+        self.I_5876 = 0.0
+        self.I_7065= 0.0                               
+        self.I_4686 = 0.0 
+        # C 3
+        self.I_1661 = [0.0, 0.0]        
+        self.I_1666 = [0.0, 0.0]        
         for line in self.obs.lines:
             if self.verbose == True:            
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
@@ -1293,6 +1346,7 @@ class AdvancedOps(BasicOps):
         if self.writeouts:
             print >> outf, '#{:<8} {:<24} {:<14} {:<11} {:<11} {:<11}'.format('Ion', 'Line Ratio', 'Ioniz Zone', 'Temp/Dens', 'Temp/Dens+err', 'Error')
             print >> outf, '# FIRST estimations of TEMPERATURES:'
+        self.TO3 = [0.0, 0.0]
         try:
             self.O3 = pn.Atom("O", "3")
             #self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
@@ -1319,6 +1373,7 @@ class AdvancedOps(BasicOps):
         except Exception as e:
             (NameError,),e
         try:
+            self.temO2 = [0.0, 0.0]
             self.O2 = pn.Atom("O", "2")
             tem_diag_O2 = '(L(3726)+L(3729)) / (L(7329) + L(7330))'
             self.temO2 = self.O2.getTemDen(I_3727/I_7330, den=100.0, to_eval=tem_diag_O2) 
@@ -1590,6 +1645,7 @@ class AdvancedOps(BasicOps):
         except Exception as e:
             (NameError,),e        
         try:
+            self.denS2 = [0.0, 0.0]
             den_diag_S2 = 'L(6716) / L(6731)'
             self.denS2 = self.S2.getTemDen(I_6716/I_6731, tem=10000.0, to_eval=den_diag_S2) 
             print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('[S 2]','6716/6731', 'Low', self.denS2[0], self.denS2[1])
@@ -1623,53 +1679,54 @@ class AdvancedOps(BasicOps):
             (NameError,),e
             
         ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
-        if not math.isnan(self.TO3[0]):
-            # Iron
-            I4986 = 0.0
-            I4987 = 0.0
-            I4658 = 0.0
-            if line.wave == 4986:         # Fe 3
-                I4986 = line.corrIntens                               
-            elif line.wave == 4987:
-                I4987 = line.corrIntens  
-            elif line.wave == 4658:
-                I4658 = line.corrIntens  
-            if self.writeouts:
-                print >> outf, '# '
-                print >> outf, '# Theoretically obtained values'
-            if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
-                log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(self.TO3[0]-4))) / (0.66 - 0.18*(numpy.log10(self.TO3[0]-4))) )
-                self.Fe3den = 10**(log_Fe3den)
-                print '   Density measured from [Fe3] lines:', self.Fe3den
+        if self.TO3[0] != 0.0:
+            if not math.isnan(self.TO3[0]):
+                # Iron
+                I4986 = 0.0
+                I4987 = 0.0
+                I4658 = 0.0
+                if line.wave == 4986:         # Fe 3
+                    I4986 = line.corrIntens                               
+                elif line.wave == 4987:
+                    I4987 = line.corrIntens  
+                elif line.wave == 4658:
+                    I4658 = line.corrIntens  
                 if self.writeouts:
-                    den = self.Fe3den
-                    Derr = numpy.abs(den[0] - den[1])
-                    print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', den[0], den[1], Derr)
-                self.densities.append(den)
+                    print >> outf, '# '
+                    print >> outf, '# Theoretically obtained values'
+                if (I4986 != 0.0) and (I4987 != 0) and (I4658 !=0):
+                    log_Fe3den = 2 - ( (numpy.log10((I4986+I4987)/I4658) - 0.05 - 0.25*(numpy.log10(self.TO3[0]-4))) / (0.66 - 0.18*(numpy.log10(self.TO3[0]-4))) )
+                    self.Fe3den = 10**(log_Fe3den)
+                    print '   Density measured from [Fe3] lines:', self.Fe3den
+                    if self.writeouts:
+                        den = self.Fe3den
+                        Derr = numpy.abs(den[0] - den[1])
+                        print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', den[0], den[1], Derr)
+                    self.densities.append(den)
+                else:
+                    print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('[Fe 3]','Peimbert et al 2012', 'High','nan', 'nan', 'nan')
+                    if self.writeouts:
+                        print >> outf, '{:<8} {:<25} {:<14} {:<11} {:<11} {:<11}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', 'nan', 'nan', 'nan')
+    
+                ### Following analysis presented in Pena-Guerrero, Peimbert, Peimbert, Ruiz (2012, ApJ, 746, 115) and
+                ### Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39).
+                # If the [O II] temperature was not obtained directly from observations, get an estimate temperature of OII from OII:
+                # 1) using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
+                self.TO2pei = 2430. + self.TO3 * (1.031 - self.TO3/54350.)
+                TO2pei_err = numpy.abs(self.TO2pei[0] - self.TO2pei[1])
+                print 'This is the theoretically obtained temperature of O2 from Peimbert et al. 2002 = ', self.TO2pei
+                if self.writeouts:
+                    print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Peimbert et al 2002', 'Low', self.TO2pei[0], self.TO2pei[1], TO2pei_err)
+                print ' * this theoretical relation works fine if Te[OIII] > 12,000'
+                print ' * for comparison, from observations Te[O III] = ', self.TO3
+                # 2) using equation of Garnett, D. R. 1992, AJ, 103, 1330
+                self.TO2gar = 0.7 * self.TO3 + 3000.
+                TO2gar_err = numpy.abs(self.TO2gar[0] - self.TO2gar[1])
+                print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
+                if self.writeouts:
+                    print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2gar[0], self.TO2gar[1], TO2gar_err)
             else:
-                print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('[Fe 3]','Peimbert et al 2012', 'High','nan', 'nan', 'nan')
-                if self.writeouts:
-                    print >> outf, '{:<8} {:<25} {:<14} {:<11} {:<11} {:<11}'.format('ne[Fe 3]','Peimbert et al 2012', 'High', 'nan', 'nan', 'nan')
-
-            ### Following analysis presented in Pena-Guerrero, Peimbert, Peimbert, Ruiz (2012, ApJ, 746, 115) and
-            ### Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39).
-            # If the [O II] temperature was not obtained directly from observations, get an estimate temperature of OII from OII:
-            # 1) using equation of Peimbert, Peimbert, & Luridiana (2002, ApJ, 565, 668) - Based on data of Stasinska's models.
-            self.TO2pei = 2430. + self.TO3 * (1.031 - self.TO3/54350.)
-            TO2pei_err = numpy.abs(self.TO2pei[0] - self.TO2pei[1])
-            print 'This is the theoretically obtained temperature of O2 from Peimbert et al. 2002 = ', self.TO2pei
-            if self.writeouts:
-                print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Peimbert et al 2002', 'Low', self.TO2pei[0], self.TO2pei[1], TO2pei_err)
-            print ' * this theoretical relation works fine if Te[OIII] > 12,000'
-            print ' * for comparison, from observations Te[O III] = ', self.TO3
-            # 2) using equation of Garnett, D. R. 1992, AJ, 103, 1330
-            self.TO2gar = 0.7 * self.TO3 + 3000.
-            TO2gar_err = numpy.abs(self.TO2gar[0] - self.TO2gar[1])
-            print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
-            if self.writeouts:
-                print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2gar[0], self.TO2gar[1], TO2gar_err)
-        else:
-            self.TO2gar = [0.0, 0.0]
+                self.TO2gar = [0.0, 0.0]
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
@@ -1682,8 +1739,8 @@ class AdvancedOps(BasicOps):
                 perr = 0.15
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
-                teL = forceTeH * 0.9         # 90% of the high temperature
-                teVL = forceTeH * 0.8        # 80% of the high temperature
+                teL = forceTeH * 0.85         # 85% of the high temperature
+                teVL = forceTeH * 0.75        # 75% of the high temperature
             else:
                 teH = forceTeH[0]
                 # error is defined, determine the percentage to make it absolute error
@@ -1693,8 +1750,8 @@ class AdvancedOps(BasicOps):
                     abserr = forceTeH[1] - teH
                 perr = (abserr * 1.0) / teH
                 teHerr = teH + abserr
-                teL = forceTeH[0] * 0.95         # 95% of the high temperature
-                teVL = forceTeH[0] * 0.85        # 85% of the high temperature
+                teL = forceTeH[0] * 0.85         # 85% of the high temperature
+                teVL = forceTeH[0] * 0.75        # 75% of the high temperature
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
             te_low = [teL, teLerr]
@@ -1705,18 +1762,28 @@ class AdvancedOps(BasicOps):
             print '   Very Low ionization degree temperature = Te_high*0.8: ', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
             print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr*100.0), '%'
         else:
+            te_high = [10000.0, 10500.0]
+            te_low = [9000.000, 9500.0]
+            te_verylow = [8500.0, 9000.0]
             if math.isnan(self.temO2[0]):
-                te_low = [9000.000, 9500.0]
                 print 'temO2 is nan'
-            else:
+            elif self.temO2[0] != 0.0:
                 te_low = self.temO2
                 print '   Te_low (O2) =', te_low
-            if math.isnan(self.TO3[0]):
-                te_high = [10000.0, 10500.0]
-                print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
             else:
-                te_high = self.TO3
-                print '   Te_high (O3) =', te_high
+                te_low = [9000.000, 9500.0]
+            if math.isnan(self.TO3[0]):
+                if math.isnan(self.temO2[0]):
+                    print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
+            else:
+                if self.TO3[0] > 20000.0:
+                    te_hi = te_low[0] + (te_low[0] * 0.2)
+                    err = te_hi*0.3
+                    te_high = [te_hi, err]
+                    print '   Te[O 3] not available, using default value:   te_low = TO2+(0.2*TO2) +- 0.2*errTO2'
+                else:
+                    te_high = self.TO3
+                    print '   Te_high (O3) =', te_high
                 # make sure the loz ionization temperature has a lowe temperature than the high one
                 if (te_low[0] > te_high[0]) or math.isnan(self.temO2[0]):
                     print '   Te_low (O2-Garnet92) =', self.TO2gar
@@ -1724,11 +1791,10 @@ class AdvancedOps(BasicOps):
             if te_low[0] == 9000.00:
                 print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
             if math.isnan(self.TS3[0]):
-                te_verylow = [8500.0, 9000.0]
                 print '   Te[S 3] not available, using default value:   te_Verylow = 8,500 +- 500.0'
             elif self.TS3[0] <= self.TO3[0]:
-                te_verylow = self.TS3
-                print '   Te_Verylow (S3) = ', te_verylow
+                    te_verylow = self.TS3
+                    print '   Te_Verylow (S3) = ', te_verylow
             elif self.TS3[0] > self.TO3[0]:
                 teVlow = self.TO3[0]*0.85
                 perS3 = (self.TS3[1] - self.TS3[0]) / self.TS3[0]
@@ -1752,10 +1818,10 @@ class AdvancedOps(BasicOps):
             dens = [ne, dens_err]
             print '   Density forced to be: ', dens[0], '+-', dens[1]-dens[0], '\n'
         else:        
+            dens = [150.0, 200.0]
             if math.isnan(self.denS2[0]):
-                dens = [150.0, 200.0]
                 print 'ne[S 2] not available, using default value: 150.0 +- 50.0 \n'
-            else:
+            elif self.denS2[0] != 0.0:
                 #ne = self.denO2
                 ne = self.denS2
                 if numpy.abs(ne[1] - ne[0]) < 20.0:
@@ -1764,9 +1830,36 @@ class AdvancedOps(BasicOps):
                 print 'ne =', dens, '\n'
         print ''
         # Define the temperatures and density for the class. 
-        self.te_high = te_high        
-        self.te_low = te_low        
-        self.te_verylow = te_verylow       
+        '''
+        if self.object_name =='mrk5':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [12700.0, 13700.0]#te_high        
+            self.te_low = [11900.0, 12900.0]#te_low        
+            self.te_verylow = [9000.0, 11500.0]#te_verylow       
+        '''
+        if self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [9500.0, 11500.0]#te_high        
+            self.te_low = [9000.0, 10900.0]#te_low        
+            self.te_verylow = [7000.0, 11500.0]#te_verylow       
+        elif self.object_name =='sbs1319':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [13600.0, 14100.0]#te_high        
+            self.te_low = [12400.0, 12800.0]#te_low        
+            self.te_verylow = [1000.0, 10500.0]#te_verylow
+        elif self.object_name =='tol9':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [7600.0, 8600.0]#te_high        
+            self.te_low = [8300.0, 9000.0]#te_low        
+            self.te_verylow = [7500.0, 8500.0]#te_verylow
+        elif self.object_name =='arp252':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [8700.0, 9600.0]#te_high        
+            self.te_low = [9100.0, 9900.0]#te_low        
+            self.te_verylow = [7500.0, 8500.0]#te_verylow
+        elif self.object_name =='sbs1415':     # We couldn't find temperatures, using same as Garcia-Rojas et al. (2014)
+            self.te_high = [11300.0, 11700.0]#[15500.0, 16200.0]#te_high        
+            self.te_low = [11000.0, 11500.0]#[13850.0, 114250.0]#te_low        
+            self.te_verylow = [9000.0, 10500.0]#te_verylow
+        else:       
+            self.te_high = te_high        
+            self.te_low = te_low        
+            self.te_verylow = te_verylow 
         self.dens = dens         
         
     def get_iontotabs(self, forceTeH=None, forceNe=None, data2use=None):
@@ -1794,7 +1887,7 @@ class AdvancedOps(BasicOps):
         print 'te_low =', te_low
         print 'te_verylow = ', te_verylow
         print 'density =', dens
-        raw_input(' ***  press enter to continue')
+        #raw_input(' ***  press enter to continue')
                 
         print '\n  Calculating abundances.... \n'
             
@@ -1930,15 +2023,19 @@ class AdvancedOps(BasicOps):
         print '\n OXYGEN'
         Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
         O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
+        #O23sq = (Otot * 0.35)**2
         Ototerr = numpy.sqrt(O23sq)
-        O_errp = (Ototerr/Otot)*100
+        O_errp = (Ototerr*100) / Otot
+        #print '    absOtot = ', Otot, '+-', Ototerr, ', which is', O_errp,'% of error'
+        print '    absOtot = %0.3e +- %0.3e (~%0.3f percent)' % (Otot, Ototerr, O_errp)
         print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
         # For such assumption see Lopez-Sanchez & Esteban (2009) and Izotov et al. (2006) 
         logOtot = 12+numpy.log10(Otot)
-        logOtoterr = numpy.log10((100+O_errp) / (100-O_errp))/2.0
+        #logOtoterr = numpy.log10(numpy.abs(100+O_errp) / numpy.abs(100-O_errp))/2.0
+        logOtoterr = Ototerr / (2.303 * Otot)        # equivalent method to above
         R = Otot / Otot
         Ratio = numpy.log(R)
-        Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr, Ratio, Ratioerr]        
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
         logOtot_sun = 8.66 #+-0.05    taken from Asplund et al. 2005
@@ -1963,7 +2060,7 @@ class AdvancedOps(BasicOps):
         print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
         R = N_tot / Otot
         Ratio = numpy.log(R)
-        Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303)
         elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
@@ -1980,17 +2077,23 @@ class AdvancedOps(BasicOps):
         print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, logele, logeleerr)
         R = Ne_tot / Otot
         Ratio = numpy.log(R)
-        Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 * R)
+        Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    Ne/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         
         # Sulphur
         print '\n SULPHUR'
         print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
-        print '    * Make sure that  O+ / Otot ~ 0.1:', self.atom_abun['O2'][0]/Otot
+        ofrac = self.atom_abun['O2'][0]/Otot
+        print '    *  O+ / Otot =:', ofrac
         #OpOtot = float(raw_input('Enter O+/Otot: '))
-        OpOtot = -0.25
-        S_icf = 1.0 / 10**(OpOtot)
+        if ofrac <= 0.15:
+            correspondingSvalue2OpOtot = -0.25
+        elif ofrac > 0.15 and ofrac < 0.3:
+            correspondingSvalue2OpOtot = -0.1
+        elif ofrac >= 0.3:
+            correspondingSvalue2OpOtot = -0.05
+        S_icf = 1.0 / 10**(correspondingSvalue2OpOtot)
         S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
         S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
         # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
@@ -2195,9 +2298,10 @@ class AdvancedOps(BasicOps):
         
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
         # Equation 2 for C^{++}/O^{++}
-        tc = te_high[0]/10000.0         # central temp
-        tpluserr = te_high[1]/10000.0   # central temp plus error
-        if self.I_1666[0] < 0.0:
+        te_used = te_high
+        tc = te_used[0]/10000.0         # central temp
+        tpluserr = te_used[1]/10000.0   # central temp plus error
+        if self.I_1666[0] <= 0.0:
             I_1663 = self.I_1661
         else:
             I_1663 = self.I_1666
@@ -2252,7 +2356,9 @@ class AdvancedOps(BasicOps):
         totC_garnett = totabs_ions_list[cpp] * icfC     
         logele_gar = 12+numpy.log10(totC_garnett[0])
         logeleerr_gar = totC_garnett[1] / (2.303 * totC_garnett[0])
-        print '  C++ = ', totabs_ions_list[cpp]
+        percent_err = totC_garnett[1]*100 / totC_garnett[0]
+        #logeleerr_gar = numpy.log10((100+percent_err)/(100-percent_err)) / 2.0
+        print '  C++ = ', totabs_ions_list[cpp], '%err=', percent_err
         print ' total C = ', totC_garnett
         print ' 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
         # now determine carbon abundance with my thesis method
@@ -2286,15 +2392,15 @@ class AdvancedOps(BasicOps):
         corrI1907 = IC3IO3_ratio * I1661
         err_corrI1907 = IC3IO3_ratio * err_I1661 
         I_1907 = numpy.array([corrI1907, err_corrI1907])
-        C3_thesis = self.C3.getIonAbundance(I_1907, te_high, dens, to_eval='L(1907)')
-        print 'This is the ionic abundance of C++ with my thesis method', C3_thesis 
+        C3_thesis = self.C3.getIonAbundance(I_1907, te_used, dens, to_eval='L(1907)')
+        print '         This is the ionic abundance of C++ with my thesis method', C3_thesis 
         # now, using the correction factor given by Garnett '95
         Ctot_thesis = icfC*C3_thesis
         logele_thes = 12+numpy.log10(Ctot_thesis[0])
         #logeleerr = numpy.log10((100+C_errp) / (100-C_errp))/2.0
         logeleerr_thes = Ctot_thesis[1] / (2.303 * Ctot_thesis[0])
-        print ' total abundance with thesis method, Ctot =', Ctot_thesis
-        print ' 12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele_thes, logeleerr_thes)
+        print '         total abundance with thesis method, Ctot =', Ctot_thesis
+        print '         12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele_thes, logeleerr_thes)
         
         # But only print the correct value: if CHbeta take the one from my thesis, else use the ebv one
         if data2use != None:
@@ -2305,13 +2411,18 @@ class AdvancedOps(BasicOps):
             Ctot = totC_garnett
             logele = logele_gar
             logeleerr = logeleerr_gar
-        C_errp = (Ctot[1]/Ctot[0])*100
+        C_errp = Ctot[1]*100/Ctot[0]
         R = Ctot[0] / Otot
-        Ratio = numpy.log(R)
-        Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303 * R)            
+        print Ctot[0], '/', Otot, '=', R
+        Ratio = numpy.log10(R)
+        Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303)            
         elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
+        print ' C/O = %0.2f +- %0.2f\n' % (Ratio, Ratioerr)
         #raw_input(' ***  press enter to continue')
         
+        te_used = te_low#te_high
+        tc = te_used[0]/10000.0         # central temp
+        tpluserr = te_used[1]/10000.0   # central temp plus error
         I_1752 = self.I_1752
         N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
         # error calculation
@@ -2330,7 +2441,10 @@ class AdvancedOps(BasicOps):
             
         # Write results in text file
         if self.writeouts:
-            out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
+            if self.used_measured_info:
+                out_file = self.object_name+'_measuredLI_IonicTotAbundances_'+RedCorType+'.txt'
+            else:
+                out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
             path_object = '../results/'+self.object_name
             fullpath_outfile = os.path.join(path_object, out_file)
             outf = open(fullpath_outfile, 'w+')
@@ -2682,9 +2796,15 @@ class AdvancedOps(BasicOps):
         # Go into the object folder and get the file
         results4object_path = os.path.join(full_results_path, object_name)
         if use_Chbeta:
-            RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
+            if self.used_measured_info:
+                RedCor_file = os.path.join(results4object_path, object_name+"_measuredLI_RedCor_CHbeta.txt")
+            else:
+                RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
         else:
-            RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
+            if self.used_measured_info:
+                RedCor_file = os.path.join(results4object_path, object_name+"_measuredLI_RedCor_Ebv.txt")
+            else:
+                RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
         # Load the data of interest
         wavs, intensities, errs = numpy.loadtxt(RedCor_file, skiprows=(1), usecols=(0,9,10), unpack=True)
         w4He = [2945.0, 3188.0, 3614.0, 3819.0, 3889.0, 3965.0, 4026.0, 4121.0, 4388.0, 4438.0, 
@@ -2767,46 +2887,48 @@ class AdvancedOps(BasicOps):
         # The multiplet 1 has eight lines (4639, 42, 49, 51, 62, 74,76, and 4696) of which only two doublets are usually observed:
         # the blending of 4638.86 and 4641.81, known as 4639+42 and the blending of 4649.13 and 4659.84, known as 4649+51
         #AdvOpscols_in_file = [self.wavelength, self.flambda, self.element, self.ion, self.forbidden, self.howforb, self.flux, self.errflux, self.percerrflx, self.intensity, self.errinten, self.percerrinten, self.ew, self.errew, self.percerrew]
+        I_4639p42 = [0.0, 0.0]
+        I_4649p51 = [0.0, 0.0]
         for w, F, err in zip(self.AdvOpscols_in_file[0], self.AdvOpscols_in_file[6], self.AdvOpscols_in_file[7]):
             if w == 4640.0:
                 if F > 0.0:
                     I_4639p42 = [F, err]
-                else:
-                    I_4639p42 = [0.0, 0.0]
             elif w == 4650.0:
                 if F > 0.0:        
                     I_4649p51 = [F, err]
-                else:
-                    I_4649p51 = [0.0, 0.0]
             elif w == 4861.33:
                 Hbeta = [F, err]
-        I_ORLs_obs = I_4639p42[0] + I_4649p51[0]
-        err_I_ORLs_obs = numpy.sqrt(I_4639p42[1]**2 + I_4649p51[1]**2)
-        # So now we have that I_ORLs_obs +- err_I_ORLs_obs represents percent_ORLs_obs of the I_total of the multiplet, therefore
-        # we have to multiply it for 1/percent_ORLs_obs in order to correct for the ~30% we do not see:
-        # lets call I_ORLs_obs * (1/percent_ORLs_obs) = ORLs
-        ORLs = I_ORLs_obs * (1.0/percent_ORLs_obs)
-        IORLs_over_Hbeta =  ORLs / Hbeta[0]
-        # errors in the intensity of the multiplet 1
-        err_ORLs = err_I_ORLs_obs * 1.0/percent_ORLs_obs
-        err_IORLs_over_Hbeta = IORLs_over_Hbeta * numpy.sqrt((err_ORLs/ORLs)**2 + (Hbeta[1]/Hbeta[0])**2) 
-        # Now we can proceed with the O++ abundance determination:
-        print 't_4 = ', t_4
-        #print 'percent_4639p42 =', I4639p62p96_over_Isum, '+', I4642p76_over_Isum
-        #print 'percent_4649p51 =', I4649_over_Isum, '+', I4651p74_over_Isum
-        print 'percent_ORLs_obs = ', percent_4639p42, '+', percent_4649p51, '=', percent_ORLs_obs
-        print 'I_ORLs_obs * (1.0/percent_ORLs_obs) = ', I_ORLs_obs, '*', '1/',percent_ORLs_obs, '=', ORLs
-        print 'IORLs_over_Hbeta =', IORLs_over_Hbeta
-        print 'alpha_effHbeta/alpha_effORLs = ', alpha_effHbeta, '/', alpha_effORLs, '=', alpha_effHbeta/alpha_effORLs
-        #print 'lambdaORLs_over_lambdaHbeta = ', lambdaORLs_over_lambdaHbeta
-        densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
-        # error in ionic abundance
-        #err_densOpp_over_densHp = densOpp_over_densHp * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2 + (err_lambdaORLs_over_lambdaHbeta/lambdaORLs_over_lambdaHbeta)**2)
-        err_densOpp_over_densHp = densOpp_over_densHp * lambdaORLs_over_lambdaHbeta * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2)
-        #err_densOpp_over_densHp = err_IORLs_over_Hbeta * lambdaORLs_over_lambdaHbeta * alpha_effHbeta/alpha_effORLs        
+        I_ORLs_obs = I_4639p42[0] + I_4649p51[0]        
+        if I_ORLs_obs == 0.0:
+            densOpp_over_densHp = 0.0
+            err_densOpp_over_densHp = 0.0
+            log_densOpp_over_densHp = 0.0
+            logeleerr = 0.0
+        else:
+            err_I_ORLs_obs = numpy.sqrt(I_4639p42[1]**2 + I_4649p51[1]**2)
+            # So now we have that I_ORLs_obs +- err_I_ORLs_obs represents percent_ORLs_obs of the I_total of the multiplet, therefore
+            # we have to multiply it for 1/percent_ORLs_obs in order to correct for the ~30% we do not see:
+            # lets call I_ORLs_obs * (1/percent_ORLs_obs) = ORLs
+            ORLs = I_ORLs_obs * (1.0/percent_ORLs_obs)
+            IORLs_over_Hbeta =  ORLs / Hbeta[0]
+            # errors in the intensity of the multiplet 1
+            err_ORLs = err_I_ORLs_obs * 1.0/percent_ORLs_obs
+            err_IORLs_over_Hbeta = IORLs_over_Hbeta * numpy.sqrt((err_ORLs/ORLs)**2 + (Hbeta[1]/Hbeta[0])**2) 
+            # Now we can proceed with the O++ abundance determination:
+            densOpp_over_densHp = IORLs_over_Hbeta * alpha_effHbeta/alpha_effORLs * lambdaORLs_over_lambdaHbeta
+            # error in ionic abundance
+            err_densOpp_over_densHp = densOpp_over_densHp * lambdaORLs_over_lambdaHbeta * numpy.sqrt((err_IORLs_over_Hbeta/IORLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_effORLs)/(alpha_effHbeta/alpha_effORLs))**2)
+            log_densOpp_over_densHp = 12 + numpy.log10(densOpp_over_densHp)
+            logeleerr = err_densOpp_over_densHp / (2.303 * densOpp_over_densHp)
+            print 't_4 = ', t_4        
+            #print 'percent_4639p42 =', I4639p62p96_over_Isum, '+', I4642p76_over_Isum
+            #print 'percent_4649p51 =', I4649_over_Isum, '+', I4651p74_over_Isum
+            print 'percent_ORLs_obs = ', percent_4639p42, '+', percent_4649p51, '=', percent_ORLs_obs
+            print 'I_ORLs_obs * (1.0/percent_ORLs_obs) = ', I_ORLs_obs, '*', '1/',percent_ORLs_obs, '=', ORLs
+            print 'IORLs_over_Hbeta =', IORLs_over_Hbeta
+            print 'alpha_effHbeta/alpha_effORLs = ', alpha_effHbeta, '/', alpha_effORLs, '=', alpha_effHbeta/alpha_effORLs
+            #print 'lambdaORLs_over_lambdaHbeta = ', lambdaORLs_over_lambdaHbeta
         print '\n The O++ abundance determined from RLs is: %0.3e +- %0.3e' % (densOpp_over_densHp, err_densOpp_over_densHp)
-        log_densOpp_over_densHp = 12 + numpy.log10(densOpp_over_densHp)
-        logeleerr = err_densOpp_over_densHp / (2.303 * densOpp_over_densHp)
         print '                           12+log(O++/H+) = %0.2f +- %0.2f' % (log_densOpp_over_densHp, logeleerr)
         # To find approximate value of ADF, we divide the abundances found with CELs/RLs:
         approxADF = densOpp_over_densHp/Opp
@@ -2842,26 +2964,32 @@ class AdvancedOps(BasicOps):
         err_alpha_CRL =  1e-14 * a * err_t4**f * (1 + b*(1-err_t4) + c*(1-err_t4)**2 + d*(1-err_t4)**3)
         # Following the same recipy as for oxygen,
         lambdaCRL_over_lambdaHbeta = 4267.15/4861.33
+        F_4267 = [0.0, 0.0]
+        densCpp_over_densHp = 0.0
+        err_densCpp_over_densHp = 0.0
+        log_densCpp_over_densHp = 0.0
+        logeleerr = 0.0
         for w, F, err in zip(self.AdvOpscols_in_file[0], self.AdvOpscols_in_file[6], self.AdvOpscols_in_file[7]):
             if w == 4267.15:
                 if F > 0.0:
                     F_4267 = [F, err]
                 else:
-                    F_4267 = [0.0, 0.0]
+                    print  'This object had no 4267 CII line...'
         percent_CRL_obs = 1.
         CRLs = F_4267[0] * (1.0/percent_CRL_obs)
         CRLs_over_Hbeta =  CRLs / Hbeta[0]
-        err_CRLs_over_Hbeta = numpy.sqrt((F_4267[1]/F_4267[0])**2 + (Hbeta[1]/Hbeta[0])**2)
-        densCpp_over_densHp = CRLs_over_Hbeta * alpha_effHbeta/alpha_CRL * lambdaCRL_over_lambdaHbeta
-        err_densCpp_over_densHp = densCpp_over_densHp * lambdaCRL_over_lambdaHbeta * numpy.sqrt((err_CRLs_over_Hbeta/CRLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_CRL)/(alpha_effHbeta/alpha_CRL))**2) 
+        if F_4267[0] != 0.0:
+            err_CRLs_over_Hbeta = numpy.sqrt((F_4267[1]/F_4267[0])**2 + (Hbeta[1]/Hbeta[0])**2)
+            densCpp_over_densHp = CRLs_over_Hbeta * alpha_effHbeta/alpha_CRL * lambdaCRL_over_lambdaHbeta
+            err_densCpp_over_densHp = densCpp_over_densHp * lambdaCRL_over_lambdaHbeta * numpy.sqrt((err_CRLs_over_Hbeta/CRLs_over_Hbeta)**2 + ((alpha_effHbeta/err_alpha_CRL)/(alpha_effHbeta/alpha_CRL))**2) 
+            log_densCpp_over_densHp = 12 + numpy.log10(densCpp_over_densHp)
+            logeleerr = err_densCpp_over_densHp / (2.303 * densCpp_over_densHp)
         print '\n'
         print 'CRLs =', F_4267[0], '* 1.0/', percent_CRL_obs, '=', F_4267[0] * (1.0/percent_CRL_obs)
         print 'CRLs_over_Hbeta =', CRLs_over_Hbeta
         print 'alpha_effHbeta/alpha_CRL = ', alpha_effHbeta, '/', alpha_CRL, '=', alpha_effHbeta/alpha_CRL
         print 'lambdaCRL_over_lambdaHbeta = ', lambdaCRL_over_lambdaHbeta
         print '\n The C++ abundance determined from RLs is: %0.3e  +- %0.3e' % (densCpp_over_densHp, err_densCpp_over_densHp)
-        log_densCpp_over_densHp = 12 + numpy.log10(densCpp_over_densHp)
-        logeleerr = err_densCpp_over_densHp / (2.303 * densCpp_over_densHp)
         print '                           12+log(C++/H+) = %0.2f +- %0.2f' % (log_densCpp_over_densHp, logeleerr)
         approxADF_C = densCpp_over_densHp / Cpp
         print ' The approximate value of ADF is: '
