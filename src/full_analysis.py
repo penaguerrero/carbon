@@ -15,23 +15,12 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-
-object_number = 1
-
-# Skip the finding of the line info and go directly to gather the spectra?
-use_given_lineinfo = True
-
-# Do you want to the data to be rebinned?
-perform_rebin = False
+object_number = 17
 
 # Write the text file with line info?
 create_txt_lineinfo = True
-# Do deblend of lines?
-deblend4363 = False
-deblend3727 = False
-deblend6563 = False
 
-# If only wanting to perform the reddening and redshift correction set to True: first round of corrrections
+# If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
@@ -46,8 +35,43 @@ case = 'B'
 ############################################################################################################################################
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
-forceTe = None#15500.0
-forceNe = None#500.0 #1000.0
+#                      0                1                 2                3          4 (based on Na4)     5*    6     7     8           
+forceTe_list = [[10900.,15000.],  [9000., 16000.], [10500.,12500.], [10100.,12100.], [15000.0, 17000.0], None, None, None, 11900.0,
+                None,    16200., None, None, None, None, None, None, None]
+#                   9      10*     11    12    13    14    15    16    17 
+forceTe = forceTe_list[object_number]
+#forceTe = None
+#                   0      1             2              3        4     5    6     7     8           
+forceNe_list = [None, [100., 650.], [100., 3000.], [800, 1000], None, None, None, None, [100., 655],
+                None,    None, None, None, None, None, None, None, [500., 400.]]
+#                 9      10*     11    12    13    14    15    16    17 
+forceNe = forceNe_list[object_number]
+
+# Skip the finding of the line info and go directly to gather the spectra?
+#                            0     1     2     3     4      5     6     7     8
+use_given_lineinfo_list = [True, True, True, False, True, False, True, True, True, 
+                           False, False, False, True, False, False, False, False, True]
+#                           9     10     11     12     13     14     15     16     17
+use_given_lineinfo = use_given_lineinfo_list[object_number]
+
+# use this option if wanting to rebin or not
+#                       0      1      2     3      4      5     6     7     8
+perform_rebin_list = [False, False, True, False, False, True, True, True, False, 
+                      False, False, True, True, True, True, True, True, True]
+#                      9      10    11    12     13    14    15     16     17
+perform_rebin = perform_rebin_list[object_number]
+
+# use this option if object is VERY faint and want to use thinner widths for emission lines
+#                  0      1     2     3      4     5     6      7      8
+faintObj_list = [False, True, True, False, True, True, False, True, False, 
+                 False, False, True, False, True, False, False, False, False]
+#                  9      10    11    12     13    14     15     16     17
+faintObj = faintObj_list[object_number]
+
+# Do deblend of lines?
+deblend4363 = False
+deblend3727 = False
+deblend6563 = False
 
 # Used values of Halpha_width in order to properly correct for reddening
 #                     0    1    2    3    4    5    6    7   8     9   10   11   12   13   14   15   16   17
@@ -59,7 +83,7 @@ I_theo_HaHb = 2.86
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 2.43], [2.1, 2.4], [2.0, 1.05], [2.0, 1.16], [2.5, 4.8], [0.1, 0.001], [2.0, 1.21], [2.6, 0.96], [2.5, 2.35], 
+combos_list = [[2.0, 0.6], [2.0, 2.3], [2.0, 2.8], [0.7, 0.6], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
                [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
@@ -79,26 +103,17 @@ or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[or1, or2, or3], [1.6, 6.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
-                            #        6              7                 8                9              10               11
-                            [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
-                            #       12             13                14               15              16               17                            
-                            [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
-
+desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+                            #        6              7                 8                9               10               11
+                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 4.2, 5.0],
+#                                   12             13                14               15               16               17                            
+                            [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
 
-# use this option if object is VERY faint and want to use thinner widths for emission lines
-#                  0      1     2     3      4     5     6      7      8
-faintObj_list = [False, True, True, False, True, True, False, True, False, 
-                 False, False, True, False, True, False, False, False, True]
-#                  9      10    11    12     13    14     15     16     17
-faintObj = faintObj_list[object_number]
-
-# corresponding redshifts
-# from observations
+# corresponding redshifts from observations
 #             0        1        2        3         4         5        6        7         8
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
-          0.046240, 0.013642, 0.002010, 0.0073, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
+          0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.032989, 0.04678, 0.002031]
 #             9       10        11       12        13       14       15       16       17
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
 # tol9=14 is found to have a much different z than that of phase2.... previous value = 0.01195
@@ -325,12 +340,13 @@ if use_given_lineinfo == False:
     cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=True, err_cont_fit=True, errs_files=errs_files)
 else:
     # Load the text files with the measured lines and equivalent widths and write the corresponding file
-    nameoutfile = os.path.join(results4object_path, object_name+"_MEASURED_linesNUV2NIR.txt")    
-    cols_in_file, flxEW_errs = metallicity.use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, cont_data, err_stis_list, all_err_cont_fit, reject=50.0, start_w=None, name_out_file=nameoutfile, create_txt=True)
+    nameoutfile = os.path.join(results4object_path, object_name+"_measuredLI_linesNUV2NIR.txt")  
+    cols_in_file, flxEW_errs = metallicity.use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data, cont_data, err_stis_list, 
+                                                                       all_err_cont_fit, reject=50.0, start_w=None, create_txt=True, name_out_file=nameoutfile)
 
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 err_flux, err_EW, cont_errs = flxEW_errs
-
+'''
 # Deblend lines
 lines2deblend = [4359.340, 4363.210]
 # the width is the same for all the components
@@ -344,7 +360,7 @@ whole_object_continua = numpy.array([object_wavelengths, object_continuum])
 #spectrum.deblend_line(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
 #spectrum.deblend_with_gauss(whole_object_data, whole_object_continua, catalog_wavelength, observed_wavelength, tot_flx, tot_cont, lines2deblend, width_of_lines, plot_fit=True)
 #exit()
-
+'''
 # Determine the corresponding E(B-V) value for each object
 av = A_V_list[object_number]
 if use_Chbeta:
@@ -363,11 +379,19 @@ redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
 cHbeta = 0.434*C_Hbeta
 # Names of the text files with the results with errors
 if use_Chbeta:
-    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_CHbeta.txt")
-    tfile2ndRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_2ndRedCor_CHbeta.txt")
+    if use_given_lineinfo:
+        name_extension = '_measuredLI_RedCor_CHbeta.txt'
+        tfile2ndRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_measuredLI_2ndRedCor_CHbeta.txt")
+    else:
+        name_extension = '_RedCor_CHbeta.txt'
+        tfile2ndRedCor = os.path.join(results4object_path, object_name+"_Case"+case+"_2ndRedCor_CHbeta.txt")
 else:
-    RedCor_file = os.path.join(results4object_path, object_name+"_RedCor_Ebv.txt")
+    if use_given_lineinfo:
+        name_extension = '_measuredLI_RedCor_Ebv.txt'
+    else:
+        name_extension = '_RedCor_Ebv.txt'
     tfile2ndRedCor = None
+RedCor_file = os.path.join(results4object_path, object_name+name_extension)
 print '     Reddening corrected intensities wrote on file:', RedCor_file
 kk = metallicity.BasicOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
