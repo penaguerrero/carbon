@@ -13,46 +13,70 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 
-
 # Choose parameters to run script
+# Select a number from objects_list, i = :
+object_number = 17
+# use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
+specs = [1]
+# set commented parameters, choose options 0 through 3
+choose_conditions4textfiles = 1
 
-# 1) Select a number from objects_list, i = :
-object_number = 1
+############################################################################################################################################
+'''
+# write the text file with the line wavelengths, fluxes, and fitted continuum?
+text_table = False
+# Do you want to normalize the spectra to the continuum?
+normalize = False
+# Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
+correct_redshift = True
+rebin = True
+### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true 
+splot_text = True
 
-# 2) use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
-
-# 3) Do you want to use Vacuum wavelengths?
+# Do you want to see the plots of the fitted continuum?
+plot = True
+'''
+# Do you want to use Vacuum wavelengths?
 vacuum = False
-
-# 4) Do you want to normalize the spectra to the continuum?
-normalize = True
-
-# 5) Choose how many sigmas to clip from the continuum array
-sigmas_away = 2
-
-# in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-order = 8
-
-# 6) What is the width of the window to use to find local continuum?
-window = 70
 # Do you want to consider the first 150 A? If yes, set to False
 nullfirst150 = True
 
-# 7) Do you want to see the plots of the fitted continuum?
-plot = True
-
-# 8) write the text file with the line wavelengths, fluxes, and fitted continuum?
-text_table = False
-
-# Want to see the quasi-final spectrum?  (i.e. correct for redshift and rebin)
-correct_redshift = True
-rebin = False
-
-############################################################################################################################################
-
-# Set width of Halpha in order to properly correct for reddening
-#Halpha_width = 40.
+# lists to make faster the text files for splot:
+#    text_table normalize correct_redshift rebin splot_text plot
+reg  = [False,      False,     False,       False,   False,   True]
+norm = [False,      True,      True,       False,    False,    True]
+normreb = [False,   True,      True,        True,    False,    True]
+reb  = [False,     False,      True,        True,    False,    True]
+if choose_conditions4textfiles==0:
+    conditions4textfiles = reg
+elif choose_conditions4textfiles==1:
+    conditions4textfiles = norm
+elif choose_conditions4textfiles==2:
+    conditions4textfiles = normreb
+elif choose_conditions4textfiles==3:
+    conditions4textfiles = reb
+if conditions4textfiles:
+    text_table = conditions4textfiles[0]
+    normalize = conditions4textfiles[1]
+    correct_redshift = conditions4textfiles[2]
+    rebin = conditions4textfiles[3]
+    splot_text = conditions4textfiles[4]
+    plot = conditions4textfiles[5]
+    
+for s in specs:
+    # Choose how many sigmas to clip from the continuum array
+    sigmas_lsit = [[3,3,3], [2,3,1.5], [3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3], 
+                   [3,3,3],[2,3,3], [3,3,3], [2,3,3], [2,2,2], [3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
+    sigmas_away = sigmas_lsit[object_number][s]
+    # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
+    order_list = [[2,1,1], [8,3,5], [2,2,1], [7,2,2], [3,1,1], [5,5,5], [7,1,1], [7,1,1], [3,1,1], 
+                  [7,1,1], [7,1,1], [7,1,1], [5,1,1], [3,1,1], [2,3,1], [2,1,1], [7,1,1], [7,1,1]]
+    order = order_list[object_number][s]
+    # What is the width of the window to use to find local continuum?
+    window_list = [[350,350,250], [70,400,800], [500,300,200], [80,130,130], [150,250,250], [100,300,200], 
+                   [70,150,350], [80,600,550], [100,250,250], [80,200,150], [50,350,350], [80,250,300], 
+                   [70,550,550], [300,300,300], [250,250,250], [250,380,200], [50,350,500], [40,550,550]]
+    window = window_list[object_number][s]
 
 object_name = objects_list[object_number]
 
@@ -69,25 +93,62 @@ results4object_path = os.path.join(full_results_path, object_name)
 add_str = "_selectedspecs"
 data, full_file_list = spectrum.loadtxt_from_files(object_name, add_str, specs, text_files_path)
 # alternative for when files have been corrected in splot
+altern_file = False
 ### To get altern files run: 1. correct_spec script, 2.rspectext, 3.splot, 4.correct with j and save with i, 5.wspectext
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
-#altern = '../results/iras08339/iras08339_nir_corr.txt'
-#altern = '../results/mrk1087/mrk1087_opt_corr.txt'
-#altern = '../results/mrk1087/mrk1087_nir_corr.txt'
-#altern = '../results/sbs0218/sbs0218_opt_corr.txt'
-#altern = '../results/pox4/pox4_opt_corr.txt'
-#altern = '../results/sbs1319/sbs1319_optspec_cor.txt'
-#altern = '../results/tol9/tol9_opt21_fix.txt'
-#altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
-#w, f = numpy.loadtxt(altern, unpack=True)
-#data = [numpy.array([w,f])]
+for s in specs:
+    if (object_name=='iras08339') and (s==1):
+        altern = '../results/iras08339/iras08339_nir_corr.txt'
+        altern_file = True
+    if (object_name=='mrk1087') and (s==1):
+        altern = '../results/mrk1087/mrk1087_opt_corr.txt'
+        altern_file = True
+    if (object_name=='mrk1087') and (s==2):
+        altern = '../results/mrk1087/mrk1087_nir_corr.txt'
+        altern_file = True
+    if (object_name=='mrk1199') and (s==1):
+        altern = '../results/mrk1199/mrk1199_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='mrk960') and (s==1):
+        altern = '../results/mrk960/mrk960_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='sbs0218') and (s==1):
+        altern = '../results/sbs0218/sbs0218_opt_corr.txt'
+        altern_file = True
+    if (object_name=='sbs0948') and (s==1):
+        altern = '../results/sbs0948/sbs0948_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='sbs0926') and (s==1):
+        altern = '../results/sbs0926/sbs0926_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='sbs0926') and (s==2):
+        altern = '../results/sbs0926/sbs0926_nirspec_corr.txt'
+        altern_file = True
+    if (object_name=='pox4') and (s==1):
+        altern = '../results/pox4/pox4_opt_corr.txt'
+        altern_file = True
+    if (object_name=='sbs1054') and (s==1):
+        altern = '../results/sbs1054/sbs1054_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='sbs1319') and (s==1):
+        altern = '../results/sbs1319/sbs1319_optspec_corr.txt'
+        altern_file = True
+    if (object_name=='tol9') and (s==1):
+        altern = '../results/tol9/tol9_opt21_fix.txt'
+        altern_file = True
+    if (object_name=='sbs1415') and (s==1):
+        altern = '../results/sbs1415/sbs1415_optspec_cor.txt'
+        altern_file = True
+if altern_file:
+    w, f = numpy.loadtxt(altern, unpack=True)
+    data = [numpy.array([w,f])]
 
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
-          0.046240, 0.013642, 0.002010, 0.0073, 0.01732, 0.01199, 0.032989, 0.04678, 0.002031]
+          0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.032989, 0.04678, 0.002031]
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
 
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
@@ -96,12 +157,13 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-#                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[2.5, 8.0, 8.0], [1.6, 6.5, 5.0], [2.0, 5.0, 10.0], [2.0, 5.0, 6.0], [2.0, 3.0, 5.0], [2.0, 3.0, 5.0], 
+factor = 3.0
+#                                    0              1                 2                3                4                5
+desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
-                            [2.0, 7.0, 8.0], [2.0, 4.0, 6.0], [2.0, 8.0, 6.0], [2.0, 8.0, 8.0], [or1, or2, or3], [2.0, 8.0, 8.0],
-                            [2.0, 5.0, 5.0], [2.0, 5.0, 6.0], [2.0, 5.0, 6.0], [2.5, 5.0, 7.0], [2.5, 8.0, 8.0], [or1, or2, or3]]
-#                                 12             13                14               15              16               17                            
+                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 4.2, 5.0],
+#                                   12             13                14               15               16               17                            
+                            [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
 
 
@@ -139,11 +201,14 @@ for d, s in zip(data, specs):
             print >> txt, '{:<7.3f} {:>25.5e} {:>32.5e}'.format(w, f, c)
         txt.close()
 
-    ### If needing to create a text file with only wavelengths and fluxes for splot change splot_text to true and change the corresponding part
-    # of the spectra to appear in the title of the text file
-    splot_text = True
-    part_of_spec = 'nuv'
-    if splot_text == True:
+    ### The followeing lines are just in case of wanting to create a text file to convert into readable splot fits
+    if splot_text:
+        if s == 0:
+            part_of_spec = 'nuv'
+        elif s == 1:
+            part_of_spec = 'opt'
+        elif s == 2:
+            part_of_spec = 'nir'
         name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec.txt")
         if normalize:
             name_out_file = os.path.join(results4object_path, object_name+"_"+part_of_spec+"spec_NORMALIZED.txt")
