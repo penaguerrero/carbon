@@ -1839,6 +1839,10 @@ class AdvancedOps(BasicOps):
             self.te_high = [9500.0, 11500.0]#te_high        
             self.te_low = [9000.0, 10900.0]#te_low        
             self.te_verylow = [7000.0, 11500.0]#te_verylow       
+        elif self.object_name =='iras08208':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [10100.0, 10800.0]#te_high        
+            self.te_low = [10100.0, 10600.0]#te_low        
+            self.te_verylow = [9000.0, 10500.0]#te_verylow
         elif self.object_name =='sbs1319':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
             self.te_high = [13600.0, 14100.0]#te_high        
             self.te_low = [12400.0, 12800.0]#te_low        
