@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 This scripts takes the found metallicities and produces:
  * plot of C/O vs Otot
  * plot of N/O vs Otot
+ * plot of Ne/O vs Otot
 '''
 
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
@@ -59,11 +60,11 @@ plt.show()
 
 # N/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
-plt.errorbar(OH, NO, xerr=OHerr, yerr=COerr, fmt='ko')
+plt.errorbar(OH, NO, xerr=OHerr, yerr=NOerr, fmt='ko')
 plt.xlim(7.0, 9.0)
-plt.ylim(-2.0, 0.5)
+plt.ylim(-2.0, 0.1)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(-2.0, 0.5, 0.5))
+plt.yticks(numpy.arange(-2.0, 0.1, 0.5))
 for x, y, z in zip(OH, NO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
@@ -74,6 +75,7 @@ for x, y, z in zip(OH, NO, objects_list):
         subxcoord = 10
         side = 'left'
     if (z == 'iras08208'):
+        subxcoord = 5
         subycoord = 10
         side = 'left'
     if (z == 'pox4') or (z == 'ngc1741') or (z == 'sbs0218') or (z == 'tol1457') or (z == '30Dor'):
@@ -87,6 +89,33 @@ plt.title('N/O vs O/H')
 plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (N/O)')
 img_name = 'NOvsOH.jpg'
+destination = os.path.join(full_results_path, img_name)
+plt.savefig(destination)
+print('Plot %s was saved!' % destination)
+plt.show()
+
+# Ne/O vs O/H
+fig1 = plt.figure(1, figsize=(12, 10))
+plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
+plt.xlim(7.0, 9.0)
+plt.ylim(-2.0, 0.1)
+plt.xticks(numpy.arange(7.0, 9.0, 0.2))
+plt.yticks(numpy.arange(-2.0, 0.1, 0.5))
+for x, y, z in zip(OH, NeO, objects_list):
+    # Annotate the points 5 _points_ above and to the left of the vertex
+    #print z, x, y
+    subxcoord = -5
+    subycoord = 5
+    side = 'right'
+    if (z == 'pox4') or (z == 'mrk960') or (z == 'sbs1319') or (z == 'Orion'):
+        subxcoord = 5
+        subycoord = 10
+        side = 'left'
+    plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
+plt.title('Ne/O vs O/H')
+plt.xlabel('12 + log (O/H)')
+plt.ylabel('log (Ne/O)')
+img_name = 'NeOvsOH.jpg'
 destination = os.path.join(full_results_path, img_name)
 plt.savefig(destination)
 print('Plot %s was saved!' % destination)
