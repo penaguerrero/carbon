@@ -293,7 +293,6 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, all_
         # find the line in the catalog that is closest to a 
         line_looked_for = lines_catalog[use_wavs][i]
         nearest2line = spectrum.find_nearest_within(measured_wavs, line_looked_for, 10.0)
-        #print line_looked_for, nearest2line, measured_wavs
         nearest2line_idx = numpy.where(measured_wavs == nearest2line)
         idx = nearest2line_idx[0]
         if nearest2line > 0.0:  
@@ -1853,8 +1852,8 @@ class AdvancedOps(BasicOps):
             self.te_low = [9100.0, 9900.0]#te_low        
             self.te_verylow = [7500.0, 8500.0]#te_verylow
         elif self.object_name =='sbs1415':     # We couldn't find temperatures, using same as Garcia-Rojas et al. (2014)
-            self.te_high = [11300.0, 11700.0]#[15500.0, 16200.0]#te_high        
-            self.te_low = [11000.0, 11500.0]#[13850.0, 114250.0]#te_low        
+            self.te_high = [15500.0, 16500.0]#te_high        
+            self.te_low = [13850.0, 14850.0]#te_low        
             self.te_verylow = [9000.0, 10500.0]#te_verylow
         else:       
             self.te_high = te_high        
