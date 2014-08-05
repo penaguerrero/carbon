@@ -44,7 +44,10 @@ for x, y, z in zip(OH, CO, objects_list):
     side = 'right'
     if (z == 'mrk960') or (z == 'sbs1054'):
         subycoord = -15
-    if (z == 'sbs1319') or(z == 'iras08208') or (z == 'iiizw107') or (z == 'Orion'):
+    if (z == 'iras08208'):
+        subxcoord = 8
+        side = 'left'
+    if (z == 'sbs1319') or (z == 'iiizw107') or (z == 'Orion'):
         subxcoord = 8
         subycoord = -15
         side = 'left'
@@ -78,10 +81,10 @@ for x, y, z in zip(OH, NO, objects_list):
         subxcoord = 5
         subycoord = 10
         side = 'left'
-    if (z == 'pox4') or (z == 'ngc1741') or (z == 'sbs0218') or (z == 'tol1457') or (z == '30Dor'):
+    if (z == 'ngc1741') or (z == 'sbs0218') or (z == 'tol1457') or (z == '30Dor'):
         subycoord = -15
-    if (z == 'iiizw107') or (z == 'Orion'):
-        subxcoord = 10
+    if (z == 'iiizw107') or (z == 'pox4') or (z == 'mrk1199') or (z == 'sbs0948') or (z == 'Orion'):
+        subxcoord = 8
         subycoord = -15
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
@@ -98,9 +101,9 @@ plt.show()
 fig1 = plt.figure(1, figsize=(12, 10))
 plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
 plt.xlim(7.0, 9.0)
-plt.ylim(-2.0, 0.1)
+plt.ylim(-4.0, 0.1)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(-2.0, 0.1, 0.5))
+plt.yticks(numpy.arange(-4.0, 0.1, 0.5))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
