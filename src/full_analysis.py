@@ -50,7 +50,7 @@ forceTe = forceTe_list[object_number]
 #forceTe = None
 #                   0      1             2              3        4     5    6     7     8           
 forceNe_list = [None, [100., 650.], [100., 3000.], [800, 1000], None, None, None, None, [100., 655],
-                None,    None, None, None, None, None, None, None, [100, 200.]]
+                None,    None, None, None, None, None, None, 100., [100, 200.]]
 #                 9      10*     11    12    13    14    15    16    17 
 forceNe = forceNe_list[object_number]
 
