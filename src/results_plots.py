@@ -65,9 +65,11 @@ plt.show()
 fig1 = plt.figure(1, figsize=(12, 10))
 plt.errorbar(OH, NO, xerr=OHerr, yerr=NOerr, fmt='ko')
 plt.xlim(7.0, 9.0)
-plt.ylim(-2.0, 0.1)
+yup = -0.5
+ylo = -2.0
+plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(-2.0, 0.1, 0.5))
+plt.yticks(numpy.arange(ylo, yup, 0.25))
 for x, y, z in zip(OH, NO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
@@ -101,9 +103,11 @@ plt.show()
 fig1 = plt.figure(1, figsize=(12, 10))
 plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
 plt.xlim(7.0, 9.0)
-plt.ylim(-4.0, 0.1)
+yup = 0.1
+ylo = -2.0
+plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(-4.0, 0.1, 0.5))
+plt.yticks(numpy.arange(ylo, yup, 0.5))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
