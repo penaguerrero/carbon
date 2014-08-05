@@ -310,7 +310,7 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, all_
             errs_ews.append(float(errews[idx]))
             print '\n Looking for:',  line_looked_for
             print nearest2line, '   flux =', f,'+-',ferr, '   cont =', c, '   ew =', e
-            #if line_looked_for ==  4861.33:
+            #if line_looked_for ==  2144.0:
             #    raw_input()
             #if line_looked_for ==  4650.0:
             #    raw_input()
@@ -1066,6 +1066,8 @@ class AdvancedOps(BasicOps):
         if verbose == None:
             verbose = self.verbose
         input_file = object_name+'_RedCor_'+self.RedCorType+'.txt'
+        if self.used_measured_info:
+            input_file = object_name+'_measuredLI_RedCor_'+self.RedCorType+'.txt'
         path_object = '../results/'+object_name
         path_inputfile = os.path.join(path_object, input_file)
         # define the columns to be filled when reading the file
@@ -1092,6 +1094,7 @@ class AdvancedOps(BasicOps):
         else:
             self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
         tf = open(self.pynebIDstxt, 'w+')
+        verbose = True
         if verbose == True:
             print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
             print 'For  cHbeta = %0.3f' % self.cHbeta
@@ -1104,6 +1107,7 @@ class AdvancedOps(BasicOps):
             wavid = cw+'A'
             pynebid = el+io
             if verbose == True:
+                print w, el, io, Ic, er
                 print 'pynebid =', pynebid, '    wavid =', wavid
             lineID = pynebid + '_' + wavid
             matching_line = [cw, Ic, er]
@@ -1150,7 +1154,9 @@ class AdvancedOps(BasicOps):
         self.I_4686 = 0.0 
         # C 3
         self.I_1661 = [0.0, 0.0]        
-        self.I_1666 = [0.0, 0.0]        
+        self.I_1666 = [0.0, 0.0] 
+        # N2               
+        self.I_2144 = [0.0, 0.0] 
         for line in self.obs.lines:
             if self.verbose == True:            
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
@@ -1168,8 +1174,10 @@ class AdvancedOps(BasicOps):
                 self.I_1749 = line.corrIntens                      
             elif line.wave == 1752:
                 self.I_1752 = line.corrIntens            
-            elif line.wave == 5755:         # N 2
-                I_5755 = line.corrIntens                      
+            elif line.wave == 2144:         # N 2
+                self.I_2144 = line.corrIntens                      
+            elif line.wave == 5755:
+                I_5755 = line.corrIntens            
             elif line.wave == 6548:
                 I_6548 = line.corrIntens            
             #elif line.wave == 6584:   # not using it because most of the time is blended with Halpha
@@ -1968,8 +1976,10 @@ class AdvancedOps(BasicOps):
         # Get abundances only from strong (or more easily measurable) lines and appropriate temperature
         #                     Al2     Ar3     Ar4     Ar5     C2      C3      Ca5     Cl2     Cl3     Cl4     Fe3 
         strong_lines_list = ['2670', '7751', '4740', '6435', '2328', '1907', '6087', '9124', '5518', '7531', '4987',
-                             # K4     K5      Mg5     N1      N2      N3      Na4     Na6     Ne3     Ne4     Ne5     
-                             '6796', '4163', '2783', '5200', '6548', '1752', '3362', '2970', '3869', '2425', '3346',
+                             # K4     K5      Mg5     N1      N2      
+                             '6796', '4163', '2783', '5200', '6548', 
+                             # N3      Na4     Na6     Ne3     Ne4     Ne5     
+                             '1752', '3362', '2970', '3869', '2425', '3346',
                              # O1     O2     O3      S2      S3      Si2     Si3
                              '6300', '3727', '5007', '6731', '9531', '2345', '1892',
                              # He1     He2
@@ -2058,7 +2068,8 @@ class AdvancedOps(BasicOps):
         Nicf = Otot / self.atom_abun['O2'][0]
         N_errp = (N_toterr/N_tot)*100
         logele = 12+numpy.log10(N_tot)
-        logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
+        #logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
+        logeleerr = N_toterr / (2.303 * N_tot)        # equivalent method to above
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
         print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
         R = N_tot / Otot
@@ -2066,6 +2077,26 @@ class AdvancedOps(BasicOps):
         Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303)
         elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        if self.I_2144[0] != 0.0:
+            abN2 = self.N2.getIonAbundance(int_ratio=self.I_2144, tem=te_low, den=dens, wave=2144)
+            print 'N2 abundance from 2144A line =', abN2
+            N_tot = (Otot / self.atom_abun['O2'][0]) * abN2[0]
+            N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (abN2[0]/self.atom_abun['O2'][0])**2 + abN2[1]**2)
+            Nicf = Otot / self.atom_abun['O2'][0]
+            N_errp = (N_toterr/N_tot)*100
+            logele = 12+numpy.log10(N_tot)
+            logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
+            #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
+            print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
+            R = N_tot / Otot
+            Ratio = numpy.log(R)
+            Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303)
+            #elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
+            print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)        
+        else:
+            print 'Could not find N2 abundance from 2144A line.'
+            pass
+        #raw_input(' ***  press enter to continue')
         
         # Neon
         print '\n NEON'
