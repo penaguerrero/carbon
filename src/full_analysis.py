@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 11
+object_number = 8 
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -35,15 +35,15 @@ case = 'B'
 ############################################################################################################################################
 
 # Skip the finding of the line info and go directly to gather the spectra?
-#                            0     1     2     3     4     5     6     7     8
-use_given_lineinfo_list = [True, True, True, False, True, False, True, True, True, 
+#                            0     1     2     3     4      5     6     7     8
+use_given_lineinfo_list = [True, True, True, False, False, False, True, True, True, 
                            True, True, False, True, True, True, True, True, True]
 #                            9     10    11    12    13    14    15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
-#                      0                1                 2                3          4 (based on Na4)     5*    6     7     8           
-forceTe_list = [[10900.,15000.],  [9000., 16000.], [10500.,12500.], [10100.,12100.], [15000.0, 17000.0], None, None, None, 11900.0,
+#                      0                1                 2                3          4 (based on Na4)     5*          6           7     8           
+forceTe_list = [[10900.,15000.],  [9000., 16000.], [10500.,12500.], [10100.,12100.], [15000.0, 17000.0], None, [10000.0,12000.0], None, 11900.0,
                 None, [13000, 3200.], None, None, None, None, None, None, None]
 #                   9      10*          11    12    13    14    15    16    17 
 forceTe = forceTe_list[object_number]
