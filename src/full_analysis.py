@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 17
+object_number = 11
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -37,21 +37,21 @@ case = 'B'
 # Skip the finding of the line info and go directly to gather the spectra?
 #                            0     1     2     3     4     5     6     7     8
 use_given_lineinfo_list = [True, True, True, False, True, False, True, True, True, 
-                           True, True, True, True, True, True, True, True, True]
+                           True, True, False, True, True, True, True, True, True]
 #                            9     10    11    12    13    14    15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                      0                1                 2                3          4 (based on Na4)     5*    6     7     8           
 forceTe_list = [[10900.,15000.],  [9000., 16000.], [10500.,12500.], [10100.,12100.], [15000.0, 17000.0], None, None, None, 11900.0,
-                None,    16200., None, None, None, None, None, None, None]
-#                   9      10*     11    12    13    14    15    16    17 
+                None, [13000, 3200.], None, None, None, None, None, None, None]
+#                   9      10*          11    12    13    14    15    16    17 
 forceTe = forceTe_list[object_number]
 #forceTe = None
 #                   0      1             2              3        4     5    6     7     8           
 forceNe_list = [None, [100., 650.], [100., 3000.], [800, 1000], None, None, None, None, [100., 655],
-                None,    None, None, None, None, None, None, 100., [100, 200.]]
-#                 9      10*     11    12    13    14    15    16    17 
+                200.,  [100, 200.], None, None, None, None, None, 100., [100, 200.]]
+#                 9        10*       11    12    13    14    15    16    17 
 forceNe = forceNe_list[object_number]
 
 # use this option if wanting to rebin or not
