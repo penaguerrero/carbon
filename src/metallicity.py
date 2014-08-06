@@ -2239,7 +2239,7 @@ class AdvancedOps(BasicOps):
         ab = ab_Ial06[rule][0]
         er = ab_Ial06[rule][1]
         # If possible, use Peimbert et al (2005)
-        if (self.atom_abun['Ar4'][0] > 0.0) and (self.atom_abun['Ar3'][0] > 0.0):
+        if (self.atom_abun['Ar4'][0] > 0.0) and (self.atom_abun['Ar3'][0] > 0.0) and (self.atom_abun['S2'][0] > 0.0) and (self.atom_abun['S3'][0] > 0.0):
             print '    Assuming ICF(Ar) from Peimbert, Peimbert Ruiz (2005):  (S+/S++)*Ar++ * (Ar++ + Ar+++)/(Ar++ + Ar+++)'
             Ar34 = self.atom_abun['Ar3'][0] + self.atom_abun['Ar4'][0]
             S23 = self.atom_abun['S2'][0] / self.atom_abun['S3'][0]
