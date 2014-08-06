@@ -1837,40 +1837,9 @@ class AdvancedOps(BasicOps):
                 print 'ne =', dens, '\n'
         print ''
         # Define the temperatures and density for the class. 
-        '''
-        if self.object_name =='mrk5':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [12700.0, 13700.0]#te_high        
-            self.te_low = [11900.0, 12900.0]#te_low        
-            self.te_verylow = [9000.0, 11500.0]#te_verylow       
-        '''
-        if self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [9500.0, 11500.0]#te_high        
-            self.te_low = [9000.0, 10900.0]#te_low        
-            self.te_verylow = [7000.0, 11500.0]#te_verylow       
-        elif self.object_name =='iras08208':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [10100.0, 10800.0]#te_high        
-            self.te_low = [10100.0, 10600.0]#te_low        
-            self.te_verylow = [9000.0, 10500.0]#te_verylow
-        elif self.object_name =='sbs1319':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [13600.0, 14100.0]#te_high        
-            self.te_low = [12400.0, 12800.0]#te_low        
-            self.te_verylow = [1000.0, 10500.0]#te_verylow
-        elif self.object_name =='tol9':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [7600.0, 8600.0]#te_high        
-            self.te_low = [8300.0, 9000.0]#te_low        
-            self.te_verylow = [7500.0, 8500.0]#te_verylow
-        elif self.object_name =='arp252':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [8700.0, 9600.0]#te_high        
-            self.te_low = [9100.0, 9900.0]#te_low        
-            self.te_verylow = [7500.0, 8500.0]#te_verylow
-        elif self.object_name =='sbs1415':     # We couldn't find temperatures, using same as Garcia-Rojas et al. (2014)
-            self.te_high = [15500.0, 16500.0]#te_high        
-            self.te_low = [13850.0, 14850.0]#te_low        
-            self.te_verylow = [9000.0, 10500.0]#te_verylow
-        else:       
-            self.te_high = te_high        
-            self.te_low = te_low        
-            self.te_verylow = te_verylow 
+        self.te_high = te_high        
+        self.te_low = te_low        
+        self.te_verylow = te_verylow 
         self.dens = dens         
         
     def get_iontotabs(self, forceTeH=None, forceNe=None, data2use=None):
@@ -2117,48 +2086,52 @@ class AdvancedOps(BasicOps):
         
         # Sulphur
         print '\n SULPHUR'
-        print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
-        ofrac = self.atom_abun['O2'][0]/Otot
-        print '    *  O+ / Otot =:', ofrac
-        #OpOtot = float(raw_input('Enter O+/Otot: '))
-        if ofrac <= 0.15:
-            correspondingSvalue2OpOtot = -0.25
-        elif ofrac > 0.15 and ofrac < 0.3:
-            correspondingSvalue2OpOtot = -0.1
-        elif ofrac >= 0.3:
-            correspondingSvalue2OpOtot = -0.05
-        S_icf = 1.0 / 10**(correspondingSvalue2OpOtot)
-        S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
-        S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
-        # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
-        S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
-                               (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
-        S_errp = (S_toterr/S_tot)*100
-        logele = 12+numpy.log10(S_tot)
-        logeleerr = numpy.log10((100+S_errp) / (100-S_errp))/2.0
-        print '    S_toterr = ', S_toterr, '=', S_errp, '%'
-        print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, logele, logeleerr)
-        # For comparison also clculate abundances with Izotov et al (2006)
-        if logOtot <= 7.2:
-            rule = 'Ial06_20a'
-        elif (logOtot > 7.2) and (logOtot < 8.2):
-            rule = 'Ial06_20b'
-        elif logOtot >= 8.2:
-            rule = 'Ial06_20c'
-        S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
-        abS = S_Ial06[rule][0]
-        erS = S_Ial06[rule][1]
-        print '    Abundances with:  Garnett 89        =  %0.3e +- %0.3e' % (S_tot, S_toterr) 
-        print '                      Izotov et al. 06  =  %0.3e +- %0.3e' % (abS, erS)
-        print '        they compare as: Izotov/Garnett = ', S_tot/abS
-        print '                          Garnett + err = ', S_tot + S_toterr
-        print '                          Izotov - err  = ', abS - erS
-        R = S_tot / Otot
-        Ratio = numpy.log10(R)
-        Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Ototerr/Otot)**2)
-        Ratioerr = Rerr / (2.303 * R)
-        elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr, Ratio, Ratioerr]   
-        print '    S/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        if (self.atom_abun['S2'][0] > 0.0) and (self.atom_abun['S3'][0] > 0.0): 
+            print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
+            ofrac = self.atom_abun['O2'][0]/Otot
+            print '    *  O+ / Otot =:', ofrac
+            #OpOtot = float(raw_input('Enter O+/Otot: '))
+            if ofrac <= 0.15:
+                correspondingSvalue2OpOtot = -0.25
+            elif ofrac > 0.15 and ofrac < 0.3:
+                correspondingSvalue2OpOtot = -0.1
+            elif ofrac >= 0.3:
+                correspondingSvalue2OpOtot = -0.05
+            S_icf = 1.0 / 10**(correspondingSvalue2OpOtot)
+            S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
+            S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
+            # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
+            S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
+                                   (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
+            S_errp = (S_toterr/S_tot)*100
+            logele = 12+numpy.log10(S_tot)
+            logeleerr = numpy.log10((100+S_errp) / (100-S_errp))/2.0
+            print '    S_toterr = ', S_toterr, '=', S_errp, '%'
+            print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, logele, logeleerr)
+            # For comparison also clculate abundances with Izotov et al (2006)
+            if logOtot <= 7.2:
+                rule = 'Ial06_20a'
+            elif (logOtot > 7.2) and (logOtot < 8.2):
+                rule = 'Ial06_20b'
+            elif logOtot >= 8.2:
+                rule = 'Ial06_20c'
+            S_Ial06 = icf.getElemAbundance(self.atom_abun, icf_list=[rule])
+            abS = S_Ial06[rule][0]
+            erS = S_Ial06[rule][1]
+            print '    Abundances with:  Garnett 89        =  %0.3e +- %0.3e' % (S_tot, S_toterr) 
+            print '                      Izotov et al. 06  =  %0.3e +- %0.3e' % (abS, erS)
+            print '        they compare as: Izotov/Garnett = ', S_tot/abS
+            print '                          Garnett + err = ', S_tot + S_toterr
+            print '                          Izotov - err  = ', abS - erS
+            R = S_tot / Otot
+            Ratio = numpy.log10(R)
+            Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Ototerr/Otot)**2)
+            Ratioerr = Rerr / (2.303 * R)
+            elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr, Ratio, Ratioerr]   
+            print '    S/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        else:
+            elem_abun['S'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]   
+            print 'Not possible to determine the S abundance: S2=', self.atom_abun['S2'], '  S3=', self.atom_abun['S3']
         
         # Chlorine
         print '\n CHLORINE'
@@ -3034,6 +3007,32 @@ class AdvancedOps(BasicOps):
         lines_pyneb_matches = self.writeRedCorrFile()
         self.get_tempsdens()
         self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
+        # Cases of specific objects whose temperatures need to be forced
+        if self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [9500.0, 11500.0]#te_high        
+            self.te_low = [9000.0, 10900.0]#te_low        
+            self.te_verylow = [7000.0, 11500.0]#te_verylow       
+        elif self.object_name =='iras08208':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [10100.0, 10800.0]#te_high        
+            self.te_low = [10100.0, 10600.0]#te_low        
+            self.te_verylow = [9000.0, 10500.0]#te_verylow
+        elif self.object_name =='sbs1319':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [13600.0, 14600.0]#te_high        
+            self.te_low = [12400.0, 13400.0]#te_low        
+            self.te_verylow = [10000.0, 11000.0]#te_verylow
+        elif self.object_name =='tol9':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [7600.0, 8600.0]#te_high        
+            self.te_low = [8300.0, 9000.0]#te_low        
+            self.te_verylow = [7500.0, 8500.0]#te_verylow
+        elif self.object_name =='arp252':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [8700.0, 9600.0]#te_high        
+            self.te_low = [9100.0, 9900.0]#te_low        
+            self.te_verylow = [7500.0, 8500.0]#te_verylow
+        elif self.object_name =='sbs1415':     # We couldn't find temperatures, using same as Garcia-Rojas et al. (2014)
+            self.te_high = [15500.0, 16500.0]#te_high        
+            self.te_low = [13850.0, 14850.0]#te_low        
+            self.te_verylow = [9000.0, 10500.0]#te_verylow
+
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             CHbeta, cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
