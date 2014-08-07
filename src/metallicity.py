@@ -1746,7 +1746,10 @@ class AdvancedOps(BasicOps):
                 perr = 0.15
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
-                teL = forceTeH * 0.85         # 85% of the high temperature
+                teL = forceTeH * 0.85         # 85% of the high temperature  
+                #or from Garnett(1992):
+                #t2 = t3*0.7 +0.3 
+                #t2 = t3*0.83 +0.17, if TS3 is measured 
                 teVL = forceTeH * 0.75        # 75% of the high temperature
             else:
                 teH = forceTeH[0]
@@ -3008,7 +3011,11 @@ class AdvancedOps(BasicOps):
         self.get_tempsdens()
         self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
         # Cases of specific objects whose temperatures need to be forced
-        if self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+        if self.object_name =='iras08339':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [8700.0, 9700.0]#te_high        
+            self.te_low = [9100.0, 10100.0]#te_low        
+            self.te_verylow = [8000.0, 9000.0]#te_verylow
+        elif self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
             self.te_high = [9500.0, 11500.0]#te_high        
             self.te_low = [9000.0, 10900.0]#te_low        
             self.te_verylow = [7000.0, 11500.0]#te_verylow       
