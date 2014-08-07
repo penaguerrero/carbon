@@ -42,12 +42,15 @@ for x, y, z in zip(OH, CO, objects_list):
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'mrk960') or (z == 'sbs1054'):
+    if (z == 'sbs1054') or (z == 'Sun'):
         subycoord = -15
-    if (z == 'iras08208'):
+    if (z == 'mrk960'):
+        subxcoord = 20
+        subycoord = -17
+    if (z == 'sbs0218') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 8
         side = 'left'
-    if (z == 'sbs1319') or (z == 'iiizw107') or (z == 'Orion'):
+    if (z == 'sbs1319') or (z == 'iiizw107'):
         subxcoord = 8
         subycoord = -15
         side = 'left'
@@ -73,21 +76,31 @@ plt.yticks(numpy.arange(ylo, yup, 0.25))
 for x, y, z in zip(OH, NO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
-    subxcoord = -5
+    subxcoord = -2
     subycoord = 5
     side = 'right'
-    if (z == 'mrk5') or(z == 'iras08339'):
-        subxcoord = 10
+    if (z == 'sbs0926'):
+        subxcoord = -20
+        subycoord = -5
+    if (z == 'ngc1741'):
+        subxcoord = -17
+        subycoord = 0
+    if (z == 'mrk5'):
+        subxcoord = 7
         side = 'left'
-    if (z == 'iras08208'):
+    if (z == 'iras08208') or (z == 'Sun'):
         subxcoord = 5
         subycoord = 10
         side = 'left'
-    if (z == 'ngc1741') or (z == 'sbs0218') or (z == 'tol1457') or (z == '30Dor'):
+    if (z == 'sbs0218') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
         subycoord = -15
-    if (z == 'iiizw107') or (z == 'pox4') or (z == 'mrk1199') or (z == 'sbs0948') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'Orion'):
+        subxcoord = 6
+        subycoord = -14
+        side = 'left'
+    if  (z == 'sbs0948'):
         subxcoord = 8
-        subycoord = -15
+        subycoord = 1
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('N/O vs O/H')
@@ -103,11 +116,11 @@ plt.show()
 fig1 = plt.figure(1, figsize=(12, 10))
 plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
 plt.xlim(7.0, 9.0)
-yup = 0.1
-ylo = -2.0
+yup = -0.2
+ylo = -1.15
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.5))
+plt.yticks(numpy.arange(ylo, yup, 0.15))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
