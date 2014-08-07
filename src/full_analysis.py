@@ -35,6 +35,7 @@ case = 'B'
 ############################################################################################################################################
 
 # Skip the finding of the line info and go directly to gather the spectra?
+# this line tells which set of line info did I take
 #                            0     1     2     3     4      5     6     7     8
 use_given_lineinfo_list = [True, True, True, False, False, False, True, False, True, 
                            True, True, False, True, False, True, False, True, True]
