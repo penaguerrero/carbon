@@ -3052,4 +3052,3 @@ class AdvancedOps(BasicOps):
             data2use = None
         self.get_iontotabs(forceTe, forceNe, data2use)
         return lines_pyneb_matches
-
