@@ -9,6 +9,8 @@ This scripts takes the found metallicities and produces:
  * plot of C/O vs Otot
  * plot of N/O vs Otot
  * plot of Ne/O vs Otot
+ 
+ NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanches & Esteban 2010
 '''
 
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
