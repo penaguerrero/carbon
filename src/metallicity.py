@@ -1094,7 +1094,6 @@ class AdvancedOps(BasicOps):
         else:
             self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
         tf = open(self.pynebIDstxt, 'w+')
-        verbose = True
         if verbose == True:
             print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
             print 'For  cHbeta = %0.3f' % self.cHbeta
