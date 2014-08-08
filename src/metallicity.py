@@ -299,6 +299,12 @@ def find_matching_lines_with_catalog(measured_data, faintObj, Halpha_width, all_
             catalog_wavs_found.append(line_looked_for)
             central_wavelength = float(measured_wavs[idx])
             line_width = lines_catalog[7][i]
+            round_line_looked_for = numpy.round(line_looked_for, decimals=0)
+            if (round_line_looked_for == 1907.0) or (round_line_looked_for == 1909.0):
+                if faintObj:
+                    line_width = 3.0
+                else:
+                    line_width = 7.0
             if (line_looked_for ==  4267.15) or (line_looked_for == 4640.0) or (line_looked_for == 4650.0):
                 line_width = 5.0 
             f = float(measured_flxs[idx])
@@ -1739,19 +1745,22 @@ class AdvancedOps(BasicOps):
             
     def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceNe=None):
         print '\n These are the temperatures and density that will be used to determine abundances...'
-        teHgarnett = forceTeH*0.7 + 0.3        # from Garnett(1992) 
-        tLfromTS3 = teHgarnett*0.83 + 0.17     # from Garnett(1992), if TS3 is measured 
         if (forceTeH != None):
             if type(forceTeH) is not list:
+                teHgarnett = forceTeH*0.7 + 3000.0     # from Garnett(1992) 
+                tLfromTS3 = forceTeH*0.83 + 1700.0     # from Garnett(1992), if TS3 is measured 
                 # error is not defined, use a default value of 25% of the given temperature
                 perr = 0.15
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
                 #teL = forceTeH * 0.85         # 85% of the high temperature  
                 teL = teHgarnett  
-                teVL = forceTeH * 0.75         # 75% of the high temperature
+                #teVL = forceTeH * 0.75         # 75% of the high temperature
+                teVL = tLfromTS3  
             else:
                 teH = forceTeH[0]
+                teHgarnett = teH*0.7 + 3000.0     # from Garnett(1992) 
+                tLfromTS3 = teH*0.83 + 1700.0     # from Garnett(1992), if TS3 is measured 
                 # error is defined, determine the percentage to make it absolute error
                 if forceTeH[1] < forceTeH[0]:
                     abserr = forceTeH[1]
@@ -1761,23 +1770,27 @@ class AdvancedOps(BasicOps):
                 teHerr = teH + abserr
                 #teL = forceTeH[0] * 0.85         # 85% of the high temperature
                 teL = teHgarnett
-                teVL = forceTeH[0] * 0.75        # 75% of the high temperature
+                #teVL = forceTeH[0] * 0.75        # 75% of the high temperature
+                teVL = tLfromTS3  
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
             te_low = [teL, teLerr]
             teVLerr = teVL + (teVL * perr)
             te_verylow = [teVL, teVLerr]
-            print '   High ionization degree temperature forced to be:      ', te_high[0], '+-', te_high[1]-te_high[0]
-            print '   Low ionization degree temperature    =   Te_high*0.9: ', te_low[0], '+-', te_low[1]-te_low[0]
-            print '   Very Low ionization degree temperature = Te_high*0.8: ', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
+            print '   High ionization degree temperature forced to be:            ', te_high[0], '+-', te_high[1]-te_high[0]
+            print '   Low ionization degree temperature = t_high*0.7 + 3000.0:    ', te_low[0], '+-', te_low[1]-te_low[0]
+            print '   Very Low ionization degree temperature = t_high*0.85+ 1700.0', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
             print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr*100.0), '%'
         else:
             te_high = [10000.0, 11000.0]
             #te_low = [9000.000, 10000.0]
+            teHgarnett = te_high[0]*0.7 + 3000.0     # from Garnett(1992) 
             te_low = [teHgarnett, teHgarnett+1000.0]
-            te_verylow = [8500.0, 9500.0]
+            #te_verylow = [8500.0, 9500.0]
+            tLfromTS3 = te_high[0]*0.83 + 1700.0     # from Garnett(1992), if TS3 is measured 
+            te_verylow = [tLfromTS3, tLfromTS3+1000.0]
             if math.isnan(self.temO2[0]):
-                print 'temO2 is nan'
+                print '   Te[O 2] not available, using default value from Garnett (1992): t_high*0.7 + 3000.0'
             elif self.temO2[0] != 0.0:
                 te_low = self.temO2
                 print '   Te_low (O2) =', te_low
@@ -1787,30 +1800,28 @@ class AdvancedOps(BasicOps):
                 if math.isnan(self.temO2[0]):
                     print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 1000.0'
             else:
-                if self.TO3[0] > 20000.0:
+                if (self.TO3[0] > 20000.0):
                     te_hi = te_low[0] + (te_low[0] * 0.1)
                     err = te_hi*0.3
                     te_high = [te_hi, err]
-                    print '   Te[O 3] not available, using default value:   te_low = TO2+(0.2*TO2) +- 0.2*errTO2'
+                    print '   Te[O 3] is not available but te_low=', te_low,', using:   te_high = te_low+(0.1*te_low) +- 0.2*errte_low'
                 else:
                     te_high = self.TO3
                     print '   Te_high (O3) =', te_high
-                # make sure the loz ionization temperature has a lowe temperature than the high one
-                if (te_low[0] > te_high[0]) or math.isnan(self.temO2[0]):
+                # make sure the low ionization temperature has a reasonable value compared to the high one
+                diff_temps = te_low[0] - te_high[0]
+                if (diff_temps > 3000.0) or math.isnan(self.temO2[0]):
                     print '   Te_low (O2-Garnet92) =', self.TO2gar
                     te_low = self.TO2gar
-            if te_low[0] == 9000.00:
-                print '   Te[O 2] not available, using default value:   te_low = 9,000 +- 500.0'
             if math.isnan(self.TS3[0]):
-                print '   Te[S 3] not available, using default value:   te_Verylow = 8,500 +- 500.0'
+                print '   Te[S 3] not available, using default value from Garnett (1992): t_high*0.83 + 1700.0'
             elif self.TS3[0] <= self.TO3[0]:
                     te_verylow = self.TS3
                     print '   Te_Verylow (S3) = ', te_verylow
             elif self.TS3[0] > self.TO3[0]:
-                teVlow = self.TO3[0]*0.85
-                perS3 = (self.TS3[1] - self.TS3[0]) / self.TS3[0]
-                te_verylow = [teVlow, teVlow+teVlow*perS3]
-                print self.TS3, perS3
+                #teVlow = self.TO3[0]*0.85
+                teVlow = tLfromTS3
+                te_verylow = [teVlow, teVlow+2000.0]
                 print '   Te[S 3] > Te[O 3], using default value:   te_Verylow = Te[O 3]*0.85 +-  % err of Te[S 3] =', te_verylow
         print 'Densitiy being used for calculations:'
         if forceNe != None:
@@ -1867,10 +1878,10 @@ class AdvancedOps(BasicOps):
         te_low = self.te_low        
         te_verylow = self.te_verylow       
         dens = self.dens         
-        print 'te_high =', te_high
-        print 'te_low =', te_low
-        print 'te_verylow = ', te_verylow
-        print 'density =', dens
+        print 'te_high =', te_high[0], '+-', te_high[1] - te_high[0]
+        print 'te_low =', te_low[0], '+-',te_low[1] - te_low[0]
+        print 'te_verylow = ', te_verylow[0], '+-', te_verylow[1] - te_verylow[0]
+        print 'density =', dens[0], '+-', dens[1] - dens[0]
         #raw_input(' ***  press enter to continue')
                 
         print '\n  Calculating abundances.... \n'
@@ -2020,7 +2031,7 @@ class AdvancedOps(BasicOps):
         #logOtoterr = numpy.log10(numpy.abs(100+O_errp) / numpy.abs(100-O_errp))/2.0
         logOtoterr = Ototerr / (2.303 * Otot)        # equivalent method to above
         R = Otot / Otot
-        Ratio = numpy.log(R)
+        Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr, Ratio, Ratioerr]        
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
@@ -2046,7 +2057,7 @@ class AdvancedOps(BasicOps):
         #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
         print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
         R = N_tot / Otot
-        Ratio = numpy.log(R)
+        Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303)
         elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
@@ -2062,7 +2073,7 @@ class AdvancedOps(BasicOps):
             #print 'Nicf=%0.2f ,   Ntot = %0.2f +- %0.2f' % (Nicf, 12+numpy.log10(Ntot), numpy.log10((Ntot+Ntoterr) / (Ntot-Ntoterr))/2.0)
             print '    ICF(N)=%0.2f ,   N_tot = %0.2f +- %0.2f' % (Nicf, logele, logeleerr)
             R = N_tot / Otot
-            Ratio = numpy.log(R)
+            Ratio = numpy.log10(R)
             Ratioerr = numpy.sqrt((N_toterr/N_tot)**2 + (Ototerr/Otot)**2) / (2.303)
             #elem_abun['N'] = [N_tot, N_toterr, N_errp, logele, logeleerr, Ratio, Ratioerr]
             print '    N/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)        
@@ -2083,7 +2094,7 @@ class AdvancedOps(BasicOps):
         logeleerr = numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0
         print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, logele, logeleerr)
         R = Ne_tot / Otot
-        Ratio = numpy.log(R)
+        Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    Ne/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
@@ -2195,7 +2206,7 @@ class AdvancedOps(BasicOps):
                 logeleerr = numpy.log10((100+perr) / (100-perr))/2.0
                 print '    Cl_tot = %0.2f +- %0.2f' % (logele, logeleerr)
                 R = ab /Otot
-                Ratio = numpy.log(R)
+                Ratio = numpy.log10(R)
                 Rerr = R * numpy.sqrt((er/ab)**2 + (Ototerr/Otot)**2)
                 Ratioerr = Rerr / (2.303 * R)
                 elem_abun['Cl'] = [ab, er, perr, logele, logeleerr, Ratio, Ratioerr]
@@ -3016,6 +3027,10 @@ class AdvancedOps(BasicOps):
             self.te_high = [8700.0, 9700.0]#te_high        
             self.te_low = [9100.0, 10100.0]#te_low        
             self.te_verylow = [8000.0, 9000.0]#te_verylow
+        elif self.object_name =='mrk1087':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
+            self.te_high = [10900.0, 12900.0]#te_high        
+            self.te_low = [10500.0, 12500.0]#te_low        
+            self.te_verylow = [9000.0, 11000.0]#te_verylow       
         elif self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
             self.te_high = [9500.0, 11500.0]#te_high        
             self.te_low = [9000.0, 10900.0]#te_low        
