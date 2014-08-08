@@ -1739,17 +1739,17 @@ class AdvancedOps(BasicOps):
             
     def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceNe=None):
         print '\n These are the temperatures and density that will be used to determine abundances...'
+        teHgarnett = forceTeH*0.7 + 0.3        # from Garnett(1992) 
+        tLfromTS3 = teHgarnett*0.83 + 0.17     # from Garnett(1992), if TS3 is measured 
         if (forceTeH != None):
             if type(forceTeH) is not list:
                 # error is not defined, use a default value of 25% of the given temperature
                 perr = 0.15
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
-                teL = forceTeH * 0.85         # 85% of the high temperature  
-                #or from Garnett(1992):
-                #t2 = t3*0.7 +0.3 
-                #t2 = t3*0.83 +0.17, if TS3 is measured 
-                teVL = forceTeH * 0.75        # 75% of the high temperature
+                #teL = forceTeH * 0.85         # 85% of the high temperature  
+                teL = teHgarnett  
+                teVL = forceTeH * 0.75         # 75% of the high temperature
             else:
                 teH = forceTeH[0]
                 # error is defined, determine the percentage to make it absolute error
@@ -1759,7 +1759,8 @@ class AdvancedOps(BasicOps):
                     abserr = forceTeH[1] - teH
                 perr = (abserr * 1.0) / teH
                 teHerr = teH + abserr
-                teL = forceTeH[0] * 0.85         # 85% of the high temperature
+                #teL = forceTeH[0] * 0.85         # 85% of the high temperature
+                teL = teHgarnett
                 teVL = forceTeH[0] * 0.75        # 75% of the high temperature
             te_high = [teH, teHerr]
             teLerr = teL + (teL*perr)
@@ -1771,22 +1772,23 @@ class AdvancedOps(BasicOps):
             print '   Very Low ionization degree temperature = Te_high*0.8: ', te_verylow[0], '+-', te_verylow[1]-te_verylow[0]
             print '   * Error is calculated from percentage error in Te_high:    %0.2f' % (perr*100.0), '%'
         else:
-            te_high = [10000.0, 10500.0]
-            te_low = [9000.000, 9500.0]
-            te_verylow = [8500.0, 9000.0]
+            te_high = [10000.0, 11000.0]
+            #te_low = [9000.000, 10000.0]
+            te_low = [teHgarnett, teHgarnett+1000.0]
+            te_verylow = [8500.0, 9500.0]
             if math.isnan(self.temO2[0]):
                 print 'temO2 is nan'
             elif self.temO2[0] != 0.0:
                 te_low = self.temO2
                 print '   Te_low (O2) =', te_low
             else:
-                te_low = [9000.000, 9500.0]
+                te_low = [teHgarnett, teHgarnett+1000.0]
             if math.isnan(self.TO3[0]):
                 if math.isnan(self.temO2[0]):
-                    print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 500.0'
+                    print '   Te[O 3] not available, using default value:   te_high = 10,000 +- 1000.0'
             else:
                 if self.TO3[0] > 20000.0:
-                    te_hi = te_low[0] + (te_low[0] * 0.2)
+                    te_hi = te_low[0] + (te_low[0] * 0.1)
                     err = te_hi*0.3
                     te_high = [te_hi, err]
                     print '   Te[O 3] not available, using default value:   te_low = TO2+(0.2*TO2) +- 0.2*errTO2'
