@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 17
+object_number = 0
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -24,7 +24,7 @@ create_txt_lineinfo = True
 first_redcorr = False
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = False
+use_Chbeta = True
 
 # Write the text file with temperatures, densities, and abundances?
 create_txt_temdenabunds = True
@@ -90,7 +90,7 @@ I_theo_HaHb = 2.86
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 0.6], [2.0, 2.3], [2.0, 2.8], [0.7, 0.6], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
+combos_list = [[2.0, 2.5], [2.0, 2.3], [2.0, 2.8], [0.7, 0.6], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
                [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
