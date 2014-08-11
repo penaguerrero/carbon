@@ -1743,23 +1743,28 @@ class AdvancedOps(BasicOps):
         if self.writeouts:
             outf.close()
             
-    def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceNe=None):
+    def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceTeL=None, forceNe=None):
         print '\n These are the temperatures and density that will be used to determine abundances...'
         if (forceTeH != None):
             if type(forceTeH) is not list:
-                teHgarnett = forceTeH*0.7 + 3000.0     # from Garnett(1992) 
+                if (forceTeL != None) and type(forceTeL) is not list:
+                    teL = forceTeL
+                else:
+                    teHgarnett = forceTeH*0.7 + 3000.0     # from Garnett(1992) 
+                    teL = teHgarnett  
                 tLfromTS3 = forceTeH*0.83 + 1700.0     # from Garnett(1992), if TS3 is measured 
-                # error is not defined, use a default value of 25% of the given temperature
-                perr = 0.15
+                # error is not defined, use a default value of 10% of the given temperature
+                perr = 0.1
                 teH = forceTeH
                 teHerr = teH + (teH * perr)
-                #teL = forceTeH * 0.85         # 85% of the high temperature  
-                teL = teHgarnett  
-                #teVL = forceTeH * 0.75         # 75% of the high temperature
                 teVL = tLfromTS3  
             else:
                 teH = forceTeH[0]
-                teHgarnett = teH*0.7 + 3000.0     # from Garnett(1992) 
+                if (forceTeL != None) and type(forceTeL) is list:
+                    teL = forceTeL[0]
+                else:                
+                    teHgarnett = teH*0.7 + 3000.0     # from Garnett(1992) 
+                    teL = teHgarnett
                 tLfromTS3 = teH*0.83 + 1700.0     # from Garnett(1992), if TS3 is measured 
                 # error is defined, determine the percentage to make it absolute error
                 if forceTeH[1] < forceTeH[0]:
@@ -1769,7 +1774,6 @@ class AdvancedOps(BasicOps):
                 perr = (abserr * 1.0) / teH
                 teHerr = teH + abserr
                 #teL = forceTeH[0] * 0.85         # 85% of the high temperature
-                teL = teHgarnett
                 #teVL = forceTeH[0] * 0.75        # 75% of the high temperature
                 teVL = tLfromTS3  
             te_high = [teH, teHerr]
@@ -1857,12 +1861,8 @@ class AdvancedOps(BasicOps):
         self.te_verylow = te_verylow 
         self.dens = dens         
         
-    def get_iontotabs(self, forceTeH=None, forceNe=None, data2use=None):
+    def get_iontotabs(self, data2use=None):
         ''' With the available temperatures determine ionic and total abundances
-        forceTeH = specific high ionization region temperature to be used to determine abundances.
-                    It can be either one value or a list of value and error.
-        forceNe = specific density to be used 
-                    It can be either one value or a list of value and error.
         data2use = is only different to None when correcting for collisional excitation. It is a list of
                     [lines_info, dereddening_info, uncertainties_info]  where
                     lines_info = [catalog_lines, wavs_lines, element_lines, ion_lines, forbidden_lines,  
@@ -1960,12 +1960,12 @@ class AdvancedOps(BasicOps):
         # Get abundances only from strong (or more easily measurable) lines and appropriate temperature
         #                     Al2     Ar3     Ar4     Ar5     C2      C3      Ca5     Cl2     Cl3     Cl4     Fe3 
         strong_lines_list = ['2670', '7751', '4740', '6435', '2328', '1907', '6087', '9124', '5518', '7531', '4987',
-                             # K4     K5      Mg5     N1      N2      
-                             '6796', '4163', '2783', '5200', '6548', 
-                             # N3      Na4     Na6     Ne3     Ne4     Ne5     
-                             '1752', '3362', '2970', '3869', '2425', '3346',
-                             # O1     O2     O3      S2      S3      Si2     Si3
-                             '6300', '3727', '5007', '6731', '9531', '2345', '1892',
+                             # K4     K5      Mg5     N1      N2      N3      Na4     Na6     Ne3     Ne4     Ne5    
+                             '6796', '4163', '2783', '5200', '6548', '1752', '3362', '2970', '3869', '2425', '3346',
+                             # O1     O2     O3      S2      
+                             '6300', '3727', '5007', '6731',#'6716', 
+                             # S3      Si2     Si3
+                             '9531', '2345', '1892',
                              # He1     He2
                              '7065', '4686'] 
         for label in line_label_list:
@@ -3018,44 +3018,10 @@ class AdvancedOps(BasicOps):
         print '            C++_RLs / C++_CELs =', densCpp_over_densHp, '/', Cpp, ' =', approxADF_C
     
         
-    def perform_advanced_ops(self, forceTe, forceNe, theoCE):
+    def perform_advanced_ops(self, forceTeH, forceTeL, forceNe, theoCE):
         lines_pyneb_matches = self.writeRedCorrFile()
         self.get_tempsdens()
-        self.define_TeNe_HighLow_andVLow(forceTe, forceNe)
-        # Cases of specific objects whose temperatures need to be forced
-        if self.object_name =='iras08339':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [8700.0, 9700.0]#te_high        
-            self.te_low = [9100.0, 10100.0]#te_low        
-            self.te_verylow = [8000.0, 9000.0]#te_verylow
-        elif self.object_name =='mrk1087':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [10900.0, 12900.0]#te_high        
-            self.te_low = [10500.0, 12500.0]#te_low        
-            self.te_verylow = [9000.0, 11000.0]#te_verylow       
-        elif self.object_name =='mrk960':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [9500.0, 11500.0]#te_high        
-            self.te_low = [9000.0, 10900.0]#te_low        
-            self.te_verylow = [7000.0, 11500.0]#te_verylow       
-        elif self.object_name =='iras08208':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [10100.0, 10800.0]#te_high        
-            self.te_low = [10100.0, 10600.0]#te_low        
-            self.te_verylow = [9000.0, 10500.0]#te_verylow
-        elif self.object_name =='sbs1319':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [13600.0, 14600.0]#te_high        
-            self.te_low = [12400.0, 13400.0]#te_low        
-            self.te_verylow = [10000.0, 11000.0]#te_verylow
-        elif self.object_name =='tol9':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [7600.0, 8600.0]#te_high        
-            self.te_low = [8300.0, 9000.0]#te_low        
-            self.te_verylow = [7500.0, 8500.0]#te_verylow
-        elif self.object_name =='arp252':     # We couldn't find temperatures, using same as Lopez-Sanchez et al. (2009)
-            self.te_high = [8700.0, 9600.0]#te_high        
-            self.te_low = [9100.0, 9900.0]#te_low        
-            self.te_verylow = [7500.0, 8500.0]#te_verylow
-        elif self.object_name =='sbs1415':     # We couldn't find temperatures, using same as Garcia-Rojas et al. (2014)
-            self.te_high = [15500.0, 16500.0]#te_high        
-            self.te_low = [13850.0, 14850.0]#te_low        
-            self.te_verylow = [9000.0, 10500.0]#te_verylow
-
+        self.define_TeNe_HighLow_andVLow(forceTeH, forceTeL, forceNe)
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             CHbeta, cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
@@ -3067,5 +3033,5 @@ class AdvancedOps(BasicOps):
             data2use = [CHbeta, catalog_wavelength, flambdas, element, ion, norm_fluxes, errflux, percerrflx, norm_intenties, errinten]
         else:
             data2use = None
-        self.get_iontotabs(forceTe, forceNe, data2use)
+        self.get_iontotabs(data2use)
         return lines_pyneb_matches
