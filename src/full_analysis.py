@@ -11,11 +11,11 @@ from science import spectrum
 '''  Choose parameters to run script  '''
 
 # name of the object
-#                  0            1           2          3         4        5*        6         7         8
+#                  0            1           2          3         4        5         6         7         8
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 6
+object_number = 17
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -36,31 +36,30 @@ case = 'B'
 
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
-#                            0     1     2     3     4      5     6      7     8
+#                            0     1     2     3     4       5      6      7     8
 use_given_lineinfo_list = [False, True, True, True, False, False, False, False, True, 
-                           True, True, False, True, False, True, False, True, True]
-#                            9     10    11    12    13     14    15    16    17
+                           True, False, False, True, False, True, False, True, True]
+#                            9     10    11    12    13     14     15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
-#                      0           1      2          3          4 (based on Na4)     5*  6 (based on Ar4)   7     8           
-forceTe_list = [[10900.,15000.],  None, None, [8500.,10500.], [15000.0, 17000.0], None, [12000.0,13500.0], None, 11900.0,
-                None, [13000, 3200.], None, None, None, None, None, None, None]
-#                   9      10*          11    12    13    14    15    16    17 
-forceTe = forceTe_list[object_number]
-#forceTe = None
+#                       0                1               2                3        4 (based on Na4)       5         6 (based on Ar4)   7        
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8500.,10500.], [15000.,17000.], [9500.,11500.], [11000.,13000.], None,
+                  11900., None, [13000, 3200.], None, [13600.,14600.], None, [7600.,8600.], [8700.,9600.], [10100.,10800.], [15500.,16500.]]
+#                    8      9         10         11         12          13        14             15              16               17
+forceTeO3 = forceTeO3_list[object_number]
+
+#                   0         1                2          3     4          5                6          7     8           
+forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,10900.], [11500.,13500.], None, None,
+                  None, None, None, [12400.,13400.], [8300.,9000.], [8700.,9600.], [9100.,9900.], [10100.,10600.], [13850.,14850.]]
+#                   9    10    11         12              13             14             15              16               17 
+forceTeO2 = forceTeO2_list[object_number]
+
 #                   0           1             2              3        4         5             6         7        8           
-forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 1000], None, [500., 3000.], [100,1100], None, [100., 655],
+forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 1000], None, [500., 3000.], [100,300], None, [100., 655],
                 200.,  [100, 200.], None, None, None, None, [100, 1000], 100., [100, 200.]]
 #                 9        10*       11    12    13    14        15      16         17 
 forceNe = forceNe_list[object_number]
-
-# use this option if wanting to rebin or not
-#                       0      1      2     3      4      5     6     7     8
-perform_rebin_list = [False, False, True, False, False, True, True, True, False, 
-                      False, False, True, True, True, True, True, True, True]
-#                      9      10    11    12     13    14    15     16     17
-perform_rebin = perform_rebin_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
@@ -68,6 +67,13 @@ faintObj_list = [False, False, False, False, True, True, True, True, False,
                  False, False, True, False, True, False, True, False, False]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
+
+# use this option if wanting to rebin or not
+#                       0      1      2     3      4      5     6     7     8
+perform_rebin_list = [False, False, True, False, False, True, True, True, False, 
+                      False, False, True, True, True, True, True, True, True]
+#                      9      10    11    12     13    14    15     16     17
+perform_rebin = perform_rebin_list[object_number]
 
 # Do deblend of lines?
 deblend4363 = False
@@ -427,7 +433,7 @@ verbose = False
 advops = metallicity.AdvancedOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
                                  case, use_Chbeta, theoCE, writeouts, verbose, tfile2ndRedCor)
 
-lines_pyneb_matches = advops.perform_advanced_ops(forceTe=forceTe, forceNe=forceNe, theoCE=theoCE, )
+lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE, )
 
 
 print '\n Code finished!'
