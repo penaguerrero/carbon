@@ -457,6 +457,41 @@ def write_RedCorfile(object_name, path_and_name_outfile, cols_in_file):
     RedCor_file.close()
     print 'Text file with corrected intensities written in: ', path_and_name_outfile
 
+def read_IonTotAbs(file_name):
+    ''' This function reads the ionic and total abundances text files and returns a dictionary with:
+    element, abundance, abund error, %err, logAbund, logErr, X/O, X/Oerr '''
+    # the file columns are for the following elements in this specific order:
+    default_elements = ['O', 'N', 'Ne', 'S', 'Cl', 'Ar', 'Fe', 'C']
+    # these are the columns of interest:
+    elements = []
+    abund = []
+    abunderr = []
+    perr = []
+    logabund = [] 
+    loerr = []
+    XO = []
+    XOerr = []
+    cols = [elements, abund, abunderr, perr, logabund, loerr, XO, XOerr]
+    f = open(file_name, 'r')
+    for row in f:
+        line_data = row.split()
+        # the common thing between the lines of interest is the number of columns 
+        if (len(line_data) == 8) and ('#' not in row):
+            # Split each row into columns
+            line_data = row.split()
+            # append the element into each column in the cols_in_file
+            for item, col in zip(line_data, cols):
+                if item not in default_elements:
+                    item = float(item)
+                col.append(item)
+    f.close()
+    # create the dictionary for this object
+    elem_abun = OrderedDict()
+    for el, a, ae, pe, la, le, xo, xoe in zip(elements, abund, abunderr, perr, logabund, loerr, XO, XOerr):
+        elem_abun[el] = [a, ae, pe, la, le, xo, xoe]
+    return elem_abun
+
+
 class OneDspecs:
     '''
     This uses the 1d fits extraction files from all three filters (g230l, g430l, and g750l), 
