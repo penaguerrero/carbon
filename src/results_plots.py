@@ -44,12 +44,9 @@ for x, y, z in zip(OH, CO, objects_list):
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'sbs1054') or (z == 'Sun'):
+    if (z == 'sbs1054') or (z == 'mrk960') or (z == 'sbs0926') or (z == 'Sun'):
         subycoord = -15
-    if (z == 'mrk960'):
-        subxcoord = 20
-        subycoord = -17
-    if (z == 'sbs0218') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 8
         side = 'left'
     if (z == 'sbs1319') or (z == 'iiizw107'):
