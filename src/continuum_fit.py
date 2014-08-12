@@ -14,11 +14,11 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 6
+object_number = 11
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
 specs = [1]
 # set commented parameters, choose options 0 through 3
-choose_conditions4textfiles = 1
+choose_conditions4textfiles = 0
 
 ############################################################################################################################################
 '''
@@ -160,7 +160,7 @@ factor = 3.0
 #                                    0              1                 2                3                4                5
 desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
-                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 4.2, 5.0],
+                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
                             [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
