@@ -12,10 +12,12 @@ The script returns:
 
 # This comparison is for the results of the sample objects in the following order:
 #                objects in the sample 
+#                  0            1           2          3         4        5         6         7         8
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+#                 9           10         11         12         13       14        15         16         17
 # if wanting to compare all objects type all, else type in a list the objects to make the comparison
-object_numbers = [0,1]
+object_numbers = 'all'
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
 use_Chbeta = False
@@ -70,7 +72,37 @@ Ardiffs = []
 Fediffs = []
 Cdiffs = []
 
-print code_measurements_list[0]['O'][0]
+for i in range(len(objects2compare)):
+    O_diff = manual_measurements_list[i]['O'][3] - code_measurements_list[i]['O'][3]
+    Odiffs.append(O_diff)
+    N_diff = manual_measurements_list[i]['N'][3] - code_measurements_list[i]['N'][3]
+    Ndiffs.append(N_diff)
+    Ne_diff = manual_measurements_list[i]['Ne'][3] - code_measurements_list[i]['Ne'][3]
+    Nediffs.append(Ne_diff)
+    S_diff = manual_measurements_list[i]['S'][3] - code_measurements_list[i]['S'][3]
+    Sdiffs.append(S_diff)
+    Cl_diff = manual_measurements_list[i]['Cl'][3] - code_measurements_list[i]['Cl'][3]
+    Cldiffs.append(Cl_diff)
+    Ar_diff = manual_measurements_list[i]['Ar'][3] - code_measurements_list[i]['Ar'][3]
+    Ardiffs.append(Ar_diff)
+    Fe_diff = manual_measurements_list[i]['Fe'][3] - code_measurements_list[i]['Fe'][3]
+    Fediffs.append(Fe_diff)
+    C_diff = manual_measurements_list[i]['C'][3] - code_measurements_list[i]['C'][3]
+    Cdiffs.append(C_diff)
+    
+print '{:<12} {:>60}'.format('Object', 'Diff = manual_measurements - code_measuremets')
+print '{:<12} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}'.format(' ', 'O_diff', 'N_diff', 'Ne_diff', 'S_diff', 'Cl_diff', 'Ar_diff', 'Fe_diff', 'C_diff')
+for obj, ox, ni, ne, su, cl, ar, fe, ca in zip(objects2compare, Odiffs, Ndiffs, Nediffs, Sdiffs, Cldiffs, Ardiffs, Fediffs, Cdiffs):
+    print '{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, ox, ni, ne, su, cl, ar, fe, ca)
 
+out_file = results4object_path = os.path.join(full_results_path, 'diffs_manualVScode.txt')
+of = open(out_file, 'w+')
+print >> of, '{:<12} {:>60}'.format('Object', 'Diff = manual_measurements - code_measuremets')
+print >> of, '{:<12} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}'.format(' ', 'O_diff', 'N_diff', 'Ne_diff', 'S_diff', 'Cl_diff', 'Ar_diff', 'Fe_diff', 'C_diff')
+for obj, ox, ni, ne, su, cl, ar, fe, ca in zip(objects2compare, Odiffs, Ndiffs, Nediffs, Sdiffs, Cldiffs, Ardiffs, Fediffs, Cdiffs):
+    print >> of, '{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, ox, ni, ne, su, cl, ar, fe, ca)
+of.close()
 
+print '\n Text file written: ', out_file
+   
 print '\n ... Code finished!'
