@@ -15,7 +15,7 @@ results_path = "../results/"
 full_results_path = os.path.abspath(results_path)
 # read the results file
 resfile = os.path.join(full_results_path, 'comparison_abunds.txt')
-rf = numpy.loadtxt(resfile, skiprows=7, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28), unpack=True)
+rf = numpy.loadtxt(resfile, skiprows=6, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28), unpack=True)
 O, Oerr, Oother, Oerrother, N, Nerr, Nother, Nerrother, Ne, Neerr, Neother, Neerrother, S, Serr, Sother, Serrother, Ar, Arerr, Arother, Arerrother, Fe, Feerr, Feother, Feerrother, T, Terr, Tother, Terrother = rf
 
 # These are the results are for the sample objects in the following order:
@@ -33,21 +33,24 @@ diff_Ar = []
 diff_Fe = []
 diff_T = []
 
-for ox, oo, ni, no, ne, neo, su, so, ar, aro, fe, feo, Te, Teo in zip(O, Oother, N, Nother, Ne, Neother, S, Sother, Ar, Arother, Fe, Feother, T, Tother):
-    diff = ox - oo
-    diff_O.append(diff)
-    diff = ni - no
-    diff_N.append(diff)
-    diff = ne - neo
-    diff_Ne.append(diff)
-    diff = su - so
-    diff_S.append(diff)
-    diff = ar - aro
-    diff_Ar.append(diff)
-    diff = fe - feo
-    diff_Fe.append(diff)
-    diff = Te - Teo
-    diff_T.append(diff)
+print '{:<10} {:>17} {:>4}'.format(default_cols[0], default_cols[1], default_cols[2])
+print '{:<10} {:>13} {:>12} {:>7}'.format(' ', 'this work', 'Lop-San09', 'diff')
+for i in range(len(O)): 
+    odiff = O[i] - Oother[i]
+    diff_O.append(odiff)
+    ndiff = N - Nother[i]
+    diff_N.append(ndiff)
+    nediff = Ne - Neother[i]
+    diff_Ne.append(nediff)
+    sdiff = S - Sother[i]
+    diff_S.append(sdiff)
+    ardiff = Ar - Arother[i]
+    diff_Ar.append(ardiff)
+    fediff = Fe - Feother[i]
+    diff_Fe.append(fediff)
+    tdiff = T - Tother[i]
+    diff_T.append(tdiff)
 
-
-
+    print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f}'.format(objects_list[i], O[i], Oerr[i], Oother[i], Oerrother[i], odiff, N[i])
+    
+    
