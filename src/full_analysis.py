@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 0
+object_number = 11
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -24,7 +24,7 @@ create_txt_lineinfo = True
 first_redcorr = False
 
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
-use_Chbeta = True
+use_Chbeta = False
 
 # Write the text file with temperatures, densities, and abundances?
 create_txt_temdenabunds = True
@@ -64,7 +64,7 @@ forceNe = forceNe_list[object_number]
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
 faintObj_list = [False, False, False, False, True, True, True, True, False, 
-                 False, False, True, False, True, False, True, False, False]
+                 False, False, False, False, True, False, True, False, False]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
 
@@ -112,7 +112,7 @@ or3 = originals[2]
 #                                    0              1                 2                 3              4                5
 desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
-                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 4.2, 5.0],
+                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
                             [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
