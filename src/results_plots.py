@@ -129,9 +129,15 @@ for x, y, z in zip(OH, NeO, objects_list):
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'pox4') or (z == 'mrk960') or (z == 'sbs1319') or (z == 'Orion'):
+    if  (z == 'sbs1054') or (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948'):
+        subycoord = -10
+    if (z == 'mrk5'):
+        subxcoord = 8
+        subycoord = -9
+        side = 'left'
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'sbs0218') or (z == 'Orion'):
         subxcoord = 5
-        subycoord = 10
+        subycoord = 4
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('Ne/O vs O/H')
