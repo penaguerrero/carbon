@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 11
+object_number = 3
 
 # Write the text file with line info?
 create_txt_lineinfo = True
@@ -44,7 +44,7 @@ use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2                3        4 (based on Na4)       5         6 (based on Ar4)   7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8500.,10500.], [15000.,17000.], [9500.,11500.], [11000.,13000.], None,
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8500.,13500.], [15000.,17000.], [9500.,11500.], [11000.,13000.], None,
                   11900., None, [13000, 3200.], None, [13600.,14600.], None, [7600.,8600.], [8700.,9600.], [10100.,10800.], [15500.,16500.]]
 #                    8      9         10         11         12          13        14             15              16               17
 forceTeO3 = forceTeO3_list[object_number]
@@ -56,7 +56,7 @@ forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,1090
 forceTeO2 = forceTeO2_list[object_number]
 
 #                   0           1             2              3        4         5             6         7        8           
-forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 1000], None, [500., 3000.], [100,300], None, [100., 655],
+forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 2100], None, [500., 3000.], [100,300], None, [100., 655],
                 200.,  [100, 200.], None, None, None, None, [100, 1000], 100., [100, 200.]]
 #                 9        10*       11    12    13    14        15      16         17 
 forceNe = forceNe_list[object_number]
