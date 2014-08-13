@@ -92,14 +92,14 @@ for i in range(len(objects2compare)):
     C_diff = manual_measurements_list[i]['C'][3] - code_measurements_list[i]['C'][3]
     Cdiffs.append(C_diff)
     
-    print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f}'.format(objects2compare[i], manual_measurements_list[i]['O'][3], manual_measurements_list[i]['O'][4], 
-                                                                                    code_measurements_list[i]['O'][3], code_measurements_list[i]['O'][4], 
-                                                                                    manual_measurements_list[i]['N'][3])
+    #print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f}'.format(objects2compare[i], manual_measurements_list[i]['O'][3], manual_measurements_list[i]['O'][4], 
+    #                                                                                code_measurements_list[i]['O'][3], code_measurements_list[i]['O'][4], 
+    #                                                                                manual_measurements_list[i]['N'][3])
         
-#print '{:<12} {:>60}'.format('Object', 'Diff = manual_measurements - code_measuremets')
-#print '{:<12} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}'.format(' ', 'O_diff', 'N_diff', 'Ne_diff', 'S_diff', 'Cl_diff', 'Ar_diff', 'Fe_diff', 'C_diff')
-#for obj, ox, ni, ne, su, cl, ar, fe, ca in zip(objects2compare, Odiffs, Ndiffs, Nediffs, Sdiffs, Cldiffs, Ardiffs, Fediffs, Cdiffs):
-#    print '{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, ox, ni, ne, su, cl, ar, fe, ca)
+print '{:<12} {:>60}'.format('Object', 'Diff = manual_measurements - code_measuremets')
+print '{:<12} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}'.format(' ', 'O_diff', 'N_diff', 'Ne_diff', 'S_diff', 'Cl_diff', 'Ar_diff', 'Fe_diff', 'C_diff')
+for obj, ox, ni, ne, su, cl, ar, fe, ca in zip(objects2compare, Odiffs, Ndiffs, Nediffs, Sdiffs, Cldiffs, Ardiffs, Fediffs, Cdiffs):
+    print '{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, ox, ni, ne, su, cl, ar, fe, ca)
 
 
 out_file = results4object_path = os.path.join(full_results_path, 'diffs_manualVScode.txt')
