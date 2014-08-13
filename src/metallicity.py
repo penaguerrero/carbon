@@ -2440,11 +2440,16 @@ class AdvancedOps(BasicOps):
         avgC = 10**(CHbeta*deltaflambda)
         IC3IO3_ratio = norm_fluxes[idx1907] / norm_fluxes[idx1661] * avgC
         # Since we do not trust the 1666 measurement enough, we will use the optical part to back it up
-        idx4959 = rounded_catwavs.index(4959.0)
-        # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
-        ionic_ratio = 3.519e-23 / 2.032e-21
-        I1661 = norm_intenties[idx4959] * ionic_ratio
-        err_I1661 = errinten[idx4959] * ionic_ratio
+        if 4959.0 in rounded_catwavs:
+            idxO3 = rounded_catwavs.index(4959.0)
+            # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
+            ionic_ratio = 6.771e-24 / 1.222e-21     # from ionic with Te=10,000 and ne=100
+        else:
+            idxO3 = rounded_catwavs.index(5007.0)
+            # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/5007
+            ionic_ratio = 6.771e-24 / 3.531e-21     # from ionic with Te=10,000 and ne=100
+        I1661 = norm_intenties[idxO3] * ionic_ratio
+        err_I1661 = errinten[idxO3] * ionic_ratio
         # now from the IC3IO3_ratio equation, solve for the I1661 intensity and use the optical 4959 to find C3] 1907
         corrI1907 = IC3IO3_ratio * I1661
         err_corrI1907 = IC3IO3_ratio * err_I1661 
