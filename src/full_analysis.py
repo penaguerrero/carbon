@@ -63,7 +63,7 @@ forceNe = forceNe_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
-faintObj_list = [False, False, False, False, True, True, True, True, False, 
+faintObj_list = [False, False, True, False, True, True, True, True, False, 
                  False, False, False, False, True, False, True, False, False]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
@@ -110,7 +110,7 @@ or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
 #                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, or2*2.6, or3*1.5], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
                             [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
