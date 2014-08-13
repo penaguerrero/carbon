@@ -33,24 +33,33 @@ diff_Ar = []
 diff_Fe = []
 diff_T = []
 
-print '{:<10} {:>17} {:>4}'.format(default_cols[0], default_cols[1], default_cols[2])
-print '{:<10} {:>13} {:>12} {:>7}'.format(' ', 'this work', 'Lop-San09', 'diff')
+colhdr1 = '{:<10} {:>17} {:>4} {:>29} {:>4} {:>29} {:>4} {:>29} {:>4} {:>29} {:>4} {:>29} {:>4} {:>32} {:>4}'
+print colhdr1.format(default_cols[0], default_cols[1], default_cols[2], default_cols[3], default_cols[4], default_cols[5], default_cols[6], default_cols[7], default_cols[8], default_cols[9], default_cols[10], default_cols[11], default_cols[12], default_cols[13], default_cols[14])
+colhdr2 = '{:<10} {:>13} {:>12} {:>7} {:>13} {:>12} {:>7} {:>13} {:>12} {:>7} {:>13} {:>12} {:>7} {:>13} {:>12} {:>7} {:>13} {:>12} {:>7} {:>15} {:>15} {:>9}'
+print colhdr2.format(' ', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff', 'this work', 'Lop-San09', 'diff')
 for i in range(len(O)): 
     odiff = O[i] - Oother[i]
     diff_O.append(odiff)
-    ndiff = N - Nother[i]
+    ndiff = N[i] - Nother[i]
     diff_N.append(ndiff)
-    nediff = Ne - Neother[i]
+    nediff = Ne[i] - Neother[i]
     diff_Ne.append(nediff)
-    sdiff = S - Sother[i]
+    sdiff = S[i] - Sother[i]
     diff_S.append(sdiff)
-    ardiff = Ar - Arother[i]
+    ardiff = Ar[i] - Arother[i]
     diff_Ar.append(ardiff)
-    fediff = Fe - Feother[i]
+    fediff = Fe[i] - Feother[i]
     diff_Fe.append(fediff)
-    tdiff = T - Tother[i]
+    tdiff = T[i] - Tother[i]
     diff_T.append(tdiff)
 
-    print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f}'.format(objects_list[i], O[i], Oerr[i], Oother[i], Oerrother[i], odiff, N[i])
-    
+    table_format = '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>10} {:<6} {:>8} {:<6} {:>7}'
+    print table_format.format(objects_list[i], O[i], Oerr[i], Oother[i], Oerrother[i], odiff, 
+                              N[i], Nerr[i], Nother[i], Nerrother[i], ndiff,
+                              Ne[i], Neerr[i], Neother[i], Neerrother[i], nediff,
+                              S[i], Serr[i], Sother[i], Serrother[i], sdiff,
+                              Ar[i], Arerr[i], Arother[i], Arerrother[i], ardiff,
+                              Fe[i], Feerr[i], Feother[i], Feerrother[i], fediff,
+                              T[i], Terr[i], Tother[i], Terrother[i], tdiff)
+
     
