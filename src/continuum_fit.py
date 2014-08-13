@@ -14,9 +14,9 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 3
+object_number = 2
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [0]
+specs = [2]
 # set commented parameters, choose options 0 through 3
 choose_conditions4textfiles = 2
 
@@ -68,11 +68,11 @@ for s in specs:
                    [3,3,3],[2,3,3], [3,3,3], [2,3,3], [2,2,2], [3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
     sigmas_away = sigmas_lsit[object_number][s]
     # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-    order_list = [[2,1,1], [8,3,5], [2,2,1], [7,2,2], [3,1,1], [5,5,5], [7,1,1], [7,1,1], [3,1,1], 
+    order_list = [[2,1,1], [8,3,5], [2,7,1], [7,2,2], [3,1,1], [5,5,5], [7,1,1], [7,1,1], [3,1,1], 
                   [7,1,1], [7,1,1], [7,1,1], [5,1,1], [3,1,1], [2,3,1], [2,1,1], [7,1,1], [7,1,1]]
     order = order_list[object_number][s]
     # What is the width of the window to use to find local continuum?
-    window_list = [[350,350,250], [70,400,800], [500,300,200], [80,130,130], [150,250,250], [100,300,200], 
+    window_list = [[350,350,250], [70,400,800], [500,80,200], [80,130,130], [150,250,250], [100,300,200], 
                    [70,150,350], [80,600,550], [100,250,250], [80,200,150], [50,350,350], [80,250,300], 
                    [70,550,550], [300,300,300], [250,250,250], [250,380,200], [50,350,500], [40,550,550]]
     window = window_list[object_number][s]
@@ -156,9 +156,8 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-factor = 3.0
 #                                    0              1                 2                3                4                5
-desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, 6.5, 5.0], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, or2*2.6, or3*1.5], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
                             [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
