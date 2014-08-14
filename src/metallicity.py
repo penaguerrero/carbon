@@ -1188,6 +1188,10 @@ class AdvancedOps(BasicOps):
         self.obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows', corrected=True, errIsRelative=False)
         ###obs.readData(self.pynebIDstxt, fileFormat='lines_in_rows_err_cols', corrected=True)    # this option is not working
         # Intensities
+        # O
+        self.I_3727 = [0.0, 0.0]
+        self.I_4959 = [0.0, 0.0]
+        self.I_5007 = [0.0, 0.0]
         # He 1
         self.I_5876 = 0.0
         self.I_7065= 0.0                               
@@ -1235,11 +1239,11 @@ class AdvancedOps(BasicOps):
                 I_4363 = line.corrIntens
                 print '4363 has an intensity of', I_4363
             elif line.wave == 4959:
-                I_4959 = line.corrIntens
-                print '4959 has an intensity of', I_4959
+                self.I_4959 = line.corrIntens
+                print '4959 has an intensity of', self.I_4959
             elif line.wave == 5007:
-                I_5007 = line.corrIntens
-                print '5007 has an intensity of', I_5007
+                self.I_5007 = line.corrIntens
+                print '5007 has an intensity of', self.I_5007
             elif line.wave == 3726:
                 I_3726 = line.corrIntens
                 print '3726 has an intensity of', I_3726
@@ -1247,8 +1251,8 @@ class AdvancedOps(BasicOps):
                 I_3729 = line.corrIntens
                 print '3729 has an intensity of', I_3729
             elif line.wave == 3727:
-                I_3727 = line.corrIntens
-                print '3727 has an intensity of', I_3727
+                self.I_3727 = line.corrIntens
+                print '3727 has an intensity of', self.I_3727
             #elif line.wave == 7320:
             #    I_7320 = line.corrIntens
             #    print '7320 has an intensity of', I_7320
@@ -1399,7 +1403,7 @@ class AdvancedOps(BasicOps):
             #self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
             #print 'ratio of O3 = ', (I_4959+I_5007)/I_4363
             self.tem_diag_O3 = 'L(5007) / L(4363)'
-            self.strongO3 = I_5007
+            self.strongO3 = self.I_5007
             self.TO3 = self.O3.getTemDen(self.strongO3/I_4363, den=100., to_eval=self.tem_diag_O3)
             print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 3]','5007/4363', 'Medium', self.TO3[0], self.TO3[1])
             if self.writeouts:
@@ -1423,7 +1427,7 @@ class AdvancedOps(BasicOps):
             self.temO2 = [0.0, 0.0]
             self.O2 = pn.Atom("O", "2")
             tem_diag_O2 = '(L(3726)+L(3729)) / (L(7329) + L(7330))'
-            self.temO2 = self.O2.getTemDen(I_3727/I_7330, den=100.0, to_eval=tem_diag_O2) 
+            self.temO2 = self.O2.getTemDen(self.I_3727/I_7330, den=100.0, to_eval=tem_diag_O2) 
             print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 2]','3727/7325', 'Low', self.temO2[0], self.temO2[1])
             if self.writeouts:
                 Terr = numpy.abs(self.temO2[0] - self.temO2[1])
@@ -2352,6 +2356,25 @@ class AdvancedOps(BasicOps):
         '''
         
         # METHODS NOT IN PYNEB
+        
+        # Corrected Auroral Line Method (Pena-Guerrero et al. 2012b):
+        Ocalm = 1.0825 * elem_abun['O'][3] + 0.375
+        print '\nO_direct =', elem_abun['O'][3], '  O_CALM =', Ocalm
+        
+        # Recalibrated R23 Method O abundances (Pena-Guerrero et al. 2012b):
+        if (self.I_3727[0] != 0.0) and (self.I_4959[0] != 0.0) and (self.I_5007[0] != 0.0):
+            R23 = (self.I_3727[0] + self.I_4959[0] + self.I_5007[0])/ 100.0
+            P = (self.I_4959[0] + self.I_5007[0]) / (self.I_3727[0] + self.I_4959[0] + self.I_5007[0])
+            print 'R_23 = ', R23, '      P = ', P
+            if elem_abun['O'][3] >= 8.25:
+                Orrm = (R23 + 1837.0 + 2146*P + 850.0*P*P) / (209.5 + 201.7*P + 43.98*P*P + 1.793*R23)
+                print 'Upper branch object:       O_RRM = ', Orrm
+            elif elem_abun['O'][3] <= 8.00:
+                Orrm = (R23 + 90.73 + 94.58*P - 5.26*P*P) / (14.81 + 5.52*P + 5.81*P*P - 0.252*R23)
+                print 'Lower branch object:       O_RRM = ', Orrm
+            else:
+                print 'O abundance in the degenerate zone... Unable to derermine O_RRM.'
+            raw_input()
         
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
         # Equation 2 for C^{++}/O^{++}
