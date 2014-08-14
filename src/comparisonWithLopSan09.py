@@ -9,6 +9,18 @@ The results are:
  * table of comparison values of all available abundances
 '''
 
+# Parameters to show on screen:
+# Print abundances of O, N, Ne, S, Ar, Fe, and TeO3 with their errors?
+print_all = True
+        
+# Print the Corrected Auroral Line Method O abundances (Pena-Guerrero et al. 2012b)?
+calm_abunds = False     
+
+# Print the Recalibrated R23 Method O abundances (Pena-Guerrero et al. 2012b)?
+rrm = False             
+
+############################################################################################################################################
+
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
 results_path = "../results/"
 # but just to make sure we are in the right place, get and work with full paths
@@ -53,13 +65,23 @@ for i in range(len(O)):
     tdiff = T[i] - Tother[i]
     diff_T.append(tdiff)
 
-    table_format = '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>10} {:<6} {:>8} {:<6} {:>7}'
-    print table_format.format(objects_list[i], O[i], Oerr[i], Oother[i], Oerrother[i], odiff, 
-                              N[i], Nerr[i], Nother[i], Nerrother[i], ndiff,
-                              Ne[i], Neerr[i], Neother[i], Neerrother[i], nediff,
-                              S[i], Serr[i], Sother[i], Serrother[i], sdiff,
-                              Ar[i], Arerr[i], Arother[i], Arerrother[i], ardiff,
-                              Fe[i], Feerr[i], Feother[i], Feerrother[i], fediff,
-                              T[i], Terr[i], Tother[i], Terrother[i], tdiff)
+    if print_all:
+        table_format = '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.2f} {:>10} {:<6} {:>8} {:<6} {:>7}'
+        print table_format.format(objects_list[i], O[i], Oerr[i], Oother[i], Oerrother[i], odiff, 
+                                  N[i], Nerr[i], Nother[i], Nerrother[i], ndiff,
+                                  Ne[i], Neerr[i], Neother[i], Neerrother[i], nediff,
+                                  S[i], Serr[i], Sother[i], Serrother[i], sdiff,
+                                  Ar[i], Arerr[i], Arother[i], Arerrother[i], ardiff,
+                                  Fe[i], Feerr[i], Feother[i], Feerrother[i], fediff,
+                                  T[i], Terr[i], Tother[i], Terrother[i], tdiff)
 
+    if calm_abunds:
+        Ocalm = 1.0825 * O[i] - 0.375
+        print 'O_CALM =', Ocalm
+    
+    #if rrm:
+    #    R23 = ()
+    #    if O[i] >= 8.55:
+    #        Orrm = (R23 + 1837.0 + 2146*P + 850.0*P) / (209.5 + 201.7*P + 43.98*P*P + 1.793*R23)
+        
     
