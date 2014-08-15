@@ -15,10 +15,10 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 3
+object_number = 17
 
 # Write the text file with line info?
-create_txt_lineinfo = True
+create_txt_lineinfo = False
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
@@ -27,7 +27,7 @@ first_redcorr = False
 use_Chbeta = False
 
 # Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = True
+create_txt_temdenabunds = False
 
 # Choose case
 case = 'B'
