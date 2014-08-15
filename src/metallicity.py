@@ -2358,22 +2358,36 @@ class AdvancedOps(BasicOps):
         # METHODS NOT IN PYNEB
         
         # Corrected Auroral Line Method (Pena-Guerrero et al. 2012b):
-        Ocalm = 1.0825 * elem_abun['O'][3] + 0.375
-        print '\nO_direct =', elem_abun['O'][3], '  O_CALM =', Ocalm
+        Ocalm = 1.0825 * elem_abun['O'][3] - 0.375
+        errOcalm = 1.0825 * elem_abun['O'][4]
+        print '\nO_direct = %0.2f +- %0.2f    O_CALM = %0.2f +- %0.2f' % (elem_abun['O'][3], elem_abun['O'][4], Ocalm, errOcalm)
         
         # Recalibrated R23 Method O abundances (Pena-Guerrero et al. 2012b):
-        if (self.I_3727[0] != 0.0) and (self.I_4959[0] != 0.0) and (self.I_5007[0] != 0.0):
+        #if (self.I_3727[0] != 0.0) and (self.I_4959[0] != 0.0) and (self.I_5007[0] != 0.0):
+        if (self.I_3727[0] != 0.0) and (self.I_5007[0] != 0.0):
+            self.I_4959[0] = self.I_5007[0]/3.0
             R23 = (self.I_3727[0] + self.I_4959[0] + self.I_5007[0])/ 100.0
+            errR23 = numpy.sqrt(self.I_3727[1]**2 + (self.I_5007[1]/3.)**2 + self.I_5007[1]**2)/ 100.0
             P = (self.I_4959[0] + self.I_5007[0]) / (self.I_3727[0] + self.I_4959[0] + self.I_5007[0])
-            print 'R_23 = ', R23, '      P = ', P
-            if elem_abun['O'][3] >= 8.25:
-                Orrm = (R23 + 1837.0 + 2146*P + 850.0*P*P) / (209.5 + 201.7*P + 43.98*P*P + 1.793*R23)
-                print 'Upper branch object:       O_RRM = ', Orrm
-            elif elem_abun['O'][3] <= 8.00:
+            e1 = numpy.sqrt((self.I_5007[1]/3.)**2 + self.I_5007[1]**2)
+            e2 = numpy.sqrt(self.I_3727[1]**2 + (self.I_5007[1]/3.)**2 + self.I_5007[1]**2)
+            errP = P * numpy.sqrt((e1/(self.I_4959[0] + self.I_5007[0]))**2 + (e2/(self.I_3727[0] + self.I_4959[0] + self.I_5007[0]))**2)
+            errP2 = 2*P*errP
+            print 'R_23 = %0.2f +- %0.2f        P = %0.2f +- %0.2f' % (R23, errR23, P, errP)
+            if Ocalm >= 8.55:#elem_abun['O'][3] >= 8.25:
+                Orrm = (R23 + 1837.0 + 2146.0*P + 850.0*P*P) / (209.5 + 201.7*P + 43.98*P*P + 1.793*R23)
+                e1 = numpy.sqrt(errR23**2 + 2146.0*errP**2 + 850.0*errP2**2)
+                e2 = numpy.sqrt(201.7*errP**2 + 43.98*errP2**2 + 1.793*errR23**2)  
+                errOrrm = Orrm * numpy.sqrt((e1/(R23 + 1837.0 + 2146.0*P + 850.0*P*P))**2 + (e2/(209.5 + 201.7*P + 43.98*P*P + 1.793*R23))**2)
+                print 'Upper branch object:       O_RRM = %0.2f +- %0.2f' % (Orrm, errOrrm)
+            elif Ocalm <= 8.29:#elem_abun['O'][3] <= 8.00:
                 Orrm = (R23 + 90.73 + 94.58*P - 5.26*P*P) / (14.81 + 5.52*P + 5.81*P*P - 0.252*R23)
-                print 'Lower branch object:       O_RRM = ', Orrm
+                e1 = numpy.sqrt(errR23**2 + 94.58*errP**2 + 5.26*errP2**2)
+                e2 = numpy.sqrt(5.52*errP**2 + 5.81*errP2**2 + 0.252*errR23**2)  
+                errOrrm = Orrm * numpy.sqrt((e1/(R23 + 90.73 + 94.58*P - 5.26*P*P))**2 + (e2/(14.81 + 5.52*P + 5.81*P*P - 0.252*R23))**2)
+                print 'Lower branch object:       O_RRM = %0.2f +- %0.2f' % (Orrm, errOrrm)
             else:
-                print 'O abundance in the degenerate zone... Unable to derermine O_RRM.'
+                print 'O abundance in the degeneracy zone... Unable to derermine O_RRM.'
             raw_input()
         
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
