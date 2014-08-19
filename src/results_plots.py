@@ -13,20 +13,32 @@ This scripts takes the found metallicities and produces:
  NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanches & Esteban 2010
 '''
 
+use_our_sample_ONLY = False
+save_images = False
+
+############################################################################################################################################
+
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
-results_path = "../results/"
+results_path = "../results"
 # but just to make sure we are in the right place, get and work with full paths
 full_results_path = os.path.abspath(results_path)
 # read the results file
-resfile = os.path.join(full_results_path, 'abunds_OCNNe.txt')
-rf = numpy.loadtxt(resfile, skiprows=1, usecols=(1,2,3,4,5,6,7,8), unpack=True)
+if use_our_sample_ONLY:
+    resfile = os.path.join(full_results_path, 'abunds_OCNNe.txt')
+    rows2skip = 5
+else:
+    resfile = os.path.join(full_results_path, 'abunds_OCNNe_plusotherrefs.txt')
+    rows2skip = 10
+rf = numpy.loadtxt(resfile, skiprows=rows2skip, usecols=(1,2,3,4,5,6,7,8), unpack=True)
 OH, OHerr, CO, COerr, NO, NOerr, NeO, NeOerr = rf
 # These are the results are for the sample objects in the following order:
 #                objects in the sample 
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415',
                # objects not in the sample
-               '30Dor', 'Orion', 'izw18', 'Sun']
+               '30Dor', 'Orion', 'izw18', 'Sun', # these are useful points of reference
+               # additional data points not in the sample
+               'ngc346', 'ngc456', 'ngc6822']
 
 # PLOTS
 # C/O vs O/H
@@ -60,10 +72,13 @@ for x, y, z in zip(OH, CO, objects_list):
 plt.title('C/O vs O/H')
 plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (C/O)')
-img_name = 'COvsOH.jpg'
-destination = os.path.join(full_results_path, img_name)
-plt.savefig(destination)
-print('Plot %s was saved!' % destination)
+if save_images:
+    img_name = 'COvsOH.jpg'
+    if use_our_sample_ONLY == False:
+        img_name = 'COvsOH_plusOtherRefs.jpg'
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
 plt.show()
 
 # N/O vs O/H
@@ -108,10 +123,13 @@ for x, y, z in zip(OH, NO, objects_list):
 plt.title('N/O vs O/H')
 plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (N/O)')
-img_name = 'NOvsOH.jpg'
-destination = os.path.join(full_results_path, img_name)
-plt.savefig(destination)
-print('Plot %s was saved!' % destination)
+if save_images:
+    img_name = 'NOvsOH.jpg'
+    if use_our_sample_ONLY == False:
+        img_name = 'NOvsOH_plusOtherRefs.jpg'
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
 plt.show()
 
 # Ne/O vs O/H
@@ -143,10 +161,13 @@ for x, y, z in zip(OH, NeO, objects_list):
 plt.title('Ne/O vs O/H')
 plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (Ne/O)')
-img_name = 'NeOvsOH.jpg'
-destination = os.path.join(full_results_path, img_name)
-plt.savefig(destination)
-print('Plot %s was saved!' % destination)
+if save_images:
+    img_name = 'NeOvsOH.jpg'
+    if use_our_sample_ONLY == False:
+        img_name = 'NeOvsOH_plusOtherRefs.jpg'
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
 plt.show()
 
 print ' Code finished!'
