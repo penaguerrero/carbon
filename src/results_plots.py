@@ -32,41 +32,69 @@ else:
 rf = numpy.loadtxt(resfile, skiprows=rows2skip, usecols=(1,2,3,4,5,6,7,8), unpack=True)
 OH, OHerr, CO, COerr, NO, NOerr, NeO, NeOerr = rf
 # These are the results are for the sample objects in the following order:
-#                objects in the sample 
-objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
-               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415',
-               # objects not in the sample
-               '30Dor', 'Orion', 'izw18', 'Sun', # these are useful points of reference
-               # additional data points not in the sample
-               'ngc346', 'ngc456', 'ngc6822']
+ordered_sample = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
+                  'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+# now divide the sample in objects for in which we found Te and those in which we did not
+objects_with_Te = ['pox4', 'sbs0948', 'sbs1054', 'tol1457', 'iras08208']
+objects_Te_literature = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'sbs0218',
+                         'sbs0926', 'sbs1319', 'tol9', 'arp252', 'sbs1415']
+
+# objects not in the sample
+objects_ref = ['30Dor', 'Orion', 'izw18', 'Sun'] # these are useful points of reference
+# additional data points not in the sample
+objects_not_in_sample = ['ngc346', 'ngc456', 'ngc6822']
+
+# Complie all the names for the labeling in the same order
+objects_list = []
+indeces_list = []
+i = 0
+for obj in ordered_sample:
+    objects_list.append(obj)
+    indeces_list.append(i)
+    i = i+1
+for obj in objects_ref:
+    objects_list.append(obj)
+    indeces_list.append(i)
+    i = i+1
+if use_our_sample_ONLY == False:
+    for obj in objects_not_in_sample:
+        objects_list.append(obj)
+        indeces_list.append(i)
+        i = i+1
 
 # PLOTS
 # C/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
-plt.errorbar(OH, CO, xerr=OHerr, yerr=COerr, fmt='ko')
+#plt.errorbar(OH, CO, xerr=OHerr, yerr=COerr, fmt='ko')    # this plots ALL points with the same symbol
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.0, 9.0)
-yup = 1.0
-ylo = -2.0
+yup = 1.02
+ylo = -1.8
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.1))
-plt.yticks(numpy.arange(ylo, yup, 0.5))
-for x, y, z in zip(OH, CO, objects_list):
-    # Annotate the points 5 _points_ above and to the left of the vertex
-    #print z, x, y
-    subxcoord = -5
+plt.yticks(numpy.arange(ylo, yup, 0.2))
+for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
+    subxcoord = -4
     subycoord = 5
     side = 'right'
     if (z == 'pox4') or (z == 'sbs1054'):
         subxcoord = -8
         subycoord = -7
-    if (z == 'mrk960') or (z == 'sbs0926') or (z == 'Sun'):
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
         subycoord = -15
-    if (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
-        subxcoord = 8
+    if (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
+        subxcoord = 5
         side = 'left'
-    if (z == 'sbs1319') or (z == 'iiizw107'):
-        subxcoord = 8
-        subycoord = -15
+    if (z == 'ngc346'):
+        subxcoord = 4
+        subycoord = -11
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('C/O vs O/H')
@@ -83,41 +111,39 @@ plt.show()
 
 # N/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
-plt.errorbar(OH, NO, xerr=OHerr, yerr=NOerr, fmt='ko')
+#plt.errorbar(OH, NO, xerr=OHerr, yerr=NOerr, fmt='ko')
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    plt.errorbar(OH[i], NO[i], xerr=OHerr[i], yerr=NOerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.0, 9.0)
 yup = -0.5
-ylo = -2.0
+ylo = -1.8
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.25))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, y, z in zip(OH, NO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
     subxcoord = -2
     subycoord = 5
     side = 'right'
-    if (z == 'sbs0926'):
-        subxcoord = -20
-        subycoord = -5
-    if (z == 'ngc1741'):
-        subxcoord = -17
-        subycoord = 0
     if (z == 'mrk5'):
         subxcoord = 7
         side = 'left'
-    if (z == 'iras08208') or (z == 'Sun'):
-        subxcoord = 5
-        subycoord = 10
+    if (z == 'Sun') or (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346'):
+        subxcoord = 4
+        subycoord = 4
         side = 'left'
-    if (z == 'sbs0218') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
-        subycoord = -15
+    if (z == 'sbs0926') or (z == 'sbs0948') or (z == 'sbs0218') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
+        subycoord = -12
     if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'Orion'):
-        subxcoord = 6
+        subxcoord = 4
         subycoord = -14
-        side = 'left'
-    if  (z == 'sbs0948'):
-        subxcoord = 8
-        subycoord = 1
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('N/O vs O/H')
@@ -134,28 +160,36 @@ plt.show()
 
 # Ne/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
-plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
+#plt.errorbar(OH, NeO, xerr=OHerr, yerr=NeOerr, fmt='ko')
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    plt.errorbar(OH[i], NeO[i], xerr=OHerr[i], yerr=NeOerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.0, 9.0)
 yup = -0.2
-ylo = -1.15
+ylo = -1.2
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.15))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if  (z == 'sbs1054') or (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948'):
+    if (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948') or (z == 'ngc346'):
         subycoord = -10
-    if (z == 'mrk5'):
-        subxcoord = 8
-        subycoord = -9
-        side = 'left'
-    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'sbs0218') or (z == 'Orion'):
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'Orion'):
         subxcoord = 5
         subycoord = 4
+        side = 'left'
+    if (z == 'sbs1054') or (z == 'ngc6822'):
+        subxcoord = 4
+        subycoord = -14
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('Ne/O vs O/H')
