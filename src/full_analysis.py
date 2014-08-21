@@ -16,9 +16,8 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
 object_number = 17
-
 # Write the text file with line info?
-create_txt_lineinfo = False
+create_txt_lineinfo = True
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
@@ -27,7 +26,7 @@ first_redcorr = False
 use_Chbeta = False
 
 # Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = False
+create_txt_temdenabunds = True
 
 # Choose case
 case = 'B'
@@ -37,25 +36,25 @@ case = 'B'
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
 #                            0     1     2     3     4       5      6      7     8
-use_given_lineinfo_list = [False, True, True, True, False, False, False, False, True, 
-                           True, False, False, True, False, True, False, True, True]
-#                            9     10    11    12    13     14     15    16    17
+use_given_lineinfo_list = [False, True, True, True, False, False, False, False, False, 
+                           True, False, False, False, False, True, False, True, False]
+#                            9     10     11     12    13     14     15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
-#                       0                1               2                3        4 (based on Na4)       5         6 (based on Ar4)   7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8500.,13500.], [15000.,17000.], [9500.,11500.], [11000.,13000.], None,
-                  11900., None, [13000, 3200.], None, [13600.,14600.], None, [7600.,8600.], [8700.,9600.], [10100.,10800.], [15500.,16500.]]
-#                    8      9         10         11         12          13        14             15              16               17
+#                       0                1               2                3       4 (based on Na5)       5               6            7        
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8450.,9250.], [15000.,17000.], [9500.,11500.], [12300.,13600.], None,
+                  [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
+#                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
 #                   0         1                2          3     4          5                6          7     8           
-forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,10900.], [11500.,13500.], None, None,
-                  None, None, None, [12400.,13400.], [8300.,9000.], [8700.,9600.], [9100.,9900.], [10100.,10600.], [13850.,14850.]]
-#                   9    10    11         12              13             14             15              16               17 
+forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,10900.], [12400.,13200.], None, None,
+                  None, None, None, [12400.,12800.], [8300.,9000.], [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
+#                   9    10    11         12              13             14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
 
-#                   0           1             2              3        4         5             6         7        8           
+#                   0           1             2              3        4         5             6        7        8           
 forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 2100], None, [500., 3000.], [100,300], None, [100., 655],
                 200.,  [100, 200.], None, None, None, None, [100, 1000], 100., [100, 200.]]
 #                 9        10*       11    12    13    14        15      16         17 
@@ -63,8 +62,8 @@ forceNe = forceNe_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
-faintObj_list = [False, False, True, False, True, True, True, True, False, 
-                 False, False, False, False, True, False, True, False, False]
+faintObj_list = [False, False, True, False, True, True, True, True, True, 
+                 False, False, False, False, True, False, True, False, True]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
 
