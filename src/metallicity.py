@@ -2388,7 +2388,7 @@ class AdvancedOps(BasicOps):
                 print 'Lower branch object:       O_RRM = %0.2f +- %0.2f' % (Orrm, errOrrm)
             else:
                 print 'O abundance in the degeneracy zone... Unable to derermine O_RRM.'
-            raw_input()
+            #raw_input()
         
         # Now calculate the ionic abundances of C^{++}/O^{++}, N^{++}, and C/O according to Garnett et al. (1995)
         # Equation 2 for C^{++}/O^{++}
