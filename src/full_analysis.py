@@ -15,9 +15,9 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 17
-# Write the text file with line info?
-create_txt_lineinfo = True
+object_number = 7
+# Is this a TEST run?
+TEST_run = True
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
@@ -25,13 +25,15 @@ first_redcorr = False
 # Do you want to use C_Hbeta to correct for extinction?   (if set to false the values of A_V and A_B will be used)
 use_Chbeta = False
 
-# Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = True
-
 # Choose case
 case = 'B'
 
 ############################################################################################################################################
+
+# Write the text file with line info?
+create_txt_lineinfo = True
+# Write the text file with temperatures, densities, and abundances?
+create_txt_temdenabunds = True
 
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
@@ -142,6 +144,8 @@ z = z_list[object_number]
 
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
 results_path = "../results/"
+if TEST_run:
+    results_path = "../results/TESTS/"
 # but just to make sure we are in the right place, get and work with full paths
 full_results_path = os.path.abspath(results_path)
 # Go into the object folder
