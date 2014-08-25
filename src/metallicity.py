@@ -447,7 +447,7 @@ def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
             flambdas.append(f)
     return flambdas
 
-def write_RedCorfile(object_name, path_and_name_outfile, cols_in_file):
+def write_RedCorfile(path_and_name_outfile, cols_in_file):
     # Columns to be written in the text file: 
     catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW, perrEW = cols_in_file
     RedCor_file = open(path_and_name_outfile, 'w+')
@@ -834,9 +834,11 @@ class BasicOps:
     - underlying stellar absorption correction
     - line intensity measurement, equivalent widths, and FWHM
     '''
-    def __init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
+    def __init__(self, object_file, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
                  path_and_name_RedCoroutfile, do_errs=None):
-        self.object_name = object_name
+        self.object_file = object_file
+        ob = string.split(object_file, sep='/')
+        self.object_name = ob[-1]
         self.path_and_name_RedCoroutfile = path_and_name_RedCoroutfile
         if not isinstance(redlaw, str):
             print 'redlaw should be a string, got ', type(redlaw)
@@ -1069,19 +1071,21 @@ class BasicOps:
                 erp = ewe*100.0 / ew
                 perrEW.append(erp)  
             cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, self.EW, errs_EW, perrEW]
-            write_RedCorfile(self.object_name, self.path_and_name_RedCoroutfile, cols_2write_in_file)
+            write_RedCorfile(self.path_and_name_RedCoroutfile, cols_2write_in_file)
             return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
         else:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
 class AdvancedOps(BasicOps):    
-    #def __init__(self, object_name, cHbeta, case, use_Chbeta, theoCE, writeouts=False, verbose=False):
-    def __init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs, #variables from parent class
+    def __init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs, #variables from parent class
                  case, use_Chbeta, theoCE, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
         # Initialize the inherited class
-        BasicOps.__init__(self, object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs)
+        BasicOps.__init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs)
         # Inputs:
+        self.results4object_path = results4object_path
+        ob = string.split(self.results4object_path, sep='/')
+        self.object_name = ob[-1]
         self.cHbeta = cHbeta
         self.case = case                        # this is the Case used through out the class
         self.verbose = verbose                  # if True print midpoints in order to know what is the code working on
@@ -1109,8 +1113,7 @@ class AdvancedOps(BasicOps):
         input_file = object_name+'_RedCor_'+self.RedCorType+'.txt'
         if self.used_measured_info:
             input_file = object_name+'_measuredLI_RedCor_'+self.RedCorType+'.txt'
-        path_object = '../results/'+object_name
-        path_inputfile = os.path.join(path_object, input_file)
+        path_inputfile = os.path.join(self.results4object_path, input_file)
         # define the columns to be filled when reading the file
         self.wavelength = []
         self.flambda = []
@@ -1131,9 +1134,9 @@ class AdvancedOps(BasicOps):
         # Read the info from the text file that contains IDs, dered info, and errors (this is the object_redCor.txt)
         self.AdvOpscols_in_file = spectrum.readlines_from_lineinfo(path_inputfile, AdvOpscols_in_file)
         if self.used_measured_info:
-            self.pynebIDstxt = os.path.join(path_object, object_name+"_measuredLI_pynebIDs.txt")
+            self.pynebIDstxt = os.path.join(self.results4object_path, object_name+"_measuredLI_pynebIDs.txt")
         else:
-            self.pynebIDstxt = os.path.join(path_object, object_name+"_pynebIDs.txt")
+            self.pynebIDstxt = os.path.join(self.results4object_path, object_name+"_pynebIDs.txt")
         tf = open(self.pynebIDstxt, 'w+')
         if verbose == True:
             print '{:<15} {:>15} {:>15}'.format('Ion_line', 'Intensity', 'Abs Error')
@@ -1177,8 +1180,7 @@ class AdvancedOps(BasicOps):
             out_file = self.object_name+'_measuredLI_TempDens_'+RedCorType+'.txt'
         else:
             out_file = self.object_name+'_TempDens_'+RedCorType+'.txt'
-        path_object = '../results/'+self.object_name
-        fullpath_outfile = os.path.join(path_object, out_file)
+        fullpath_outfile = os.path.join(self.results4object_path, out_file)
         if self.writeouts:
             outf = open(fullpath_outfile, 'w+')
         # Determine first approximation of temperatures and densities
@@ -1781,6 +1783,9 @@ class AdvancedOps(BasicOps):
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
+            print 'Temperatures and densities written in:', fullpath_outfile
+        else:
+            print 'Temperatures and densities NOT written in text file.'
             
     def define_TeNe_HighLow_andVLow(self, forceTeH=None, forceTeL=None, forceNe=None):
         print '\n These are the temperatures and density that will be used to determine abundances...'
@@ -2544,8 +2549,7 @@ class AdvancedOps(BasicOps):
                 out_file = self.object_name+'_measuredLI_IonicTotAbundances_'+RedCorType+'.txt'
             else:
                 out_file = self.object_name+'_IonicTotAbundances_'+RedCorType+'.txt'
-            path_object = '../results/'+self.object_name
-            fullpath_outfile = os.path.join(path_object, out_file)
+            fullpath_outfile = os.path.join(self.results4object_path, out_file)
             outf = open(fullpath_outfile, 'w+')
             print >> outf, ('{:<45} {:>10} {:>6}'.format('# Temperatures used [K]', 'High =', int(te_high[0]))+'{:>30} {:>6}'.format('Low =', int(te_low[0]))+
                             '{:>35} {:>6}'.format('Very_low =', int(te_verylow[0])))
@@ -2597,6 +2601,9 @@ class AdvancedOps(BasicOps):
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
+            print '\nAbundances written in: ', fullpath_outfile
+        else:
+            print '\nAbundances text file NOT written.'
         
     def corr_ColExcit(self, Idered_norm, Hlines=None, verbose=False):
         '''
