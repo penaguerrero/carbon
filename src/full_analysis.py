@@ -403,7 +403,7 @@ else:
     tfile2ndRedCor = None
 RedCor_file = os.path.join(results4object_path, object_name+name_extension)
 print '     Reddening corrected intensities wrote on file:', RedCor_file
-kk = metallicity.BasicOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs=flxEW_errs)
+kk = metallicity.BasicOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs=flxEW_errs)
 normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
 #flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
 if use_Chbeta:
@@ -433,7 +433,7 @@ elif case == 'B':
 do_errs = None
 writeouts=create_txt_temdenabunds
 verbose = False
-advops = metallicity.AdvancedOps(object_name, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
+advops = metallicity.AdvancedOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
                                  case, use_Chbeta, theoCE, writeouts, verbose, tfile2ndRedCor)
 
 lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE, )
