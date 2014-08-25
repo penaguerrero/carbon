@@ -1079,7 +1079,7 @@ class BasicOps:
     
 class AdvancedOps(BasicOps):    
     def __init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs, #variables from parent class
-                 case, use_Chbeta, theoCE, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
+                 case, use_Chbeta, theoCE, He_value, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
         # Initialize the inherited class
         BasicOps.__init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs)
         # Inputs:
@@ -1090,6 +1090,7 @@ class AdvancedOps(BasicOps):
         self.case = case                        # this is the Case used through out the class
         self.verbose = verbose                  # if True print midpoints in order to know what is the code working on
         self.writeouts = writeouts              # write or not text files with outputs (temps, densities, and abundances)
+        self.He_value = He_value
         # Variables defined in the class
         self.lines_pyneb_matches = []
         # Define the string added to the name of the text files to be written according to the reddening process used
@@ -2437,7 +2438,7 @@ class AdvancedOps(BasicOps):
         for w, lI, le in zip(wavsHe, logInts, logErrs):
             print 'For', w, 'log Intensity =', lI, '+-', le
         #***
-        helio = 0.278 #0.298
+        helio = self.He_value
         YoverX = 4 * (helio)
         # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
         ZoverX = 32 * Otot
