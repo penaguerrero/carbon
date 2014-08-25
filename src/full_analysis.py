@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 7
+object_number = 0
 # Is this a TEST run?
 TEST_run = True
 
@@ -433,8 +433,11 @@ elif case == 'B':
 do_errs = None
 writeouts=create_txt_temdenabunds
 verbose = False
+# From 
+He_value_list = [0.278]#0.278 0.298
+He_value = He_value_list[object_number]
 advops = metallicity.AdvancedOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
-                                 case, use_Chbeta, theoCE, writeouts, verbose, tfile2ndRedCor)
+                                 case, use_Chbeta, theoCE, He_value, writeouts, verbose, tfile2ndRedCor)
 
 lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE, )
 
