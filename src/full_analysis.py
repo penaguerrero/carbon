@@ -19,6 +19,14 @@ object_number = 0
 # Is this a TEST run?
 TEST_run = True
 
+# From Lopez-Sanchez % Esteban 2009, except for 1(Lopez-Sanchez&Esteban2006), 2, and 6
+#                    0         1         2         3         4        5         6         7         8
+He_value_list = [0.087096, 0.081283, 0.088000, 0.06166, 0.081283, 0.093325, 0.088000, 0.075858, 0.087096,
+                 0.075858, 0.087096, 0.075858, 0.087096, 0.089125, 0.085114, 0.093325, 0.123027, 0.058884]
+#                    9        10        11        12         13       14        15         16         17
+#He_value = He_value_list[object_number]
+He_value_list = [0.278]#0.278 0.298
+
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
 
@@ -433,9 +441,6 @@ elif case == 'B':
 do_errs = None
 writeouts=create_txt_temdenabunds
 verbose = False
-# From 
-He_value_list = [0.278]#0.278 0.298
-He_value = He_value_list[object_number]
 advops = metallicity.AdvancedOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
                                  case, use_Chbeta, theoCE, He_value, writeouts, verbose, tfile2ndRedCor)
 
