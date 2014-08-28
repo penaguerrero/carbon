@@ -89,7 +89,7 @@ for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
         subycoord = -7
     if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
         subycoord = -15
-    if (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 5
         side = 'left'
     if (z == 'ngc346'):
