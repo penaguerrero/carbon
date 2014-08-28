@@ -2401,17 +2401,18 @@ class AdvancedOps(BasicOps):
         te_used = te_high
         tc = te_used[0]/10000.0         # central temp
         tpluserr = te_used[1]/10000.0   # central temp plus error
-        if self.I_1666[0] <= 0.0:
+        if self.I_1666[0] <= 0.0:  # in case 1666 has a negative flux use the other OIII] line
             I_1663 = self.I_1661
         else:
             I_1663 = self.I_1666
-        I_1909 = self.I_1909
-        C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_1909[0]/I_1663[0])
+        #I_C3 = self.strongC3
+        I_C3 = self.I_1909
+        C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_C3[0]/I_1663[0])
         # error calculation
-        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_1909[0]/I_1663[0])
-        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_1909[0]/I_1663[0])
-        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_1909[0] + I_1909[1]))
-        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_1909[0] - I_1909[1]))
+        uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_C3[0]/I_1663[0])
+        lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_C3[0]/I_1663[0])
+        uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_C3[0] + I_C3[1]))
+        lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_C3[0] - I_C3[1]))
         err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
         err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
         #C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
@@ -2424,8 +2425,13 @@ class AdvancedOps(BasicOps):
         op = sorted_atoms.index('O2')
         opp = sorted_atoms.index('O3')
         Ofrac = totabs_ions_list[opp][0] / Otot
-        print '\n X(O++) = %0.3f' % Ofrac
+        print '\n X(O++) = %0.2f' % Ofrac
         print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
+        # Calculate log O3/O2:
+        Oratio = numpy.log10(totabs_ions_list[opp][0]/totabs_ions_list[op][0])
+        errOratio = numpy.sqrt((totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2 + (totabs_ions_list[op][1]/totabs_ions_list[op][0])**2) / 2.303
+        print ' log (O++ / O+) =  %0.2f +- %0.02f' % (Oratio, errOratio), '\n'
+        
         # now determine the metallicity of the object: Z
         # We know that 1/X = (X + Y + Z)/X = 1 + Y/X + Z/X
         # the ammount of helium is obtained from the HELIO10 code
@@ -2449,13 +2455,21 @@ class AdvancedOps(BasicOps):
         print ' The metallicity Z =', Z
         #raw_input(' ***  press enter to continue')
         # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
-        XCXO = 0.9#0.86
+        if Ofrac >= 0.8:
+            XCXO = 0.9
+            erricfC = 0.45
+        else:
+            XCXO = 1.0
+            erricfC = 0.20
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
-        print ' ICF(C) using Garnett (1995) = %0.3f' % (icfC)
+        print ' ICF(C) using Garnett (1995) = %0.3f +- %0.3f' % (icfC, erricfC)
         cpp = sorted_atoms.index('C3')
-        totC_garnett = totabs_ions_list[cpp] * icfC     
-        logele_gar = 12+numpy.log10(totC_garnett[0])
-        logeleerr_gar = totC_garnett[1] / (2.303 * totC_garnett[0])
+        totC_gar = totabs_ions_list[cpp][0] * icfC
+        errtotC_gar = totC_gar * numpy.sqrt((totabs_ions_list[cpp][1]/totabs_ions_list[cpp][0])**2 + (erricfC/icfC)**2)
+        totC_garnett = [totC_gar, errtotC_gar]     
+        logele_gar = 12+numpy.log10(totC_gar)
+        #logeleerr_gar = totC_garnett[1] / (2.303 * totC_garnett[0])
+        logeleerr_gar = errtotC_gar / (2.303 * totC_gar)
         percent_err = totC_garnett[1]*100 / totC_garnett[0]
         #logeleerr_gar = numpy.log10((100+percent_err)/(100-percent_err)) / 2.0
         print '  C++ = ', totabs_ions_list[cpp], '%err=', percent_err
