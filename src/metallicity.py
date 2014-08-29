@@ -2445,14 +2445,14 @@ class AdvancedOps(BasicOps):
             print 'For', w, 'log Intensity =', lI, '+-', le
         #***
         helio = self.He_value
-        YoverX = 4 * (helio)
+        YoverX = 4.0 * (helio)
         # Z/X = Mass(C, N, O, ...)/Mass(H) ~ 2M(O)/M(H) = 2m(O^16)/m(H^1)*n(O)/n(H) = 32 * Otot
-        ZoverX = 32 * Otot
-        oneoverX = 1 + YoverX + ZoverX
-        X = 1 / oneoverX
+        ZoverX = 32.0 * Otot
+        oneoverX = 1.0 + YoverX + ZoverX
+        X = 1.0 / oneoverX
         # now solve for Z from Z/X 
         Z = ZoverX * X
-        print ' The metallicity Z =', Z
+        print '\n The metallicity Z = %0.3f \n' % Z
         #raw_input(' ***  press enter to continue')
         # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
         if Ofrac >= 0.8:
@@ -2462,7 +2462,7 @@ class AdvancedOps(BasicOps):
             XCXO = 1.0
             erricfC = 0.20
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
-        print ' ICF(C) using Garnett (1995) = %0.3f +- %0.3f' % (icfC, erricfC)
+        print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
         cpp = sorted_atoms.index('C3')
         totC_gar = totabs_ions_list[cpp][0] * icfC
         errtotC_gar = totC_gar * numpy.sqrt((totabs_ions_list[cpp][1]/totabs_ions_list[cpp][0])**2 + (erricfC/icfC)**2)
