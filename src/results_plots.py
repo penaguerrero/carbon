@@ -13,10 +13,10 @@ This scripts takes the found metallicities and produces:
  NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanches & Esteban 2010
 '''
 
-use_our_sample_ONLY = True
-save_images = False
+use_our_sample_ONLY = False
+save_images = True
 # Do you want to correct values?
-correct_values = True
+correct_values = False
 # Type of image to be saved?
 typeofimage = '.jpg'
 
@@ -39,6 +39,13 @@ if use_our_sample_ONLY:
     rows2skip = 5
     rf = numpy.loadtxt(resfile, skiprows=rows2skip, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20), unpack=True)
     OH, OHerr, CO, COerr, NO, NOerr, NeO, NeOerr, NeOor, NeOorerr, C2O2, C2O2err, XO2, O2O1, O2O1err, N2O2, N2O2err, Z, ifc, ifcerr = rf
+    solarZ = 0.020
+    Z_respect2solar = []
+    #print 'Values with respect to solar metallicity:'
+    for eachZ in Z:
+        Z2solar = eachZ / solarZ
+        Z_respect2solar.append(Z2solar)
+        #print '%1.3f  %1.3f' % (eachZ, Z2solar)
 else:
     resfile = os.path.join(full_results_path, 'abunds_OCNNe_plusotherrefs.txt')
     rows2skip = 10
@@ -58,15 +65,9 @@ objects_ref = ['30Dor', 'Orion', 'izw18', 'Sun'] # these are useful points of re
 # additional data points not in the sample
 objects_not_in_sample = ['ngc346', 'ngc456', 'ngc6822']
 
-solarZ = 0.020
-Z_respect2solar = []
 CN = CO - NO
 CNerr = []
-#print 'Values with respect to solar metallicity:'
-for eachZ, coe, noe in zip(Z, COerr, NOerr):
-    Z2solar = eachZ / solarZ
-    Z_respect2solar.append(Z2solar)
-    #print '%1.3f  %1.3f' % (eachZ, Z2solar)
+for coe, noe in zip(COerr, NOerr):
     cne = numpy.sqrt(coe**2 + noe**2)
     CNerr.append(cne)
 
@@ -81,7 +82,7 @@ if correct_values:
     CO_non_corr = deepcopy(CO)
     NO_non_corr = deepcopy(NO)
     NeO_non_corr = deepcopy(NeO)
-    NeOor_non_corr = deepcopy(NeOor) 
+    #NeOor_non_corr = deepcopy(NeOor) 
     print '* The format is: Object    Non-corrected values   Corrected values'
     print '{:<10} {:>10} {:>12} {:>9} {:>6}'.format('', 'O/H', 'C/O', 'Z', '[Z]')
     for i in range(len(ordered_sample)):
@@ -89,28 +90,31 @@ if correct_values:
         CO[i] = CO[i] + C_dust_correction - O_dust_correction
         NO[i] = NO[i] + C_dust_correction - O_dust_correction
         NeO[i] = NeO[i] + C_dust_correction - O_dust_correction
-        NeOor[i] = NeOor[i] + C_dust_correction - O_dust_correction
-        print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.3f} {:>5.3f}'.format(ordered_sample[i], OH_non_corr[i], OH[i], CO_non_corr[i], CO[i], Z[i], Z_respect2solar[i])
+        #NeOor[i] = NeOor[i] + C_dust_correction - O_dust_correction
+        if use_our_sample_ONLY:
+            print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f} {:>6.3f} {:>5.3f}'.format(ordered_sample[i], OH_non_corr[i], OH[i], CO_non_corr[i], CO[i], Z[i], Z_respect2solar[i])
+        else:
+            print '{:<10} {:>8.2f} {:>5.2f} {:>6.2f} {:>5.2f}'.format(ordered_sample[i], OH_non_corr[i], OH[i], CO_non_corr[i], CO[i])
     # Now add the correction to the reference objects in the same order as in the text file EXCEPT for the Sun
     for j in range(len(objects_ref)-1):
         OH[i+j+1] = OH[i+j+1] + O_dust_correction
         CO[i+j+1] = CO[i+j+1] + C_dust_correction - O_dust_correction
         NO[i+j+1] = NO[i+j+1] + C_dust_correction - O_dust_correction
         NeO[i+j+1] = NeO[i+j+1] + C_dust_correction - O_dust_correction
-        NeOor[i+j+1] = NeOor[i+j+1] + C_dust_correction - O_dust_correction
+        #NeOor[i+j+1] = NeOor[i+j+1] + C_dust_correction - O_dust_correction
     # Do not add anything for the Sun
     OH[i+j+1] = OH[i+j+1]
     CO[i+j+1] = CO[i+j+1]
     NO[i+j+1] = NO[i+j+1]
     NeO[i+j+1] = NeO[i+j+1]
-    NeOor[i+j+1] = NeOor[i+j+1] 
+    #NeOor[i+j+1] = NeOor[i+j+1] 
     # Now add the correction to the objects not in the sample in the same order as in the text file
     for k in range(len(objects_not_in_sample)-1):
         OH[i+j+k+1] = OH[i+j+k+1] + O_dust_correction
         CO[i+j+k+1] = CO[i+j+k+1] + C_dust_correction - O_dust_correction
         NO[i+j+k+1] = NO[i+j+k+1] + C_dust_correction - O_dust_correction
         NeO[i+j+k+1] = NeO[i+j+k+1] + C_dust_correction - O_dust_correction
-        NeOor[i+j+k+1] = NeOor[i+j+k+1] + C_dust_correction - O_dust_correction
+        #NeOor[i+j+k+1] = NeOor[i+j+k+1] + C_dust_correction - O_dust_correction
 
 # Complie all the names for the labeling in the same order
 objects_list = []
