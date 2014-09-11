@@ -14,11 +14,11 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 2
+object_number = 17
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [1]
 # set commented parameters, choose options 0 through 3
-choose_conditions4textfiles = 2
+choose_conditions4textfiles = 1
 
 ############################################################################################################################################
 '''
@@ -42,7 +42,7 @@ nullfirst150 = True
 
 # lists to make faster the text files for splot:
 #    text_table normalize correct_redshift rebin splot_text plot
-reg  = [False,      False,     False,       False,   False,   True]
+reg  = [False,      False,     True,       False,   False,   True]
 norm = [False,      True,      True,       False,    False,    True]
 normreb = [False,   True,      True,        True,    False,    True]
 reb  = [False,     False,      True,        True,    False,    True]
