@@ -11,7 +11,7 @@ import mcmc_infrastructure as mcmcis
 model_name = 'mcmc_test3'
 dens = 4. #log cm-3
 stb99_table = 'table star "starburst99.mod"'
-age = 'age=4.0'
+age = 'age=5.0'
 
 emis_tab = ['H  1  4861',   # must keep this format (as lines appear on Cloudy output)
             'H  1  6563',
