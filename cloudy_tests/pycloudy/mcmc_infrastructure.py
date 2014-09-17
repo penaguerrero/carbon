@@ -6,6 +6,8 @@ import pyCloudy as pc
 import time
 import copy
 import string
+import emcee
+import triangle
 from glob import glob
 #from scipy import stats
 from science import spectrum
@@ -18,7 +20,15 @@ def find_cloudyexe(cloudyexe_path):
     ''' Changing the location and version of the cloudy executable. '''
     full_cloudyexe_path = os.path.abspath(cloudyexe_path)
     pc.config.cloudy_exe = full_cloudyexe_path
+    
+def lngauss(x, x0, s):
+    return -0.5*((x-x0)/s)**2
 
+def lntophat(x, a, b):
+    if (a < x) and (x < b):
+        return np.log(1/(a-b))
+    else:
+        return -np.Infinity
 
 class PyCloudy_model:
     def __init__(self, model_name, dens, emis_tab, abunds, stb99_table, age, dir=None, verbosity=None, options=None, 
@@ -27,7 +37,7 @@ class PyCloudy_model:
         model_name = just the name of the model (without path)
         dens = Hydrogen density in units of log cm^-3
         emis_tab = lines to find (the integral over the volume of the emissivity gives the intensity of the line)
-        abunds = this is the set of target abundances for Cloudy to match
+        abunds = this is the set of target abundances for Cloudy to match, in units of log(X/H)
         stb99_table = ionizing source, should be in format: 'table star "starburst99.mod"'
         age = look for this age in the stb99 table, should be in format: 'age=4.0' 
         dir = where to put the output files
@@ -191,6 +201,7 @@ class Get_Chi2_info:
         '''
         self.measured_lines = measured_lines
         self.modeled_lines = modeled_lines 
+        self.read_files()
 
     def read_files(self):
         # MEASURED lines
@@ -268,6 +279,143 @@ class Get_Chi2_info:
         print '\nChi^2 for this model = ', Chi2
         return Chi2
     
-class Run_mcmc:
-    pass
+class MCMC:
+    ''' This class does the actual Markov Chain Monte Carlo (MCMC). This is done to marginalize over some parameters and 
+    estimate of the posterior probability function, that is the distribution of parameters that is consistent with the
+    data set. The posterior probability function can be described as follows:
+                            p(m,b,f|x,y,sigma)  proportional2  p(m,b,f) * p(y|x,sigma,m,b,f),
+    where p(y|x,sigma,m,b,f) is the likelihood function and p(m,b,f) is the prior function.   
+    '''
+    def __init__(self, object_name, manual_measurement, initial_conditions):
+        self.object_name = object_name   # name of the object
+        self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
+        self.initial_conditions = initial_conditions   # list of initial conditions for the Cloudy model, including density and chem abunds
+        self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
+        #self.run_chain()   # run the MCMC
     
+    def get_measured_lines(self):
+        # get the benchmark measurements
+        if self.manual_measurement:
+            file2use = '_measuredLI_RedCor_Ebv.txt'   # my manual line measurements
+        else:
+            file2use = '_RedCor_Ebv.txt'   # my code's line measurements
+        measured_lines_file_path = os.path.abspath('../../results/'+self.object_name+'/'+self.object_name+file2use)
+        # now retrieve the columns we need from the file
+        meas_lineIDs = []   # list of IDs in angstroms
+        meas_Isrel2Hbeta = []   # list of lines relative to Hbeta reddening corrected 
+        meas_Ierr = []   # absolute error of the line intensity
+        meas_Iper = []   # percentage error of the line intensity  
+        meas_EW = []   # NOT BEING USED FOR THE MOMENT
+        meas = open(measured_lines_file_path)
+        _ = meas.readline()  # columns header
+        for line in meas:
+            line = line.strip()   # gets rid of \n at the end of the line
+            cols = line.split()   # splits the line into a list of columns
+            # the columns of interest are: ID=0, Intensity=9, Ierr=10, Iper=11, EW=12
+            meas_lineIDs.append(int(np.round(float(cols[0]), decimals=0)))
+            meas_Isrel2Hbeta.append(float(cols[9]))
+            meas_Ierr.append(float(cols[10]))
+            meas_Iper.append(float(cols[11]))
+            meas_EW.append(float(cols[12]))
+        meas.close()
+        self.measured_lines = [meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW]
+        return self.measured_lines
+
+    def get_modeled_lines(self, theta):
+        dens, abunds = theta
+        # get the Cloudy model
+        model_name, _, emis_tab, _, stb99_table, age, dir, verbosity, options, iterations, keep_files = self.initial_conditions
+        initiate_PyCmodel = PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, iterations, keep_files)
+        cldymod = initiate_PyCmodel.mk_model()
+        modeled_lines_file_path = os.path.abspath(cldymod)
+        mod_lineIDs = []
+        ions = []
+        #mod_intensities = []   # NOT BEING USED FOR THE MOMENT
+        mod_Isrel2Hbeta = []
+        mod = open(modeled_lines_file_path, 'r')
+        # Save the temperatures, t2, HbetaEW, and the column headers into special headers
+        mod_TO3 = mod.readline()
+        mod_TO2 = mod.readline()
+        mod_T0t2 = mod.readline()   # NOT BEING USED FOR THE MOMENT
+        HbetaEW = mod.readline()   # NOT BEING USED FOR THE MOMENT
+        _ = mod.readline()  # columns header
+        for line in mod:   # read the rest of the file line by line as a string
+            line = line.strip()   # gets rid of \n at the end of the line
+            cols = line.split()   # splits the line into a list of columns
+            kk1 = string.split(cols[0], sep='A')
+            kk2 = string.split(kk1[0], sep='__')
+            ion = kk2[0]   # means that we have a case type 'HE_2__4686A'
+            if len(kk2) > 2:   # means that we have a case type 'H__1__6563A'
+                ion = kk2[0]+'_'+kk2[1]
+            lid = int(kk2[-1])
+            #print ion, lid
+            ions.append(ion)
+            mod_lineIDs.append(lid)
+            #mod_intensities.append(float(cols[1]))   # NOT BEING USED FOR THE MOMENT
+            mod_Isrel2Hbeta.append(float(cols[2]))
+        mod.close()
+        kk = string.split(mod_TO3, sep='=')
+        mod_TO3 = kk[1]   # NOT BEING USED FOR THE MOMENT
+        kk = string.split(mod_TO2, sep='=')
+        mod_TO2 = kk[1]   # NOT BEING USED FOR THE MOMENT
+        #print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
+        modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
+        return modeled_lines
+        
+    def lnlikehd(self, theta, Iobs, Iobserr):
+        modeled_lines = self.get_modeled_lines(theta)
+        mod_lineIDs, ions, mod_Isrel2Hbeta = modeled_lines
+        model = np.array(mod_Isrel2Hbeta)
+        y = np.array(Iobs)
+        e = np.array(Iobserr)
+        csq = ( y - model )**2 / e**2
+        Chi2 = csq.sum()
+        return -Chi2 / 2.0
+    
+    def lnpriors(self, theta):
+        ''' This function encodes any previous knowledge that we have about the parameters: results from other experiments, 
+        physically acceptable ranges, etc. It is necessary that you write down priors if you are going to use MCMC because 
+        all that MCMC does is draw samples from a probability distribution and you want that to be a probability distribution
+        for your parameters. We will use 2 functions: Gaussian and top-hat. 
+        dens_bounds = list of boundary conditions (min and max) for hydrogen log density cm-3, i.e. = [1, 10]
+        abunds_bounds = list of observed abundances in units of log(X/H): [He, C, N, O, Ne, S]
+        '''
+        dens, abund = theta
+        He, C, N, O, Ne, S = abund
+        '''
+        # Since we want to remain in the low density regime, set boundaries for density
+        dens = lntophat(dens, 1, 10)
+        # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
+        # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
+        He, C, N, O, Ne, S = abund
+        he = lntophat(He, -4.00, 1.00)
+        c = lntophat(C, -7.00, -3.00)
+        n = lntophat(N, -7.00, -3.00)        
+        o = lntophat(O, -7.00, -3.00)        
+        ne = lntophat(Ne, -7.00, -3.00)        
+        s = lntophat(S, -6.00, -3.00)
+        # check that all conditions are met
+        if not np.isfinite(dens) and not np.isfinite(he) and not np.isfinite(c) and not np.isfinite(n) and not np.isfinite(o) and not np.isfinite(ne) and not np.isfinite(s):
+            return dens, he, c, n, o, ne, s 
+        return -np.inf
+        '''
+        if 1.<dens<10. and -4.<He<1. and -7.<C<-3. and -7.<N<-3. and -7.<O<-3. and -7.<Ne<-3. and -7.<S<-3.:
+            return 0.0
+        return -np.inf
+
+    def lnprob(self, theta, Iobs, Iobserr):
+        dens, abund = theta
+        lp = lnprior(theta)
+        if not np.isfinite(lp):
+            return -np.inf
+        return lp + self.lnlike(theta, Iobs, Iobserr)
+    
+    def run_chain(self):
+        meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
+        ndim, nwalkers, nruns = 8, 100, 1000
+        pos = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_Isrel2Hbeta, meas_Ierr))
+        sampler.run_mcmc(pos, 100)
+        samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
+        fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
+        fig.show()
