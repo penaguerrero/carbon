@@ -43,6 +43,11 @@ def lnprior(theta):
 
 # then the probability function will be
 def lnprob(theta, x, y, yerr):
+    #print 'theta = ', theta
+    #print 'x =', x
+    #print 'y =', y
+    #print 'yerr =', yerr
+    #raw_input()
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
@@ -64,9 +69,27 @@ sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr))
 p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
 pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 steps to be "burn-in" type
+
+count = 1
+
+for posn, prob, state in sampler.sample( pos, iterations=20, storechain=False ):
+    
+    print "COUNT", count
+    
+    if count % 1 == 0:
+        for k in range( posn.shape[0] ):
+            strout = ""
+            for p in pos[k]: strout += "{:8.3f} ".format( p )
+            strout += "{:20.3f}".format( prob[k] )
+            print strout
+    count += 1
+
 sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
 
 pos, prob, state = sampler.run_mcmc(pos, nruns)   # do the mcmc which nruns steps
+#print 'pos=', pos
+#print 'prob=', prob
+#print 'state=', state
 
 # plot the true line and the "observed" data
 plt.figure()
@@ -75,6 +98,7 @@ plt.plot( x, y+dy, "ko", alpha=0.5 )   # the "observed" data
 # best model
 wh = np.where( prob == prob.max() )[0][0]
 p = pos[ wh, : ]
+print 'parameters that best fit the data are: [m  b] =', p
 plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
 
 for p in pos:
