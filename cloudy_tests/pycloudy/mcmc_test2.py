@@ -59,8 +59,12 @@ mcmcis.find_cloudyexe(cloudyexe_path)
 
 # Define path where to save the plots
 pypics_path = os.path.abspath('pypics')
-
-initial_conditions = mcmcis.PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, verbosity=3, options=options, iterations=2)
+verbosity = 3
+iterations = 2
+keep_files = None
+dir = './'
+initial_conditions = mcmcis.PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, 
+                                           iterations, keep_files)
 cldymod = initial_conditions.mk_model()
 
 modeled_lines = os.path.abspath(cldymod)
