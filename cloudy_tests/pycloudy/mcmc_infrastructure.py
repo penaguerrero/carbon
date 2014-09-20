@@ -25,14 +25,24 @@ def lngauss(x, x0, s):
     return -0.5*((x-x0)/s)**2
 
 def lntophat(x, a, b):
-    if (a < x) and (x < b):
-        return np.log(1/(a-b))
+    # b has to be grater than a
+    if a > b:
+        bb = a
+        aa = b
+    elif a == b:
+        print 'Boundaries are the same in lntophat function... change them please.'
+        exit()
     else:
-        return -np.Infinity
+        aa = a
+        bb = b
+    if (aa < x) and (x < bb):
+        return np.log(1/(bb-aa))
+    else:
+        return -1.e10
 
 class PyCloudy_model:
-    def __init__(self, model_name, dens, emis_tab, abunds, stb99_table, age, dir=None, verbosity=None, options=None, 
-                 iterations=None, keep_files=None):
+    def __init__(self, model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, 
+                 iterations, keep_files):
         '''    This set of initial conditions is specific for this particular project.
         model_name = just the name of the model (without path)
         dens = Hydrogen density in units of log cm^-3
@@ -58,26 +68,26 @@ class PyCloudy_model:
         self.abunds = abunds
         self.stb99_table = stb99_table
         self.age = age
-        if dir == None:
-            self.dir = './'
-        else:
-            self.dir = dir
-        if verbosity == None:
-            pc.log_.level = 3
-        else:
-            self.verbosity = verbosity
-        if options != None:
-            self.options = options
-        else:
-            self.options = None
-        if iterations != None:
-            self.iterations = iterations
-        else:
-            self.iterations = None
-        if keep_files == None:
-            self.keep_files = None
-        else:
-            self.keep_files = keep_files
+        #if dir == None:
+        #    self.dir = './'
+        #else:
+        self.dir = dir
+        #if verbosity == None:
+        #    pc.log_.level = 3
+        #else:
+        self.verbosity = verbosity
+        #if options != None:
+        self.options = options
+        #else:
+        #    self.options = None
+        #if iterations != None:
+        self.iterations = iterations
+        #else:
+        #    self.iterations = None
+        #if keep_files == None:
+        #    self.keep_files = None
+        #else:
+        self.keep_files = keep_files
 
     def runCldy_with_initconds(self):
         '''    
@@ -169,8 +179,8 @@ class PyCloudy_model:
         #pc.config.SAVE_LIST = SAVE_LIST
         #pc.config.SAVE_LIST_ELEMS = SAVE_LIST_ELEMS
         ''' except_files = is the list of files we actually want to keep...''' 
-        default_extensions_list = ['.emis', '.in', # just to avoid overload with the huge run
-                                   '.rad', '.cont', '.phy', '.ovr', '.heat', '.cool', '.opd',  # files pyCloude needs to read outputs
+        default_extensions_list = ['.emis', # just to avoid overload with the huge run
+                                   '.rad', '.cont', '.phy', '.ovr', '.heat', '.cool', '.opd',  # files pyCloudy needs to read outputs
                                    '.ele_H', '.ele_He', '.ele_C', '.ele_N', '.ele_O', '.ele_Ar', # out elements
                                    '.ele_Ne', '.ele_S', '.ele_Cl', '.ele_Fe', '.ele_Si']
         final_default_extensions_list = copy.deepcopy(default_extensions_list)
@@ -186,8 +196,11 @@ class PyCloudy_model:
         
     def mk_model(self):
         self.runCldy_with_initconds()
+        print'***  got initial conditions and ran Cloudy!'
         lines_file = self.read_Cldyouts()
+        print '***  reading Cloudy outputs!'
         self.clean_Cldyoutfiles()
+        print'***  cleaning Cloudy output files...'
         return lines_file
     
 
@@ -286,12 +299,11 @@ class MCMC:
                             p(m,b,f|x,y,sigma)  proportional2  p(m,b,f) * p(y|x,sigma,m,b,f),
     where p(y|x,sigma,m,b,f) is the likelihood function and p(m,b,f) is the prior function.   
     '''
-    def __init__(self, object_name, manual_measurement, initial_conditions):
+    def __init__(self, object_name, manual_measurement, initial_Cloudy_conditions): 
         self.object_name = object_name   # name of the object
         self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
-        self.initial_conditions = initial_conditions   # list of initial conditions for the Cloudy model, including density and chem abunds
         self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
-        #self.run_chain()   # run the MCMC
+        self.initial_Cloudy_conditions = initial_Cloudy_conditions
     
     def get_measured_lines(self):
         # get the benchmark measurements
@@ -322,9 +334,16 @@ class MCMC:
         return self.measured_lines
 
     def get_modeled_lines(self, theta):
-        dens, abunds = theta
         # get the Cloudy model
-        model_name, _, emis_tab, _, stb99_table, age, dir, verbosity, options, iterations, keep_files = self.initial_conditions
+        He, C, N, O, Ne, S = theta   # convert the list into a value and a dictionary
+        abunds = {}
+        abunds['He'] = He-12.
+        abunds['C'] = C-12.
+        abunds['N'] = N-12.
+        abunds['O'] = O-12.
+        abunds['Ne'] = Ne-12.
+        abunds['S'] = S-12.
+        model_name, dens, emis_tab, _, stb99_table, age, dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
         initiate_PyCmodel = PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, iterations, keep_files)
         cldymod = initiate_PyCmodel.mk_model()
         modeled_lines_file_path = os.path.abspath(cldymod)
@@ -360,14 +379,37 @@ class MCMC:
         mod_TO2 = kk[1]   # NOT BEING USED FOR THE MOMENT
         #print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
         modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
+        # Do the cleaning
+        final_default_extensions_list = ['.in', '.out', '.txt']
+        for fdf in final_default_extensions_list:
+            file2beerased = glob(dir+model_name+'*'+fdf)
+            #print file2beerased[0]
+            os.remove(file2beerased[0])
         return modeled_lines
         
-    def lnlikehd(self, theta, Iobs, Iobserr):
+    def find_Itheo_in_Iobs(self, IDobs, Iobs, Iobserr, IDmod, Imod):
+        new_Iobs = []
+        new_Iobserr = []
+        new_Imod = []
+        for idtheo in IDmod:
+            Itheo_idx = IDmod.index(idtheo)
+            Itheo = Imod[Itheo_idx]
+            if idtheo in IDobs:
+                idx = IDobs.index(idtheo)
+                iobs= Iobs[idx]
+                ierr = Iobserr[idx]
+                new_Iobs.append(iobs)
+                new_Iobserr.append(ierr)
+                new_Imod.append(Itheo)
+        return new_Iobs, new_Iobserr, new_Imod
+
+    def lnlikehd(self, theta, IDobs, Iobs, Iobserr):
         modeled_lines = self.get_modeled_lines(theta)
         mod_lineIDs, ions, mod_Isrel2Hbeta = modeled_lines
-        model = np.array(mod_Isrel2Hbeta)
-        y = np.array(Iobs)
-        e = np.array(Iobserr)
+        new_Iobs, new_Iobserr, new_Imod = self.find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, mod_lineIDs, mod_Isrel2Hbeta)
+        model = np.array(new_Imod)
+        y = np.array(new_Iobs)
+        e = np.array(new_Iobserr)
         csq = ( y - model )**2 / e**2
         Chi2 = csq.sum()
         return -Chi2 / 2.0
@@ -377,45 +419,61 @@ class MCMC:
         physically acceptable ranges, etc. It is necessary that you write down priors if you are going to use MCMC because 
         all that MCMC does is draw samples from a probability distribution and you want that to be a probability distribution
         for your parameters. We will use 2 functions: Gaussian and top-hat. 
-        dens_bounds = list of boundary conditions (min and max) for hydrogen log density cm-3, i.e. = [1, 10]
-        abunds_bounds = list of observed abundances in units of log(X/H): [He, C, N, O, Ne, S]
         '''
-        dens, abund = theta
-        He, C, N, O, Ne, S = abund
-        '''
-        # Since we want to remain in the low density regime, set boundaries for density
-        dens = lntophat(dens, 1, 10)
+        He, C, N, O, Ne, S = theta
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
-        He, C, N, O, Ne, S = abund
-        he = lntophat(He, -4.00, 1.00)
-        c = lntophat(C, -7.00, -3.00)
-        n = lntophat(N, -7.00, -3.00)        
-        o = lntophat(O, -7.00, -3.00)        
-        ne = lntophat(Ne, -7.00, -3.00)        
-        s = lntophat(S, -6.00, -3.00)
+        he = lntophat(He, 9.5, 11.0) 
+        c = lntophat(C, 6.0, 8.5)
+        n = lntophat(N, 7.0, 8.8) 
+        o = lntophat(O, 7.2, 8.9) 
+        ne = lntophat(Ne, 7.0, 8.8)  
+        s = lntophat(S, 4.0, 7.2) 
+        print 'top hat results:', he , c , n , o , ne , s
         # check that all conditions are met
-        if not np.isfinite(dens) and not np.isfinite(he) and not np.isfinite(c) and not np.isfinite(n) and not np.isfinite(o) and not np.isfinite(ne) and not np.isfinite(s):
-            return dens, he, c, n, o, ne, s 
-        return -np.inf
-        '''
-        if 1.<dens<10. and -4.<He<1. and -7.<C<-3. and -7.<N<-3. and -7.<O<-3. and -7.<Ne<-3. and -7.<S<-3.:
-            return 0.0
-        return -np.inf
+        if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
+            return he + c + n + o + ne + s 
+        else:
+            return -1.e10
 
-    def lnprob(self, theta, Iobs, Iobserr):
-        dens, abund = theta
-        lp = lnprior(theta)
-        if not np.isfinite(lp):
-            return -np.inf
-        return lp + self.lnlike(theta, Iobs, Iobserr)
-    
+    def lnprob(self, theta, IDobs, Iobs, Iobserr):
+        print 'theta =', theta
+        lp = self.lnpriors(theta)
+        print 'probabilities: ', lp
+        if lp != -1.e10:
+            return lp + self.lnlikehd(theta, IDobs, Iobs, Iobserr)
+        else:
+            return lp
+        
     def run_chain(self):
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
-        ndim, nwalkers, nruns = 8, 100, 1000
-        pos = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_Isrel2Hbeta, meas_Ierr))
-        sampler.run_mcmc(pos, 100)
+        ndim, nwalkers, nruns = 6, 20, 50
+        p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
+        #p0 = [[np.random.uniform(8., 11.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(4., 8.)] for _ in range(nwalkers)]
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
+        #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
+        #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
+        pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
+        
+        count = 1
+        for posn, lnp, state in sampler.sample( pos, iterations=20, storechain=False ):
+            print "COUNT", count
+            if count % 1 == 0:
+                for k in range( posn.shape[0] ):
+                    strout = ""
+                    for p in posn[k]: strout += "{:8.3f} ".format( p )
+                    strout += "{:20.3f}".format( lnp[k] )
+                    print strout
+            count += 1
+        
+        # best model
+        wh = np.where( prob == prob.max() )[0][0]
+        p = pos[ wh, : ]
+        print 'Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'
+        #print '   density of H =', p[0]
+        print '   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]
         samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
         fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
         fig.show()
+        
+        
