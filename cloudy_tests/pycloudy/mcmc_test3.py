@@ -9,7 +9,7 @@ import mcmc_infrastructure as mcmcis
 
 # Define initial conditions for Cloudy model
 model_name = 'mcmc_test3'
-stb99_table = 'table star "starburst99.mod"'
+stb99_table = 'table star "constSFR.mod"'
 
 emis_tab = ['H  1  4861',   # must keep this format (as lines appear on Cloudy output)
             'H  1  6563',
@@ -45,10 +45,20 @@ options = ('no molecules',
 
 age = 'age=5.0'
 dens = 4. #log cm-3
-abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 
-         'S' : 6.65 - 12}
+#abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 'S' : 6.65 - 12}
+# Abundances of:
+#           He     C      N      O      Ne      S
+abunds = [10.97,  7.12,  7.34,  8.01,  7.72,  6.65]
 
 ##################################################################################################################
+print 'Initial values of the 7 dimensions used in the MCMC:'
+print '   density of H =', dens
+#print '   abundances of: He =', abunds['He'], ' C =', abunds['C'], ' N =', abunds['N'], 'O =', abunds['O'], 'Ne =', abunds['Ne'], 'S =', abunds['S']
+print '   abundances of: He =', abunds[0], ' C =', abunds[1], ' N =', abunds[2], 'O =', abunds[3], 'Ne =', abunds[4], 'S =', abunds[5]
+
+theta = []
+for a in abunds:
+    theta.append(a)
 
 # start the timer to compute the whole running time
 start_time = time.time()
@@ -62,11 +72,13 @@ pypics_path = os.path.abspath('pypics')
 
 object_name = 'mrk960' 
 manual_measurement = False
+dir = './'
 verb = 3
 iterations = 2
 keep_files = None
-initial_conditions = [model_name, dens, emis_tab, abunds, stb99_table, age, dir, verb, options, iterations, keep_files] 
-mcham = mcmcis.MCMC(object_name, manual_measurement, initial_conditions)
+initial_Cloudy_conditions = [model_name, dens, emis_tab, theta, stb99_table, age, dir, verb, options, iterations, keep_files] 
+mchammer = mcmcis.MCMC(object_name, manual_measurement, initial_Cloudy_conditions)
+mchammer.run_chain()
 
 print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
 
