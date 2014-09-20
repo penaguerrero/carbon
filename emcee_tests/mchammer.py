@@ -16,11 +16,23 @@ import matplotlib.pyplot as plt
 def myline( x, p ):
     return p[0] + p[1] * x + p[2] * x**2 + p[3] * x**3
 
-def lnprob( p, x, y, e ):
+def lnlike( p, x, y, e ):
     m = myline( x, p )
     csq = ( y - m )**2 / e**2
     csq = csq.sum()
     return -csq
+
+def lnprior(theta):
+    a, b, c, d = theta
+    if 10. < a < 15. and -10. < b < 10.0 and -10. < c < 10.0 and -10. < d < 10.0:
+        return 0.0
+    return -np.inf    
+    
+def lnprob( theta, x, y, e ):
+    lp = lnprior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike(theta, x, y, e)
 
 # original parameters
 aa = 12.
@@ -43,7 +55,7 @@ plt.plot( x, y, "b", lw=5, alpha=0.4 )
 plt.plot( x, y + dy, "ko", alpha=0.5 )
 
 # mcmc
-ndim, nwalkers, nruns = 4, 10, 1
+ndim, nwalkers, nruns = 4, 50, 100
 pos = [np.random.rand(ndim) * 30. - 15. for i in xrange(nwalkers)]
 sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob, args=[x, y+dy, e] )
 
