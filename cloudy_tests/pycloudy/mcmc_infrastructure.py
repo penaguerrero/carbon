@@ -382,7 +382,7 @@ class MCMC:
         # Do the cleaning
         final_default_extensions_list = ['.in', '.out', '.txt']
         for fdf in final_default_extensions_list:
-            file2beerased = glob(dir+model_name+'*'+fdf)
+            file2beerased = glob(self.dir+self.model_name+'*'+fdf)
             #print file2beerased[0]
             os.remove(file2beerased[0])
         return modeled_lines
@@ -489,12 +489,13 @@ class MCMC:
         samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
         # but for now we'll use all the runs:
         #samples = sampler.chain[:, :, :].reshape((-1, ndim))
-        fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
-        fig.show()
-        fig.savefig(os.path.abspath(self.dir+"triangle_test.jpg"))
+        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
+        fig.savefig(os.path.abspath(self.dir+"triangle_test1.jpg"))
+        fig = triangle.corner(samples)
+        fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
-        p_mcmc = map(lambda v: (v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
         print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
         print p_mcmc
 
