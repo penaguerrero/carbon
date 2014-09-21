@@ -116,5 +116,7 @@ fig.savefig("triangle_test.jpg")
 
 # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
 samples[:, 1] = np.exp(samples[:, 1])
-m_mcmc, b_mcmc = map(lambda v: (v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+m_mcmc, b_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
 print 'm_mcmc, b_mcmc:', m_mcmc, b_mcmc
+m_mcmc2, b_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+print 'm_mcmc2, b_mcmc2:', m_mcmc2, b_mcmc2
