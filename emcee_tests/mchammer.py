@@ -11,6 +11,7 @@
 
 import numpy as np
 import emcee
+import triangle
 import matplotlib.pyplot as plt
 
 def myline( x, p ):
@@ -78,6 +79,13 @@ f.close()
 #     f.write( fmt_model )
 #     f.close()
 '''
+
+# reset the chain to remove the burn-in samples
+sampler.reset()
+
+# starting from the final position in the burn-in chain
+pos, lnp, rstate = sampler.run_mcmc( pos, 20, rstate0=rstate )
+
 # To store the chain....
 f = open("mchammer_chain.dat", "w")
 f.close()
@@ -95,19 +103,26 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
         f.close()
     count += 1
 
-
-# reset the chain to remove the burn-in samples
-sampler.reset()
-
-# starting from the final position in the burn-in chain
-pos, lnp, rstate = sampler.run_mcmc( pos, 20, rstate0=rstate )
-
 # best model
 wh = np.where( lnp == lnp.max() )[0][0]
 p = pos[ wh, : ]
 plt.plot( x, myline( x, p ), "r", lw=5, alpha=0.4 )
-
 for p in pos:
     plt.plot( x, myline( x, p ), "r", alpha=0.1 )
-
 plt.show()
+
+# triangle plot
+samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
+fig1 = triangle.corner(samples, labels=["$a$", "$b$", "$c$", "$d$"], truths=[aa, bb, cc, dd])
+#fig.show()
+fig1.savefig("mchammer_test.jpg")
+fig2 = triangle.corner(samples)
+#fig.show()
+fig2.savefig("mchammer_test2.jpg")
+
+# Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+samples[:, ndim-1] = np.exp(samples[:, ndim-1])
+p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
+print p_mcmc
+
