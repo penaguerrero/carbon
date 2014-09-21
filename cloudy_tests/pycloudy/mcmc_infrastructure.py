@@ -343,8 +343,8 @@ class MCMC:
         abunds['O'] = O-12.
         abunds['Ne'] = Ne-12.
         abunds['S'] = S-12.
-        model_name, dens, emis_tab, _, stb99_table, age, dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
-        initiate_PyCmodel = PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, iterations, keep_files)
+        self.model_name, dens, emis_tab, _, stb99_table, age, self.dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
+        initiate_PyCmodel = PyCloudy_model(self.model_name, dens, emis_tab, abunds, stb99_table, age, self.dir, verbosity, options, iterations, keep_files)
         cldymod = initiate_PyCmodel.mk_model()
         modeled_lines_file_path = os.path.abspath(cldymod)
         mod_lineIDs = []
@@ -424,20 +424,23 @@ class MCMC:
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
         he = lntophat(He, 9.5, 11.0) 
-        c = lntophat(C, 6.0, 8.5)
-        n = lntophat(N, 6.0, 8.8) 
+        #c = lntophat(C, 6.0, 8.5)
+        #n = lntophat(N, 6.0, 8.8) 
         o = lntophat(O, 7.2, 8.9) 
-        ne = lntophat(Ne, 7.0, 8.7)  
-        s = lntophat(S, 4.0, 7.0) 
+        #ne = lntophat(Ne, 7.0, 8.7)  
+        #s = lntophat(S, 4.0, 7.0) 
+        #print 'top hat results:', he , c , n , o , ne , s
         # additional constraints
         ClowerthanO = lntophat(C, 6.0, O)
         NlowerthanO = lntophat(N, 6.0, O)
         NelowerthanO = lntophat(Ne, 7.0, O)
         SlowerthanO = lntophat(S, 4.0, O)
-        print 'top hat results:', he , c , n , o , ne , s
+        print 'top hat results:', he , ClowerthanO , NlowerthanO , o , NelowerthanO , SlowerthanO
         # check that all conditions are met
-        if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
-            return he + c + n + o + ne + s + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
+        #if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
+            #return he + c + n + o + ne + s + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
+        if he != -1.e10 and ClowerthanO != -1.e10 and NlowerthanO != -1.e10 and o != -1.e10 and NelowerthanO != -1.e10 and SlowerthanO != -1.e10:
+            return he + o + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
         else:
             return -1.e10
 
@@ -459,26 +462,41 @@ class MCMC:
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
-        
+        # To store the chain....
+        chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
+        f = open(chain_file, "w")
+        f.close()
         count = 1
-        for posn, lnp, state in sampler.sample( pos, iterations=20, storechain=False ):
+        for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             print "COUNT", count
             if count % 1 == 0:
+                f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p in posn[k]: strout += "{:8.3f} ".format( p )
-                    strout += "{:20.3f}".format( lnp[k] )
+                    for p in pos[k]: strout += "{:8.3f} ".format( p )
+                    strout += "{:20.3f}".format( prob[k] )
                     print strout
+                    f.write(strout+"\n")
+                f.close()
             count += 1
-        
         # best model
         wh = np.where( prob == prob.max() )[0][0]
         p = pos[ wh, : ]
         print 'Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'
         #print '   density of H =', p[0]
         print '   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]
-        samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
+        # samples has an attribute called chain, which is an array with shape (nwalkers, nruns, ndim)
+        samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
+        # but for now we'll use all the runs:
+        #samples = sampler.chain[:, :, :].reshape((-1, ndim))
         fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
         fig.show()
+        fig.savefig(os.path.abspath(self.dir+"triangle_test.jpg"))
+        # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+        samples[:, ndim-1] = np.exp(samples[:, ndim-1])
+        p_mcmc = map(lambda v: (v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
+        print p_mcmc
+
         
         
