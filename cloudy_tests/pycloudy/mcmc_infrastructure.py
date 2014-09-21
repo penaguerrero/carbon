@@ -304,6 +304,7 @@ class MCMC:
         self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
         self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
         self.initial_Cloudy_conditions = initial_Cloudy_conditions
+        _, _, _, self.true_abunds, _, _, _, _, _, _, _ = initial_Cloudy_conditions # save the true initial abundances
     
     def get_measured_lines(self):
         # get the benchmark measurements
@@ -466,6 +467,17 @@ class MCMC:
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
         f = open(chain_file, "w")
         f.close()
+        # best model
+        wh = np.where( prob == prob.max() )[0][0]
+        p = pos[ wh, : ]
+        f = open(chain_file, "a")
+        f.write('Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'+"\n")
+        f.write('   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]+"\n")
+        f.close()
+        print 'Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'
+        #print '   density of H =', p[0]
+        print '   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]
+
         count = 1
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             print "COUNT", count
@@ -479,20 +491,24 @@ class MCMC:
                     f.write(strout+"\n")
                 f.close()
             count += 1
-        # best model
-        wh = np.where( prob == prob.max() )[0][0]
-        p = pos[ wh, : ]
-        print 'Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'
-        #print '   density of H =', p[0]
-        print '   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]
+
         # samples has an attribute called chain, which is an array with shape (nwalkers, nruns, ndim)
         samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
         # but for now we'll use all the runs:
         #samples = sampler.chain[:, :, :].reshape((-1, ndim))
-        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
+        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
+                                      self.true_abunds[4], self.true_abunds[5]])
         fig.savefig(os.path.abspath(self.dir+"triangle_test1.jpg"))
-        fig = triangle.corner(samples)
+        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$"])
         fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
+        fig = triangle.corner(samples, labels=["$He/O$", "$C/O$", "$N/O$", "$O$", "$Ne/O$", "$S/O$"], 
+                              truths=[self.true_abunds[0]-self.true_abunds[3], self.true_abunds[1]-self.true_abunds[3],
+                                      self.true_abunds[2]-self.true_abunds[3], self.true_abunds[3],
+                                      self.true_abunds[4]-self.true_abunds[3], self.true_abunds[5]-self.true_abunds[3]])
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios1.jpg"))
+        fig = triangle.corner(samples, labels=["$He/O$", "$C/O$", "$N/O$", "$O$", "$Ne/O$", "$S/O$"])
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
