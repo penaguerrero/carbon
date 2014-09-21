@@ -71,18 +71,21 @@ p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
 pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 steps to be "burn-in" type
 
+# To store the chain....
+f = open("line_chain.dat", "w")
+f.close()
 count = 1
-
-for posn, prob, state in sampler.sample( pos, iterations=20, storechain=False ):
-    
+for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
     print "COUNT", count
-    
     if count % 1 == 0:
+        f = open("line_chain.dat", "a")
         for k in range( posn.shape[0] ):
             strout = ""
             for p in pos[k]: strout += "{:8.3f} ".format( p )
             strout += "{:20.3f}".format( prob[k] )
             print strout
+            f.write(strout+"\n")
+        f.close()
     count += 1
 
 sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
@@ -106,7 +109,12 @@ for p in pos:
     plt.plot( x, line_eq(p, x), "r", alpha=0.1 )
 plt.show()
 
-samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
-fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
+samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
+fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
 fig.show()
+fig.savefig("triangle_test.jpg")
 
+# Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+samples[:, 1] = np.exp(samples[:, 1])
+m_mcmc, b_mcmc = map(lambda v: (v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+print 'm_mcmc, b_mcmc:', m_mcmc, b_mcmc
