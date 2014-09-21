@@ -495,9 +495,11 @@ class MCMC:
         fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
-        p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
         print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
-        print p_mcmc
+        print p_mcmc1
+        p_mcmc2 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        print p_mcmc2
 
         
         
