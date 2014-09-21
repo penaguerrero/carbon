@@ -60,7 +60,7 @@ pos = [np.random.rand(ndim) * 30. - 15. for i in xrange(nwalkers)]
 sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob, args=[x, y+dy, e] )
 
 pos, lnp, rstate = sampler.run_mcmc( pos, nruns )
-
+'''
 f = open( "chain.dat", "wb" )
 f.write( "# Omega Centauri MCMC\n"
     + "# walkers: {:}\n".format( nwalkers )
@@ -68,7 +68,6 @@ f.write( "# Omega Centauri MCMC\n"
     + "# runs: {:}\n".format( nruns )
     + "# " + "-" * 77 + "\n" );
 f.close()
-
 # for i in range( nwalkers ):
 #     p = pos[i]
 #     fmt_model = "{:6.3f}  {:6.3f}  ".format( p[0], p[1] ) \
@@ -78,19 +77,22 @@ f.close()
 #     f = open( "chain.dat", "ab" )
 #     f.write( fmt_model )
 #     f.close()
-
+'''
+# To store the chain....
+f = open("mchammer_chain.dat", "w")
+f.close()
 count = 1
-
-for posn, lnp, state in sampler.sample( pos, iterations=20, storechain=False ):
-    
+for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
     print "COUNT", count
-    
     if count % 1 == 0:
+        f = open("mchammer_chain.dat", "a")
         for k in range( posn.shape[0] ):
             strout = ""
-            for p in posn[k]: strout += "{:8.3f} ".format( p )
-            strout += "{:20.3f}".format( lnp[k] )
+            for p in pos[k]: strout += "{:8.3f} ".format( p )
+            strout += "{:20.3f}".format( prob[k] )
             print strout
+            f.write(strout+"\n")
+        f.close()
     count += 1
 
 
