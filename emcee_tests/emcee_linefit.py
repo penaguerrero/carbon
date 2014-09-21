@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import emcee
+import triangle
 import scipy.optimize as op
 
 '''
@@ -104,4 +105,8 @@ plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
 for p in pos:
     plt.plot( x, line_eq(p, x), "r", alpha=0.1 )
 plt.show()
+
+samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
+fig = triangle.corner(samples)#, labels=["$m$", "$b$", "$\ln\,f$"], truths=[m_true, b_true, np.log(f_true)])
+fig.show()
 
