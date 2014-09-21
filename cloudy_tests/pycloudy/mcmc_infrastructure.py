@@ -425,14 +425,19 @@ class MCMC:
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
         he = lntophat(He, 9.5, 11.0) 
         c = lntophat(C, 6.0, 8.5)
-        n = lntophat(N, 7.0, 8.8) 
+        n = lntophat(N, 6.0, 8.8) 
         o = lntophat(O, 7.2, 8.9) 
-        ne = lntophat(Ne, 7.0, 8.8)  
-        s = lntophat(S, 4.0, 7.2) 
+        ne = lntophat(Ne, 7.0, 8.7)  
+        s = lntophat(S, 4.0, 7.0) 
+        # additional constraints
+        ClowerthanO = lntophat(C, 6.0, O)
+        NlowerthanO = lntophat(N, 6.0, O)
+        NelowerthanO = lntophat(Ne, 7.0, O)
+        SlowerthanO = lntophat(S, 4.0, O)
         print 'top hat results:', he , c , n , o , ne , s
         # check that all conditions are met
         if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
-            return he + c + n + o + ne + s 
+            return he + c + n + o + ne + s + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
         else:
             return -1.e10
 
