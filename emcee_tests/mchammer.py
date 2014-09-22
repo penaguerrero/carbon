@@ -113,12 +113,12 @@ plt.show()
 
 # triangle plot
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
-fig1 = triangle.corner(samples, labels=["$a$", "$b$", "$c$", "$d$"], truths=[aa, bb, cc, dd])
-#fig.show()
-fig1.savefig("mchammer_test.jpg")
-fig2 = triangle.corner(samples)
-#fig.show()
-fig2.savefig("mchammer_test2.jpg")
+fig = triangle.corner(samples, labels=["$a$", "$b$", "$c/a$", "$d/a$"], truths=[aa, bb, cc/aa, dd/aa])
+fig.show()
+fig.savefig("mchammer_test.jpg")
+fig = triangle.corner(samples)
+fig.show()
+fig.savefig("mchammer_test2.jpg")
 
 # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
 samples[:, ndim-1] = np.exp(samples[:, ndim-1])
