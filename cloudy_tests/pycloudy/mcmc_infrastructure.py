@@ -28,8 +28,6 @@ def lngauss(x, x0, s):
 
 def lntophat(x, a, b):
     # b has to be grater than a
-    a = np.fabs(a)
-    b = np.fabs(b)
     if a > b:
         bb = a
         aa = b
@@ -42,7 +40,7 @@ def lntophat(x, a, b):
     if (aa < x) and (x < bb):
         return np.log(1/(bb-aa))
     else:
-        return -1.e10
+        return -np.inf#1.e10
 
 class PyCloudy_model:
     def __init__(self, model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, 
@@ -428,6 +426,7 @@ class MCMC:
         '''
         #He, O, C, N, Ne, S = theta
         He, O, CoverO, NoverO, NeoverO, SoverO = theta
+        print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
         he = lntophat(He, 9.5, 11.0) 
@@ -444,18 +443,19 @@ class MCMC:
         #SlowerthanO = lntophat(S, 4.0, O)
         #print 'top hat results:', he , ClowerthanO , NlowerthanO , o , NelowerthanO , SlowerthanO
         # check that all conditions are met
-        if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
+        #if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
+        if he != -np.inf and c != -np.inf and n != -np.inf and o != -np.inf and ne != -np.inf and s != -np.inf:
             return he + c + n + o + ne + s 
         #if he != -1.e10 and ClowerthanO != -1.e10 and NlowerthanO != -1.e10 and o != -1.e10 and NelowerthanO != -1.e10 and SlowerthanO != -1.e10:
         #    return he + o + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
         else:
-            return -1.e10
+            return -np.inf#1.e10
 
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
-        print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
+        #print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
         lp = self.lnpriors(theta)
-        print 'probabilities: ', lp
-        if lp != -1.e10:
+        #print 'probabilities: ', lp
+        if lp != -np.inf:#1.e10:
             return lp + self.lnlikehd(theta, IDobs, Iobs, Iobserr)
         else:
             return lp
@@ -464,20 +464,24 @@ class MCMC:
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
         ndim, nwalkers, nruns = 6, 20, 50
         # initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
-        nll = lambda *args: -self.lnlikehd(*args)
-        result = op.minimize(nll, self.true_abunds, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
-        p0 = [result["x"] + np.random.rand(ndim) for i in range(nwalkers)]
+        #nll = lambda *args: -self.lnlikehd(*args)
+        #result = op.minimize(nll, self.true_abunds, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
+        #p0 = [result["x"] + .1*np.random.rand(ndim) for i in range(nwalkers)]
+        #p0 = [result["x"] + [np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 1.7), 
+        #                     np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7)] for i in range(nwalkers)]
         # initialize positions randomly
-        #p0 = pos = [np.random.rand(ndim) * 10. for i in xrange(nwalkers)]
+        #p0 = [np.random.rand(ndim) for i in xrange(nwalkers)]
         # initialize semi-randomly
+        p0 = [[np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.)] for i in range(nwalkers)]
         #p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
         #p0 = [[np.random.uniform(8., 11.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(4., 8.)] for _ in range(nwalkers)]
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr), threads=8)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))#, threads=8)
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
-        sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
+        #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
         # To store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
+        print chain_file
         f = open(chain_file, "w")
         f.close()
         # best model
@@ -485,7 +489,8 @@ class MCMC:
         p = pos[ wh, : ]
         f = open(chain_file, "a")
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
-        line2 = '   He = %0.2f   C = %0.2f   N = %0.2f   O = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         f.write(line1+"\n")
         f.write(line2)
         f.close()
