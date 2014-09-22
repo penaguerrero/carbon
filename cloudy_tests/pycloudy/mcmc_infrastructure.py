@@ -471,12 +471,13 @@ class MCMC:
         wh = np.where( prob == prob.max() )[0][0]
         p = pos[ wh, : ]
         f = open(chain_file, "a")
-        f.write('Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'+"\n")
-        f.write('   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]+"\n")
+        line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
+        line2 = '   He = %0.2f   C = %0.2f   N = %0.2f   O = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        f.write(line1+"\n")
+        f.write(line2)
         f.close()
-        print 'Values of the', ndim,'dimensions that best fit the data in', nruns, 'runs, are the following:'
-        #print '   density of H =', p[0]
-        print '   abundances of: He =', p[0], ' C =', p[1], ' N =', p[2], 'O =', p[3], 'Ne =', p[4], 'S =', p[5]
+        print line1
+        print line2
 
         count = 1
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
