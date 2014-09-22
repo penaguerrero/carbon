@@ -12,7 +12,7 @@ This script exemplifies how to fit a line to noisy data (where we do not believe
 
 # true parameters for the line
 m = 1.2
-b = 5.5
+b = -0.5
 pp = [m, b]
 
 # the true line
@@ -40,7 +40,7 @@ def lnlike(theta, xobs, yobs, yerrobs):
 # lets say that we knew  0.0 < m < 5.5  and that  0.0 < b < 10.0
 def lnprior(theta):
     m, b = theta
-    if 0.0 < m < 5.5 and 0.0 < b < 10.0:
+    if 0.0 < m < 5.5 and -2.0 < b < 2.0:
         return 0.0
     return -np.inf
 
@@ -62,8 +62,9 @@ ndim, nwalkers, nruns = 2, 100, 50
 # a) a small Gaussian ball around the maximum likelihood result, for which we use optimize
 nll = lambda *args: -lnlike(*args)
 result = op.minimize(nll, [m, b], args=(x, y, yerr))
-#m_ml, b_ml = result["x"]
-pos = [result["x"] + .1*np.random.rand(ndim) for i in range(nwalkers)]
+pos = [result["x"] + np.random.rand(ndim) for i in range(nwalkers)]
+print 'result = ', result
+#pos = [result["x"] + [np.random.uniform(0., 5.), np.random.uniform(-2., 2.)] for i in range(nwalkers)]
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr), threads=8)
 '''
 # b) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
@@ -91,6 +92,7 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
 sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
 
 pos, prob, state = sampler.run_mcmc(pos, nruns)   # do the mcmc which nruns steps
+print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
 #print 'pos=', pos
 #print 'prob=', prob
 #print 'state=', state
@@ -129,4 +131,3 @@ print 'm_mcmc, b_mcmc:', m_mcmc, b_mcmc
 m_mcmc2, b_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
 print 'm_mcmc2, b_mcmc2:', m_mcmc2, b_mcmc2
 
-print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
