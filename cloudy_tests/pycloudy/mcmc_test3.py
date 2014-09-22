@@ -56,7 +56,6 @@ theta.append(abunds[0])
 theta.append(abunds[1])
 for i in range(2, len(abunds)):
     theta.append(abunds[i]-abunds[1])
-    print abunds[i]-abunds[1]
 
 print 'abundances of: He =', abunds[0], ' O =', abunds[1], ' C =', abunds[2], 'N =', abunds[3], 'Ne =', abunds[4], 'S =', abunds[5]
 print 'INITIAL values of the 6 dimensions used in the MCMC:'
