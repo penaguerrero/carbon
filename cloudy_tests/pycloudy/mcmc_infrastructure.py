@@ -11,6 +11,7 @@ import triangle
 from glob import glob
 #from scipy import stats
 from science import spectrum
+import scipy.optimize as op
 
 ''' 
 This script contains all the functions to serve as infrastructure for running a MCMC chain. 
@@ -457,11 +458,18 @@ class MCMC:
     def run_chain(self):
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
         ndim, nwalkers, nruns = 6, 20, 50
-        p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
+        # initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
+        nll = lambda *args: -self.lnlikehd(*args)
+        result = op.minimize(nll, self.true_abunds, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
+        pos = [result["x"] + 10.*np.random.rand(ndim) for i in range(nwalkers)]
+        # initialize positions randomly
+        #p0 = pos = [np.random.rand(ndim) * 10. for i in xrange(nwalkers)]
+        # initialize semi-randomly
+        #p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
         #p0 = [[np.random.uniform(8., 11.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(4., 8.)] for _ in range(nwalkers)]
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
-        #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
+        sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
         # To store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
