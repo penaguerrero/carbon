@@ -476,8 +476,6 @@ class MCMC:
         f.write(line1+"\n")
         f.write(line2)
         f.close()
-        print line1
-        print line2
 
         count = 1
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
@@ -513,6 +511,9 @@ class MCMC:
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+
+        print line1
+        print line2
         print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
         print p_mcmc1
         p_mcmc2 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
