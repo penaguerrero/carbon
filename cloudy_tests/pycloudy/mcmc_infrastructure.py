@@ -28,6 +28,8 @@ def lngauss(x, x0, s):
 
 def lntophat(x, a, b):
     # b has to be grater than a
+    a = np.fabs(a)
+    b = np.fabs(b)
     if a > b:
         bb = a
         aa = b
@@ -338,14 +340,15 @@ class MCMC:
 
     def get_modeled_lines(self, theta):
         # get the Cloudy model
-        He, C, N, O, Ne, S = theta   # convert the list into a value and a dictionary
+        #He, O, C, N, Ne, S = theta   # convert the list into a value and a dictionary
+        He, O, CoverO, NoverO, NeoverO, SoverO = theta
         abunds = {}
         abunds['He'] = He-12.
-        abunds['C'] = C-12.
-        abunds['N'] = N-12.
         abunds['O'] = O-12.
-        abunds['Ne'] = Ne-12.
-        abunds['S'] = S-12.
+        abunds['C'] = CoverO+O-12
+        abunds['N'] = NoverO+O-12-12.
+        abunds['Ne'] = NeoverO+O-12-12.
+        abunds['S'] = SoverO+O-12-12.
         self.model_name, dens, emis_tab, _, stb99_table, age, self.dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
         initiate_PyCmodel = PyCloudy_model(self.model_name, dens, emis_tab, abunds, stb99_table, age, self.dir, verbosity, options, iterations, keep_files)
         cldymod = initiate_PyCmodel.mk_model()
@@ -423,32 +426,33 @@ class MCMC:
         all that MCMC does is draw samples from a probability distribution and you want that to be a probability distribution
         for your parameters. We will use 2 functions: Gaussian and top-hat. 
         '''
-        He, C, N, O, Ne, S = theta
+        #He, O, C, N, Ne, S = theta
+        He, O, CoverO, NoverO, NeoverO, SoverO = theta
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
         he = lntophat(He, 9.5, 11.0) 
-        #c = lntophat(C, 6.0, 8.5)
-        #n = lntophat(N, 6.0, 8.8) 
-        o = lntophat(O, 7.2, 8.9) 
-        #ne = lntophat(Ne, 7.0, 8.7)  
-        #s = lntophat(S, 4.0, 7.0) 
-        #print 'top hat results:', he , c , n , o , ne , s
-        # additional constraints
-        ClowerthanO = lntophat(C, 6.0, O)
-        NlowerthanO = lntophat(N, 6.0, O)
-        NelowerthanO = lntophat(Ne, 7.0, O)
-        SlowerthanO = lntophat(S, 4.0, O)
-        print 'top hat results:', he , ClowerthanO , NlowerthanO , o , NelowerthanO , SlowerthanO
+        o = lntophat(O, 7.1, 8.9) 
+        c = lntophat(CoverO, -1.7, 2.0)#6.0, 8.5)
+        n = lntophat(NoverO, -1.7, 2.0)#6.0, 8.8) 
+        ne = lntophat(NeoverO, -1.7, 2.0)#7.0, 8.7)  
+        s = lntophat(SoverO, -1.7, 2.0)#4.0, 7.0) 
+        print 'top hat results:', he , c , n , o , ne , s
+        # additional constraints for total abundances
+        #ClowerthanO = lntophat(C, 6.0, O)
+        #NlowerthanO = lntophat(N, 6.0, O)
+        #NelowerthanO = lntophat(Ne, 7.0, O)
+        #SlowerthanO = lntophat(S, 4.0, O)
+        #print 'top hat results:', he , ClowerthanO , NlowerthanO , o , NelowerthanO , SlowerthanO
         # check that all conditions are met
-        #if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
-            #return he + c + n + o + ne + s + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
-        if he != -1.e10 and ClowerthanO != -1.e10 and NlowerthanO != -1.e10 and o != -1.e10 and NelowerthanO != -1.e10 and SlowerthanO != -1.e10:
-            return he + o + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
+        if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
+            return he + c + n + o + ne + s 
+        #if he != -1.e10 and ClowerthanO != -1.e10 and NlowerthanO != -1.e10 and o != -1.e10 and NelowerthanO != -1.e10 and SlowerthanO != -1.e10:
+        #    return he + o + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
         else:
             return -1.e10
 
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
-        print 'theta =', theta
+        print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
         lp = self.lnpriors(theta)
         print 'probabilities: ', lp
         if lp != -1.e10:
@@ -462,7 +466,7 @@ class MCMC:
         # initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
         nll = lambda *args: -self.lnlikehd(*args)
         result = op.minimize(nll, self.true_abunds, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
-        pos = [result["x"] + 10.*np.random.rand(ndim) for i in range(nwalkers)]
+        p0 = [result["x"] + np.random.rand(ndim) for i in range(nwalkers)]
         # initialize positions randomly
         #p0 = pos = [np.random.rand(ndim) * 10. for i in xrange(nwalkers)]
         # initialize semi-randomly
@@ -504,18 +508,17 @@ class MCMC:
         samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
         # but for now we'll use all the runs:
         #samples = sampler.chain[:, :, :].reshape((-1, ndim))
-        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$"], 
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
         fig.savefig(os.path.abspath(self.dir+"triangle_test1.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$C$", "$N$", "$O$", "$Ne$", "$S$"])
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
         fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
-        fig = triangle.corner(samples, labels=["$He/O$", "$C/O$", "$N/O$", "$O$", "$Ne/O$", "$S/O$"], 
-                              truths=[self.true_abunds[0]-self.true_abunds[3], self.true_abunds[1]-self.true_abunds[3],
-                                      self.true_abunds[2]-self.true_abunds[3], self.true_abunds[3],
-                                      self.true_abunds[4]-self.true_abunds[3], self.true_abunds[5]-self.true_abunds[3]])
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
+                                      self.true_abunds[4]+self.true_abunds[1], self.true_abunds[5]+self.true_abunds[1]])
         fig.savefig(os.path.abspath(self.dir+"triangle_ratios1.jpg"))
-        fig = triangle.corner(samples, labels=["$He/O$", "$C/O$", "$N/O$", "$O$", "$Ne/O$", "$S/O$"])
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
         fig.savefig(os.path.abspath(self.dir+"triangle_ratios2.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
