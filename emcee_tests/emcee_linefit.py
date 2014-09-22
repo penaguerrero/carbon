@@ -102,8 +102,16 @@ plt.plot( x, y+dy, "ko", alpha=0.5 )   # the "observed" data
 # best model
 wh = np.where( prob == prob.max() )[0][0]
 p = pos[ wh, : ]
-print 'parameters that best fit the data are: [m  b] =', p
+#print 'parameters that best fit the data are: [m  b] =', p
 plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
+line1 ='values of the %i dimensions that best fit the data in %i runs are the following:' % (ndim, nruns)
+line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
+print line1
+print line2
+f = open("line_chain.dat", "a")
+f.write(line1+"\n")
+f.write(line2)
+f.close()
 
 for p in pos:
     plt.plot( x, line_eq(p, x), "r", alpha=0.1 )
