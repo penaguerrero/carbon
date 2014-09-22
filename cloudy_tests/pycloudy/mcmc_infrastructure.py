@@ -12,6 +12,7 @@ from glob import glob
 #from scipy import stats
 from science import spectrum
 import scipy.optimize as op
+import pickle
 
 ''' 
 This script contains all the functions to serve as infrastructure for running a MCMC chain. 
@@ -467,7 +468,7 @@ class MCMC:
         # initialize semi-randomly
         #p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
         #p0 = [[np.random.uniform(8., 11.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(4., 8.)] for _ in range(nwalkers)]
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr), threads=8)
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
@@ -524,7 +525,7 @@ class MCMC:
         print line2
         print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
         print p_mcmc1
-        p_mcmc2 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        p_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
         print p_mcmc2
 
         
