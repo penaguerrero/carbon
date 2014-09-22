@@ -47,18 +47,22 @@ age = 'age=5.0'
 dens = 4. #log cm-3
 #abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 'S' : 6.65 - 12}
 # Abundances of:
-#           He     C      N      O      Ne      S
-abunds = [10.97,  7.12,  7.34,  8.01,  7.72,  6.65]
+#           He     O      C      N      Ne     S
+abunds = [10.97,  8.01, 7.12,  7.34,  7.72,  6.65]
 
 ##################################################################################################################
-print 'Initial values of the 7 dimensions used in the MCMC:'
-print '   density of H =', dens
-#print '   abundances of: He =', abunds['He'], ' C =', abunds['C'], ' N =', abunds['N'], 'O =', abunds['O'], 'Ne =', abunds['Ne'], 'S =', abunds['S']
-print '   abundances of: He =', abunds[0], ' C =', abunds[1], ' N =', abunds[2], 'O =', abunds[3], 'Ne =', abunds[4], 'S =', abunds[5]
-
 theta = []
-for a in abunds:
-    theta.append(a)
+theta.append(abunds[0])
+theta.append(abunds[1])
+for i in range(2, len(abunds)):
+    theta.append(abunds[i]-abunds[1])
+    print abunds[i]-abunds[1]
+
+print 'abundances of: He =', abunds[0], ' O =', abunds[1], ' C =', abunds[2], 'N =', abunds[3], 'Ne =', abunds[4], 'S =', abunds[5]
+print 'INITIAL values of the 6 dimensions used in the MCMC:'
+#print '   density of H =', dens
+#print '   abundances of: He =', abunds['He'], ' C =', abunds['C'], ' N =', abunds['N'], 'O =', abunds['O'], 'Ne =', abunds['Ne'], 'S =', abunds['S']
+print '    He =', theta[0], '   O =', theta[1], '   C/O = ', theta[2], '   N/O = ', theta[3], '   Ne/O = ', theta[4], '   S/O = ', theta[5]
 
 # start the timer to compute the whole running time
 start_time = time.time()
