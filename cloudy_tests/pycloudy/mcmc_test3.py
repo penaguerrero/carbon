@@ -8,7 +8,7 @@ import mcmc_infrastructure as mcmcis
 ##################################################################################################################
 
 # Define initial conditions for Cloudy model
-model_name = 'mcmc_test3'
+model_name = 'mcmc_test_pox4'
 stb99_table = 'table star "constSFR.mod"'
 
 emis_tab = ['H  1  4861',   # must keep this format (as lines appear on Cloudy output)
@@ -48,7 +48,8 @@ dens = 4. #log cm-3
 #abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 'S' : 6.65 - 12}
 # Abundances of:
 #           He     O      C      N      Ne     S
-abunds = [10.97,  8.01, 7.12,  7.34,  7.72,  6.65]
+#abunds = [10.97,  8.01, 7.12,  7.34,  7.72,  6.65]   # mrk960
+abunds = [10.88,  8.00, 7.16,  6.50,  7.26,  6.24]   # pox4
 
 ##################################################################################################################
 theta = []
@@ -73,7 +74,7 @@ mcmcis.find_cloudyexe(cloudyexe_path)
 # Define path where to save the plots
 pypics_path = os.path.abspath('pypics')
 
-object_name = 'mrk960' 
+object_name = 'pox4' 
 manual_measurement = False
 dir = './'
 verb = 3
