@@ -465,8 +465,10 @@ class MCMC:
         #p0 = [result["x"] + [np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 1.7), 
         #                     np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7)] for i in range(nwalkers)]
         # b) with a random addition to the previously know values 
+        print 'THESE ARE THE self.true_abunds:', self.true_abunds
         randadd2point = lambda x: x+np.random.rand(1)
-        p0 = [[randadd2point(x) for x in self.true_abunds] for i in range(nwalkers)] 
+        p0 = [[float(randadd2point(x)) for x in self.true_abunds] for i in range(nwalkers)] 
+        #print 'THIS IS p0:', p0
         # c) initialize positions randomly
         #p0 = [np.random.rand(ndim) for i in xrange(nwalkers)]
         # d) initialize semi-randomly -- with previous knowledge
