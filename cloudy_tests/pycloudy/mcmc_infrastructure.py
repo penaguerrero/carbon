@@ -13,6 +13,7 @@ from glob import glob
 from science import spectrum
 import scipy.optimize as op
 import pickle
+import time
 
 ''' 
 This script contains all the functions to serve as infrastructure for running a MCMC chain. 
@@ -461,6 +462,9 @@ class MCMC:
             return lp
         
     def run_chain(self):
+        # start the timer to compute the whole running time
+        start_time = time.time()
+        
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
         ndim, nwalkers, nruns = 6, 20, 50
         # Initialization of theta through different methods:
@@ -486,6 +490,8 @@ class MCMC:
         print 'The chain was saved in:', chain_file
         f = open(chain_file, "w")
         f.close()
+        time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
+        print time2run
         # best model
         wh = np.where( prob == prob.max() )[0][0]
         p = pos[ wh, : ]
@@ -493,6 +499,7 @@ class MCMC:
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        f.write(time2run+"\n")
         f.write(line1+"\n")
         f.write(line2)
         f.close()
