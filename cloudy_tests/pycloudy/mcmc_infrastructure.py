@@ -481,7 +481,7 @@ class MCMC:
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
         # To store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
-        print chain_file
+        print 'The chain was saved in:', chain_file
         f = open(chain_file, "w")
         f.close()
         # best model
