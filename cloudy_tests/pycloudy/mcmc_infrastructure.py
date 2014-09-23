@@ -522,9 +522,7 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
                                       self.true_abunds[4]+self.true_abunds[1], self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios1.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
