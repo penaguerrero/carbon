@@ -55,10 +55,10 @@ def lnprob(theta, x, y, yerr):
 start_time = time.time()
 
 # now set stuff for the mcmc, start with number of dimensions, walkers, and number of runs 
-ndim, nwalkers, nruns = 2, 100, 50
+ndim, nwalkers, nruns = 2, 100, 60
 # now we need a starting point for each walker, a ndim-vector to get a nwalkers-by-ndim array.
 # there are 2 ways to initialize the walkers:
-
+'''
 # a) a small Gaussian ball around the maximum likelihood result, for which we use optimize
 nll = lambda *args: -lnlike(*args)
 result = op.minimize(nll, [m, b], args=(x, y, yerr))
@@ -67,7 +67,17 @@ print 'result = ', result
 #pos = [result["x"] + [np.random.uniform(0., 5.), np.random.uniform(-2., 2.)] for i in range(nwalkers)]
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr), threads=8)
 '''
-# b) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
+# b) a small Gaussian around the known value point by point
+def gauss_xy(x, y, n):
+    xnew = float(np.random.rand(n) + x)  # generate random increases in the x coordinates
+    s = float(10*np.random.rand(n)/5)   # generate random sigma values
+    ynew = float(np.exp(-0.5*((xnew-x)/s)**2) + y)
+    return np.array([xnew, ynew])
+pos = [gauss_xy(m, b, 1) for i in range(nwalkers)] 
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr), threads=8)
+
+'''
+# c) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
 p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
 pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 steps to be "burn-in" type
@@ -121,6 +131,9 @@ plt.show()
 
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
 fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
+fig.show()
+fig.savefig("triangle_test_withTruths.jpg")
+fig = triangle.corner(samples, labels=["$m$", "$b$"])
 fig.show()
 fig.savefig("triangle_test.jpg")
 
