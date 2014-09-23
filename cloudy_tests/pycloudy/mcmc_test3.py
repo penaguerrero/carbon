@@ -6,9 +6,17 @@ import time
 import mcmc_infrastructure as mcmcis
 
 ##################################################################################################################
+# name of the object
+#                  0            1           2          3         4        5         6         7         8
+objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
+               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+#                 9           10         11         12         13       14        15         16         17
+object_number = 5
+
+object_name = objects_list[object_number] 
 
 # Define initial conditions for Cloudy model
-model_name = 'mcmc_test_pox4'
+
 stb99_table = 'table star "constSFR.mod"'
 
 emis_tab = ['H  1  4861',   # must keep this format (as lines appear on Cloudy output)
@@ -45,13 +53,35 @@ options = ('no molecules',
 
 age = 'age=5.0'
 dens = 4. #log cm-3
-#abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 'S' : 6.65 - 12}
-# Abundances of:
-#           He     O      C      N      Ne     S
-#abunds = [10.97,  8.01, 7.12,  7.34,  7.72,  6.65]   # mrk960
-abunds = [10.88,  8.00, 7.16,  6.50,  7.26,  6.24]   # pox4
 
 ##################################################################################################################
+
+model_name = 'mcmc_test_'+object_name
+
+#abunds = {'He' : 10.97 - 12, 'C' : 7.12 - 12, 'N' : 7.34 - 12, 'O' : 8.01 - 12, 'Ne' : 7.72 - 12, 'S' : 6.65 - 12}
+# Abundances of:
+#                  He     O      C      N      Ne     S
+abunds_lists = [[10.94,  8.20,  7.32,  7.07,  7.40,  6.42]   # 0 = iiizw107
+                [10.91,  8.31,  8.30,  7.51,  7.54,  6.55]   # 1 = iras08339
+                [10.97,  8.20,  8.52,  6.77,  7.72,  6.50]   # 2 = mrk1087 ** does not have a "true" initial S value
+                [10.79,  7.92,  7.84,  7.26,  7.81,  6.92]   # 3 = mrk1199
+                [10.91,  8.07,  6.82,  6.71,  7.35,  6.44]   # 4 = mrk5
+                [10.97,  8.01,  7.12,  7.34,  7.72,  6.65]   # 5 = mrk960
+                [10.94,  7.82,  6.94,  6.60,  7.23,  6.36]   # 6 = ngc1741
+                [10.88,  8.00,  7.16,  6.50,  7.26,  6.24]   # 7 = pox4
+                [10.94,  7.92,  6.59,  6.84,  7.24,  6.29]   # 8 = sbs0218                
+                [10.88,  8.07,  7.38,  6.16,  7.30,  6.34]   # 9 = sbs0948
+                [10.94,  7.93,  7.20,  6.48,  6.38,  6.29]   # 10 = sbs0926
+                [10.88,  7.97,  7.33,  6.59,  7.33,  6.21]   # 11 = sbs1054
+                [10.94,  8.17,  7.21,  6.52,  7.35,  6.29]   # 12 = sbs1319
+                [10.95,  7.83,  6.32,  6.27,  7.00,  6.18]   # 13 = tol1457
+                [10.93,  8.64,  8.75,  7.80,  7.84,  6.97]   # 14 = tol9
+                [10.97,  8.32,  8.11,  7.71,  7.90,  7.00]   # 15 = arp252
+                [11.09,  8.55,  7.81,  7.44,  7.66,  6.69]   # 16 = iras08208
+                [10.77,  7.56,  6.00,  6.04,  6.67,  5.89]   # 17 = sbs1415
+                ]
+abunds = abunds_lists[objecr_number]
+
 theta = []
 theta.append(abunds[0])
 theta.append(abunds[1])
@@ -74,7 +104,6 @@ mcmcis.find_cloudyexe(cloudyexe_path)
 # Define path where to save the plots
 pypics_path = os.path.abspath('pypics')
 
-object_name = 'pox4' 
 manual_measurement = False
 dir = './'
 verb = 3
