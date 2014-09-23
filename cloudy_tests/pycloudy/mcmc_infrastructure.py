@@ -437,20 +437,11 @@ class MCMC:
         ne = lntophat(NeoverO, -1.7, 2.0)#7.0, 8.7)  
         s = lntophat(SoverO, -1.7, 2.0)#4.0, 7.0) 
         print 'top hat results:', he , c , n , o , ne , s
-        # additional constraints for total abundances
-        #ClowerthanO = lntophat(C, 6.0, O)
-        #NlowerthanO = lntophat(N, 6.0, O)
-        #NelowerthanO = lntophat(Ne, 7.0, O)
-        #SlowerthanO = lntophat(S, 4.0, O)
-        #print 'top hat results:', he , ClowerthanO , NlowerthanO , o , NelowerthanO , SlowerthanO
         # check that all conditions are met
-        #if he != -1.e10 and c != -1.e10 and n != -1.e10 and o != -1.e10 and ne != -1.e10 and s != -1.e10:
         if he != -np.inf and c != -np.inf and n != -np.inf and o != -np.inf and ne != -np.inf and s != -np.inf:
             return he + c + n + o + ne + s 
-        #if he != -1.e10 and ClowerthanO != -1.e10 and NlowerthanO != -1.e10 and o != -1.e10 and NelowerthanO != -1.e10 and SlowerthanO != -1.e10:
-        #    return he + o + ClowerthanO + NlowerthanO + NelowerthanO + SlowerthanO
         else:
-            return -np.inf#1.e10
+            return -np.inf
 
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
         #print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
