@@ -430,7 +430,7 @@ class MCMC:
         print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
-        he = lntophat(He, 9.5, 11.0) 
+        he = lntophat(He, 9.5, 12.0) 
         o = lntophat(O, 7.1, 8.9) 
         c = lntophat(CoverO, -1.7, 2.0)#6.0, 8.5)
         n = lntophat(NoverO, -1.7, 2.0)#6.0, 8.8) 
@@ -475,7 +475,7 @@ class MCMC:
         #                     np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7)] for i in range(nwalkers)]
         # b) with a random addition to the previously know values 
         randadd2point = lambda x: x+np.random.rand(1)
-        p0 = [[randadd2point(x) for x in range(self.true_abunds)] for i in range(nwalkers)] 
+        p0 = [[randadd2point(x) for x in self.true_abunds] for i in range(nwalkers)] 
         # c) initialize positions randomly
         #p0 = [np.random.rand(ndim) for i in xrange(nwalkers)]
         # d) initialize semi-randomly -- with previous knowledge
