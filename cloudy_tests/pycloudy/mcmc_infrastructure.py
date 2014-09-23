@@ -463,18 +463,20 @@ class MCMC:
     def run_chain(self):
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
         ndim, nwalkers, nruns = 6, 20, 50
-        # initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
-        #nll = lambda *args: -self.lnlikehd(*args)
+        # Initialization of theta through different methods:
+        # a) initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
+        #nll = lambda *args: self.lnlikehd(*args)
         #result = op.minimize(nll, self.true_abunds, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))
-        #p0 = [result["x"] + .1*np.random.rand(ndim) for i in range(nwalkers)]
         #p0 = [result["x"] + [np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 1.7), 
         #                     np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7), np.random.uniform(-1.7, 1.7)] for i in range(nwalkers)]
-        # initialize positions randomly
+        # b) with a random addition to the previously know values 
+        randadd2point = lambda x: x+np.random.rand(1)
+        p0 = [[randadd2point(x) for x in range(self.true_abunds)] for i in range(nwalkers)] 
+        # c) initialize positions randomly
         #p0 = [np.random.rand(ndim) for i in xrange(nwalkers)]
-        # initialize semi-randomly
-        p0 = [[np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.)] for i in range(nwalkers)]
+        # d) initialize semi-randomly -- with previous knowledge
+        #p0 = [[np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.)] for i in range(nwalkers)]
         #p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
-        #p0 = [[np.random.uniform(8., 11.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(6., 9.),np.random.uniform(4., 8.)] for _ in range(nwalkers)]
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))#, threads=8)
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
@@ -516,13 +518,13 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+"triangle_test1.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_test_initializationb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
         fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
                                       self.true_abunds[4]+self.true_abunds[1], self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios_initializationb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
