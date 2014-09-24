@@ -307,7 +307,8 @@ class MCMC:
         self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
         self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
         self.initial_Cloudy_conditions = initial_Cloudy_conditions
-        _, _, _, self.true_abunds, _, _, _, _, _, _, _ = initial_Cloudy_conditions # save the true initial abundances
+        _, _, emis_tab, self.true_abunds, _, _, _, _, _, _, _ = initial_Cloudy_conditions # save the true initial abundances
+        self.lines4Chi2calculation = len(emis_tab)
     
     def get_measured_lines(self):
         # get the benchmark measurements
@@ -379,10 +380,10 @@ class MCMC:
             mod_Isrel2Hbeta.append(float(cols[2]))
         mod.close()
         kk = string.split(mod_TO3, sep='=')
-        mod_TO3 = kk[1]   # NOT BEING USED FOR THE MOMENT
+        mod_TO3 = kk[1] 
         kk = string.split(mod_TO2, sep='=')
-        mod_TO2 = kk[1]   # NOT BEING USED FOR THE MOMENT
-        #print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
+        mod_TO2 = kk[1]  
+        print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
         modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
         # Do the cleaning
         final_default_extensions_list = ['.in', '.out', '.txt']
@@ -484,7 +485,11 @@ class MCMC:
         f = open(chain_file, "w")
         f.close()
         time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
+        temps = 'model_Te_O3 = %0.2f     model_Te_O2 = %0.2f' % (self.mod_TO3, self.mod_TO2)
+        lines4chi = 'Used %i lines to determine Chi2.' % self.lines4Chi2calculation
         print time2run
+        print temps
+        print lines4chi
         # best model
         wh = np.where( prob == prob.max() )[0][0]
         p = pos[ wh, : ]
@@ -494,7 +499,9 @@ class MCMC:
         line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         f.write(time2run+"\n")
         f.write(line1+"\n")
-        f.write(line2)
+        f.write(line2+"\n")
+        f.write(temps+"\n")
+        f.write(lines4chi+"\n")
         f.close()
 
         count = 1
@@ -518,13 +525,14 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+"triangle_test_initializationb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_test_initializationb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
         fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
-                                      self.true_abunds[4]+self.true_abunds[1], self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios_initializationb.jpg"))
+                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
+                                      self.true_abunds[5]+self.true_abunds[1]])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_initializationb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
