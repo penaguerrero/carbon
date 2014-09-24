@@ -55,7 +55,7 @@ def lnprob(theta, x, y, yerr):
 start_time = time.time()
 
 # now set stuff for the mcmc, start with number of dimensions, walkers, and number of runs 
-ndim, nwalkers, nruns = 2, 100, 60
+ndim, nwalkers, nruns = 2, 100, 600
 # now we need a starting point for each walker, a ndim-vector to get a nwalkers-by-ndim array.
 # there are 2 ways to initialize the walkers:
 '''
@@ -74,7 +74,7 @@ def gauss_xy(x, y, n):
     ynew = float(np.exp(-0.5*((xnew-x)/s)**2) + y)
     return np.array([xnew, ynew])
 pos = [gauss_xy(m, b, 1) for i in range(nwalkers)] 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr), threads=8)
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr))#, threads=8)
 
 '''
 # c) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
