@@ -56,7 +56,7 @@ plt.plot( x, y, "b", lw=5, alpha=0.4 )
 plt.plot( x, y + dy, "ko", alpha=0.5 )
 
 # mcmc
-ndim, nwalkers, nruns = 4, 50, 100
+ndim, nwalkers, nruns = 4, 100, 100
 pos = [np.random.rand(ndim) * 30. - 15. for i in xrange(nwalkers)]
 sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob, args=[x, y+dy, e] )
 
