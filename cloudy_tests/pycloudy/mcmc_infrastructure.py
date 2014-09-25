@@ -380,9 +380,9 @@ class MCMC:
             mod_Isrel2Hbeta.append(float(cols[2]))
         mod.close()
         kk = string.split(mod_TO3, sep='=')
-        mod_TO3 = kk[1] 
+        self.mod_TO3 = kk[1] 
         kk = string.split(mod_TO2, sep='=')
-        mod_TO2 = kk[1]  
+        self.mod_TO2 = kk[1]  
         print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
         modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
         # Do the cleaning
