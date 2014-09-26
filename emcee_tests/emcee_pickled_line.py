@@ -30,7 +30,9 @@ dy = [np.random.uniform(-2., 3.) for _ in range(n)]
 yerr = np.array([np.random.uniform(-2., 2.) for _ in range(n)])   # error in the scattered values
 
 # likelihood function
-def lnlike(theta, xobs, yobs, yerrobs):
+def lnlike(theta, xobs, yobs, yerrobs, some_list):
+    kk = ['k', 'k']
+    some_list.append(kk)
     model = line_eq(theta, xobs)
     chi2 = (yobs - model)**2 / yerrobs**2
     chi2 = chi2.sum()
@@ -45,11 +47,13 @@ def lnprior(theta):
     return -np.inf
 
 # then the probability function will be
-def lnprob(theta, x, y, yerr):
+def lnprob(theta, x, y, yerr, some_list):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta, x, y, yerr)
+    return lp + lnlike(theta, x, y, yerr, some_list)
+
+some_list = []
 
 # start the timer to compute the whole running time
 start_time = time.time()
@@ -74,7 +78,7 @@ def gauss_xy(x, y, n):
     ynew = float(np.exp(-0.5*((xnew-x)/s)**2) + y)
     return np.array([xnew, ynew])
 pos = [gauss_xy(m, b, 1) for i in range(nwalkers)] 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr))#, threads=8)
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr, some_list))#, threads=8)
 
 '''
 # c) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
@@ -86,6 +90,7 @@ pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 ste
 f = open("line_chain.dat", "w")
 f.close()
 count = 1
+print 'len(pos)=', len(pos), '  len(some_list)=', len(some_list), raw_input()
 for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
     print "COUNT", count
     if count % 1 == 0:
@@ -94,7 +99,8 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             strout = ""
             for p in pos[k]: strout += "{:8.3f} ".format( p )
             strout += "{:20.3f}".format( prob[k] )
-            print strout
+            strout += "{:>20}".format( some_list[k] )
+            print strout, k
             f.write(strout+"\n")
         f.close()
     count += 1
@@ -116,15 +122,6 @@ wh = np.where( prob == prob.max() )[0][0]
 p = pos[ wh, : ]
 #print 'parameters that best fit the data are: [m  b] =', p
 plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
-line1 ='values of the %i dimensions that best fit the data in %i runs are the following:' % (ndim, nruns)
-line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
-print line1
-print line2
-f = open("line_chain.dat", "a")
-f.write(line1+"\n")
-f.write(line2)
-f.close()
-
 for p in pos:
     plt.plot( x, line_eq(p, x), "r", alpha=0.1 )
 plt.show()
@@ -136,6 +133,17 @@ fig.savefig("triangle_test_withTruths.jpg")
 fig = triangle.corner(samples, labels=["$m$", "$b$"])
 fig.show()
 fig.savefig("triangle_test.jpg")
+
+
+
+line1 ='values of the %i dimensions that best fit the data in %i runs are the following:' % (ndim, nruns)
+line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
+print line1
+print line2
+f = open("line_chain.dat", "a")
+f.write(line1+"\n")
+f.write(line2)
+f.close()
 
 # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
 samples[:, 1] = np.exp(samples[:, 1])
