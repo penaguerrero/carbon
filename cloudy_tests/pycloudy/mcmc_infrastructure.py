@@ -308,6 +308,7 @@ class MCMC:
         self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
         self.initial_Cloudy_conditions = initial_Cloudy_conditions
         _, _, emis_tab, self.true_abunds, _, _, _, _, _, _, _ = initial_Cloudy_conditions # save the true initial abundances
+        self.mod_temps = []   # list where all [TO3, TO2] lists will be stored
         self.lines4Chi2calculation = len(emis_tab)
     
     def get_measured_lines(self):
@@ -380,10 +381,11 @@ class MCMC:
             mod_Isrel2Hbeta.append(float(cols[2]))
         mod.close()
         kk = string.split(mod_TO3, sep='=')
-        self.mod_TO3 = kk[1] 
+        mod_TO3 = kk[1] 
         kk = string.split(mod_TO2, sep='=')
         self.mod_TO2 = kk[1]  
-        print 'model_Te_O3 =', self.mod_TO3, 'model_Te_O2 =', self.mod_TO2
+        print 'model_Te_O3 =', mod_TO3, 'model_Te_O2 =', mod_TO2
+        modeled_Otemperatures = [mod_TO3, mod_TO2]
         modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
         # Do the cleaning
         final_default_extensions_list = ['.in', '.out', '.txt']
@@ -391,7 +393,7 @@ class MCMC:
             file2beerased = glob(self.dir+self.model_name+'*'+fdf)
             #print file2beerased[0]
             os.remove(file2beerased[0])
-        return modeled_lines
+        return modeled_Otemperatures, modeled_lines
         
     def find_Itheo_in_Iobs(self, IDobs, Iobs, Iobserr, IDmod, Imod):
         new_Iobs = []
@@ -410,7 +412,8 @@ class MCMC:
         return new_Iobs, new_Iobserr, new_Imod
 
     def lnlikehd(self, theta, IDobs, Iobs, Iobserr):
-        modeled_lines = self.get_modeled_lines(theta)
+        modeled_Otemperatures, modeled_lines = self.get_modeled_lines(theta)
+        self.mod_temps.append(modeled_Otemperatures)
         mod_lineIDs, ions, mod_Isrel2Hbeta = modeled_lines
         new_Iobs, new_Iobserr, new_Imod = self.find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, mod_lineIDs, mod_Isrel2Hbeta)
         model = np.array(new_Imod)
@@ -445,10 +448,9 @@ class MCMC:
             return -np.inf
 
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
-        #print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
         lp = self.lnpriors(theta)
-        #print 'probabilities: ', lp
-        if lp != -np.inf:#1.e10:
+        if lp != -np.inf:
+            print '--->  len(self.mod_temps) =', len(self.mod_temps)
             return lp + self.lnlikehd(theta, IDobs, Iobs, Iobserr)
         else:
             return lp
@@ -485,14 +487,15 @@ class MCMC:
         f = open(chain_file, "w")
         f.close()
         time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
-        temps = 'model_Te_O3 = %0.2f     model_Te_O2 = %0.2f' % (self.mod_TO3, self.mod_TO2)
         lines4chi = 'Used %i lines to determine Chi2.' % self.lines4Chi2calculation
-        print time2run
-        print temps
-        print lines4chi
         # best model
         wh = np.where( prob == prob.max() )[0][0]
         p = pos[ wh, : ]
+        TOs = self.mod_temps[wh]
+        temps = 'model_Te_O3 = %s     model_Te_O2 = %s' % (TOs[0], TOs[1])
+        print time2run
+        print temps
+        print lines4chi
         f = open(chain_file, "a")
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
@@ -511,7 +514,7 @@ class MCMC:
                 f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p in pos[k]: strout += "{:8.3f} ".format( p )
+                    for p, Ts in zip(pos[k], self.mod_temps): strout += "{:8.3f} {:<12}".format( p, Ts )
                     strout += "{:20.3f}".format( prob[k] )
                     print strout
                     f.write(strout+"\n")
