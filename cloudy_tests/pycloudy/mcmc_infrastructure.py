@@ -500,15 +500,9 @@ class MCMC:
         fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_initializationb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
-        p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-
-        print line1
-        print line2
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
-        print percentiles
-        print p_mcmc1
+        p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
         p_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-        print p_mcmc2
 
         # Store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
@@ -542,6 +536,11 @@ class MCMC:
         count = 1
         
         print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
+        print line1
+        print line2
+        print percentiles
+        print p_mcmc1
+        print p_mcmc2
         
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             print "COUNT", count
