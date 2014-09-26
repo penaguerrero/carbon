@@ -481,7 +481,36 @@ class MCMC:
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
-        # To store the chain....
+
+        # PLOTS
+        # samples has an attribute called chain, which is an array with shape (nwalkers, nruns, ndim)
+        samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
+        # but for now we'll use all the runs:
+        #samples = sampler.chain[:, :, :].reshape((-1, ndim))
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
+                                      self.true_abunds[4], self.true_abunds[5]])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_test_initializationb.jpg"))
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
+        fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
+                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
+                                      self.true_abunds[5]+self.true_abunds[1]])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_initializationb.jpg"))
+        # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+        samples[:, ndim-1] = np.exp(samples[:, ndim-1])
+        p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+
+        print line1
+        print line2
+        percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
+        print percentiles
+        print p_mcmc1
+        p_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+        print p_mcmc2
+
+        # Store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
         print 'The chain was saved in:', chain_file
         f = open(chain_file, "w")
@@ -505,47 +534,27 @@ class MCMC:
         f.write(line2+"\n")
         f.write(temps+"\n")
         f.write(lines4chi+"\n")
+        f.write(percentiles+"\n")
+        f.write(p_mcmc2+"\n")
+        f.write(p_mcmc1+"\n")
         f.close()
 
         count = 1
+        
+        print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
+        
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             print "COUNT", count
             if count % 1 == 0:
                 f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p, Ts in zip(pos[k], self.mod_temps): strout += "{:8.3f} {:<12}".format( p, Ts )
+                    for p in pos[k]: strout += "{:8.3f} {:<12}".format( p, Ts )
+                    strout += "{:>10}".format( self.mod_temps[k] )
                     strout += "{:20.3f}".format( prob[k] )
                     print strout
                     f.write(strout+"\n")
                 f.close()
             count += 1
-
-        # samples has an attribute called chain, which is an array with shape (nwalkers, nruns, ndim)
-        samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
-        # but for now we'll use all the runs:
-        #samples = sampler.chain[:, :, :].reshape((-1, ndim))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
-                              truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
-                                      self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_test_initializationb.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
-                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
-                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
-                                      self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_initializationb.jpg"))
-        # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
-        samples[:, ndim-1] = np.exp(samples[:, ndim-1])
-        p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-
-        print line1
-        print line2
-        print 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
-        print p_mcmc1
-        p_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-        print p_mcmc2
-
         
         
