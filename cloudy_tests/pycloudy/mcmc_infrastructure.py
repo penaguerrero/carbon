@@ -460,7 +460,7 @@ class MCMC:
         start_time = time.time()
         
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
-        ndim, nwalkers, nruns = 6, 30, 40
+        ndim, nwalkers, nruns = 6, 20, 60
         # Initialization of theta through different methods:
         # a) initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
         #nll = lambda *args: self.lnlikehd(*args)
@@ -490,14 +490,14 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_test_initializationb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test3_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_test2.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios_test3.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
                                       self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
                                       self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_initializationb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test3_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
@@ -529,8 +529,8 @@ class MCMC:
         f.write(temps+"\n")
         f.write(lines4chi+"\n")
         f.write(percentiles+"\n")
-        f.write(p_mcmc2+"\n")
-        f.write(p_mcmc1+"\n")
+        f.write(repr(p_mcmc2)+"\n")
+        f.write(repr(p_mcmc1)+"\n")
         f.close()
 
         count = 1
