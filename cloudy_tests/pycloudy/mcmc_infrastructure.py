@@ -492,12 +492,14 @@ class MCMC:
                                       self.true_abunds[4], self.true_abunds[5]])
         fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test3_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios_test3.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2_test3_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
                                       self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
                                       self.true_abunds[5]+self.true_abunds[1]])
         fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test3_initb.jpg"))
+        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test3_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
@@ -548,7 +550,7 @@ class MCMC:
                 f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p in pos[k]: strout += "{:8.3f} {:<12}".format( p )
+                    for p in pos[k]: strout += "{:8.3f} ".format( p )
                     strout += "{:>10}".format( self.mod_temps[k] )
                     strout += "{:20.3f}".format( prob[k] )
                     print strout
