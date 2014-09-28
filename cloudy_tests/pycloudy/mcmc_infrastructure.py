@@ -548,7 +548,7 @@ class MCMC:
                 f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p in pos[k]: strout += "{:8.3f} {:<12}".format( p, Ts )
+                    for p in pos[k]: strout += "{:8.3f} {:<12}".format( p )
                     strout += "{:>10}".format( self.mod_temps[k] )
                     strout += "{:20.3f}".format( prob[k] )
                     print strout
