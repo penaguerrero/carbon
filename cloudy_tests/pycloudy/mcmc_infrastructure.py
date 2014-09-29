@@ -522,13 +522,15 @@ class MCMC:
         print temps
         print lines4chi
         f = open(chain_file, "a")
+        trueabs = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
-        line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2], self.true_abunds[3], self.true_abunds[4], self.true_abunds[5])
         f.write(time2run+"\n")
+        f.write(trueabs+"\n")
         f.write(line1+"\n")
         f.write(line2+"\n")
-        f.write(temps+"\n")
+        f.write(temps)
         f.write(lines4chi+"\n")
         f.write(percentiles+"\n")
         f.write(repr(p_mcmc2)+"\n")
@@ -553,6 +555,7 @@ class MCMC:
         
         print '\n'
         #print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
+        print trueabs
         print line1
         print line2
         print percentiles
