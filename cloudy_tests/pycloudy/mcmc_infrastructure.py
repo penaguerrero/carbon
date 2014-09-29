@@ -519,15 +519,24 @@ class MCMC:
         temps = 'model_Te_O3 = %s     model_Te_O2 = %s' % (TOs[0], TOs[1])
         f = open(chain_file, "a")
         trueabs0 = 'Values of the BENCHMARK abundances:\n'
-        trueabs = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        trueabs1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2], 
+                                                                                                        self.true_abunds[3], self.true_abunds[4], self.true_abunds[5])
+        trueabs2= 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1],
+                                                                                               self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
+                                                                                               self.true_abunds[5]+self.true_abunds[1])
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
-        line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2], self.true_abunds[3], self.true_abunds[4], self.true_abunds[5])
+        line2 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+        line3 = 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2]+self.true_abunds[1], 
+                                                                                             p[3]+self.true_abunds[1], p[4]+self.true_abunds[1],
+                                                                                             p[5]+self.true_abunds[1])
         f.write(time2run+"\n")
         f.write(trueabs0)
-        f.write(trueabs+"\n")
+        f.write(trueabs1+"\n")
+        f.write(trueabs2+"\n")
         f.write(line1+"\n")
         f.write(line2+"\n")
+        f.write(line3+"\n")
         f.write(temps)
         f.write(lines4chi+"\n")
         f.write(percentiles+"\n")
@@ -558,9 +567,11 @@ class MCMC:
         print temps
         print lines4chi
         print trueabs0
-        print trueabs
+        print trueabs1
+        print trueabs2
         print line1
         print line2
+        print line3
         print percentiles
         print p_mcmc1
         print p_mcmc2
