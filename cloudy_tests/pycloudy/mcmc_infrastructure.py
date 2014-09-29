@@ -537,13 +537,6 @@ class MCMC:
 
         count = 1
         
-        print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
-        print line1
-        print line2
-        print percentiles
-        print p_mcmc1
-        print p_mcmc2
-        
         for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             print "COUNT", count
             if count % 1 == 0:
@@ -558,4 +551,11 @@ class MCMC:
                 f.close()
             count += 1
         
+        print '\n'
+        #print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
+        print line1
+        print line2
+        print percentiles
+        print p_mcmc1
+        print p_mcmc2
         
