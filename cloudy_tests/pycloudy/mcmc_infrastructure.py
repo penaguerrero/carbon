@@ -508,7 +508,6 @@ class MCMC:
 
         # Store the chain....
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
-        print 'The chain was saved in:', chain_file
         f = open(chain_file, "w")
         f.close()
         time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
@@ -518,15 +517,14 @@ class MCMC:
         p = pos[ wh, : ]
         TOs = self.mod_temps[wh]
         temps = 'model_Te_O3 = %s     model_Te_O2 = %s' % (TOs[0], TOs[1])
-        print time2run
-        print temps
-        print lines4chi
         f = open(chain_file, "a")
+        trueabs0 = 'Values of the BENCHMARK abundances:\n'
         trueabs = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line2 = '   He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2], self.true_abunds[3], self.true_abunds[4], self.true_abunds[5])
         f.write(time2run+"\n")
+        f.write(trueabs0)
         f.write(trueabs+"\n")
         f.write(line1+"\n")
         f.write(line2+"\n")
@@ -546,15 +544,20 @@ class MCMC:
                 for k in range( posn.shape[0] ):
                     strout = ""
                     for p in pos[k]: strout += "{:8.3f} ".format( p )
-                    strout += "{:>10}".format( self.mod_temps[k] )
-                    strout += "{:20.3f}".format( prob[k] )
+                    strout += "{:<10}".format( self.mod_temps[k] )
+                    strout += "{:<20.3f}".format( prob[k] )
                     print strout
                     f.write(strout+"\n")
                 f.close()
             count += 1
+        print 'The chain was saved in:', chain_file
         
         print '\n'
         #print ' Lengths of temperatures_list and mcmc_guesses: ', len(self.mod_temps), len(pos) 
+        print time2run
+        print temps
+        print lines4chi
+        print trueabs0
         print trueabs
         print line1
         print line2
