@@ -460,7 +460,7 @@ class MCMC:
         start_time = time.time()
         
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
-        ndim, nwalkers, nruns = 6, 20, 60
+        ndim, nwalkers, nruns = 6, 50, 100
         # Initialization of theta through different methods:
         # a) initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
         #nll = lambda *args: self.lnlikehd(*args)
