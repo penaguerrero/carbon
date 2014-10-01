@@ -78,7 +78,7 @@ def gauss_xy(x, y, n):
     ynew = float(np.exp(-0.5*((xnew-x)/s)**2) + y)
     return np.array([xnew, ynew])
 pos = [gauss_xy(m, b, 1) for i in range(nwalkers)] 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr, some_list))#, threads=8)
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr, some_list), threads=8)
 
 '''
 # c) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
@@ -90,7 +90,7 @@ pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 ste
 f = open("line_chain.dat", "w")
 f.close()
 count = 1
-print 'len(pos)=', len(pos), '  len(some_list)=', len(some_list), raw_input()
+#print 'len(pos)=', len(pos), '  len(some_list)=', len(some_list), raw_input()
 for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
     print "COUNT", count
     if count % 1 == 0:
@@ -99,7 +99,7 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
             strout = ""
             for p in pos[k]: strout += "{:8.3f} ".format( p )
             strout += "{:20.3f}".format( prob[k] )
-            strout += "{:>20}".format( some_list[k] )
+            #strout += "{:>20}".format( some_list[k] )
             print strout, k
             f.write(strout+"\n")
         f.close()
