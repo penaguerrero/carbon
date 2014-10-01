@@ -11,7 +11,7 @@ import mcmc_infrastructure as mcmcis
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 9
+object_number = 0
 
 object_name = objects_list[object_number] 
 
@@ -67,7 +67,7 @@ abunds_lists = [[10.94,  8.20,  7.32,  7.07,  7.40,  6.42],   # 0 = iiizw107  **
                 [10.79,  7.92,  7.84,  7.26,  7.81,  6.92],   # 3 = mrk1199  ** S from Lop-San09
                 [10.91,  8.07,  6.82,  6.71,  7.35,  6.44],   # 4 = mrk5  ** S from Lop-San09
                 [10.97,  8.01,  7.12,  7.34,  7.72,  6.65],   # 5 = mrk960  ** S from Lop-San09
-                [10.94,  7.82,  6.94,  6.60,  7.23,  5.81],   # 6 = ngc1741  ** S from Lop-San09 = 6.36
+                [10.94,  8.00,  6.94,  6.60,  7.23,  5.81],   # 6 = ngc1741  ** S from Lop-San09 = 6.36
                 [10.88,  8.00,  7.16,  6.50,  7.26,  6.02],   # 7 = pox4  ** S from Lop-San09 = 6.24
                 [10.94,  7.92,  6.59,  6.84,  7.24,  6.45],   # 8 = sbs0218  ** S from Lop-San09 = 6.29                
                 [10.88,  8.07,  7.38,  6.16,  7.30,  6.34],   # 9 = sbs0948  ** S from Lop-San09 
