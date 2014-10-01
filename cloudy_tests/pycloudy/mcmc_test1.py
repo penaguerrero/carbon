@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyCloudy as pc
 import time
+import pickle
 
 # start the timer to compute the whole running time
 start_time = time.time()
@@ -18,7 +19,7 @@ cloudydata_path = '../../../../Addons/cloudy/c13.03all/c13.03/data'
 full_cloudydata_path = os.path.abspath(cloudydata_path)
 
 # Define verbosity to high level (will print errors, warnings and messages)
-pc.log_.level = 3
+pc.log_.level = 0#3
 # The directory in which we will have the model
 # You may want to change this to a different place so that the current directory
 # will not receive all the Cloudy files.
@@ -27,7 +28,7 @@ dir_ = './'
 # Define some parameters of the model:
 model_name = 'mcmc_test1'
 full_model_name = '{0}{1}'.format(dir_, model_name)
-dens = 5. #log cm-3
+dens = 2. #log cm-3
 options = ('no molecules',
             'no level2 lines',
             'no fine opacities',
@@ -81,7 +82,21 @@ c_input.run_cloudy()
 #pc.log_.timer('Cloudy ended after seconds:', calling = 'stb99_test1')
 
 # Reading the Cloudy outputs in the Mod CloudyModel object
-Mod = pc.CloudyModel(full_model_name)
+a = pc.CloudyModel(full_model_name)
+file_Name = "testfile"
+# open the file for writing
+fileObject = open(file_Name,'wb') 
+# this writes the object a to the
+# file named 'testfile'
+pickle.dump(a,fileObject)   
+# here we close the fileObject
+fileObject.close()
+# we open the file for reading
+fileObject = open(file_Name,'r')  
+# load the object from the file into var b
+Mod = pickle.load(fileObject)  
+
+
 dir(Mod) # This is the online answering way
 Mod.print_stats()
 Mod.print_lines()
