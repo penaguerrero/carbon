@@ -435,7 +435,7 @@ class MCMC:
         # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
         # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
         he = lntophat(He, 9.5, 12.0) 
-        o = lntophat(O, 7.1, 8.9) 
+        o = lntophat(O, 7.5, 8.7) 
         c = lntophat(CoverO, -1.7, 2.0)#6.0, 8.5)
         n = lntophat(NoverO, -1.7, 2.0)#6.0, 8.8) 
         ne = lntophat(NeoverO, -1.7, 2.0)#7.0, 8.7)  
@@ -490,14 +490,14 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test3_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test4_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2_test3_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2_test4_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
                                       self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
                                       self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test3_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test4_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
         fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test3_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
