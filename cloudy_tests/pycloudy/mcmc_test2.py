@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyCloudy as pc
 import time
-import mcmc_infrastructure as mcmcis
+#import mcmc_infrastructure as mcmcis
+import mcmc_infrastruc_multipross as mcmcis
 
 ##################################################################################################################
 
