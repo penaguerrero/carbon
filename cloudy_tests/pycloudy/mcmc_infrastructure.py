@@ -12,12 +12,22 @@ from glob import glob
 #from scipy import stats
 from science import spectrum
 import scipy.optimize as op
-import pickle
+import copy_reg, pickle
+import types
 import time
+#from emcee.utils import MPIPool
 
 ''' 
 This script contains all the functions to serve as infrastructure for running a MCMC chain. 
 '''
+
+def _lnprob(*args):
+    obj = args[1]
+    args = list(args)
+    del args[1]
+    x = obj.lnprob(*args)
+    return x
+
 
 def find_cloudyexe(cloudyexe_path):
     ''' Changing the location and version of the cloudy executable. '''
@@ -91,6 +101,8 @@ class PyCloudy_model:
         #    self.keep_files = None
         #else:
         self.keep_files = keep_files
+        #print ' THIS IS IN THE PYCLOYLUDY CLASS: self.dir, self.model_name =', self.dir, self.model_name
+        self.lines_file = self.mk_model()
 
     def runCldy_with_initconds(self):
         '''    
@@ -130,7 +142,7 @@ class PyCloudy_model:
         '''
         # Reading the Cloudy outputs in the Mod CloudyModel object
         Mod = pc.CloudyModel(self.full_model_name)
-        dir(Mod) # This is the online answering way
+        #dir(Mod) # This is the online answering way
         Mod.print_stats()
         #Mod.print_lines()
         Mod.get_ab_ion_vol_ne('O',2)
@@ -295,13 +307,283 @@ class Get_Chi2_info:
         print '\nChi^2 for this model = ', Chi2
         return Chi2
     
+# MCMC methodology
+def get_measured_lines(object_name, manual_measurement):
+    # get the benchmark measurements
+    if manual_measurement:
+        file2use = '_measuredLI_RedCor_Ebv.txt'   # my manual line measurements
+    else:
+        file2use = '_RedCor_Ebv.txt'   # my code's line measurements
+    measured_lines_file_path = os.path.abspath('../../results/'+object_name+'/'+object_name+file2use)
+    # now retrieve the columns we need from the file
+    meas_lineIDs = []   # list of IDs in angstroms
+    meas_Isrel2Hbeta = []   # list of lines relative to Hbeta reddening corrected 
+    meas_Ierr = []   # absolute error of the line intensity
+    meas_Iper = []   # percentage error of the line intensity  
+    meas_EW = []   # NOT BEING USED FOR THE MOMENT
+    meas = open(measured_lines_file_path)
+    _ = meas.readline()  # columns header
+    for line in meas:
+        line = line.strip()   # gets rid of \n at the end of the line
+        cols = line.split()   # splits the line into a list of columns
+        # the columns of interest are: ID=0, Intensity=9, Ierr=10, Iper=11, EW=12
+        meas_lineIDs.append(int(np.round(float(cols[0]), decimals=0)))
+        meas_Isrel2Hbeta.append(float(cols[9]))
+        meas_Ierr.append(float(cols[10]))
+        meas_Iper.append(float(cols[11]))
+        meas_EW.append(float(cols[12]))
+    meas.close()
+    measured_lines = [meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW]
+    return measured_lines
+
+def get_modeled_lines(theta, initial_Cloudy_conditions):
+    # get the Cloudy model
+    He, O, CoverO, NoverO, NeoverO, SoverO = theta
+    abunds = {}
+    abunds['He'] = He-12.
+    abunds['O'] = O-12.
+    abunds['C'] = CoverO+O-12
+    abunds['N'] = NoverO+O-12.
+    abunds['Ne'] = NeoverO+O-12.
+    abunds['S'] = SoverO+O-12.
+    model_name, dens, emis_tab, _, stb99_table, age, dir, verbosity, options, iterations, keep_files = initial_Cloudy_conditions
+    #print '* before making the model.... model_name, dir', model_name, dir
+    cldymod = PyCloudy_model(model_name, dens, emis_tab, abunds, stb99_table, age, dir, verbosity, options, iterations, keep_files)
+    #cldymod = initiate_PyCmodel.mk_model()
+    modeled_lines_file_path = os.path.abspath(cldymod.lines_file)
+    mod_lineIDs = []
+    ions = []
+    #mod_intensities = []   # NOT BEING USED FOR THE MOMENT
+    mod_Isrel2Hbeta = []
+    mod = open(modeled_lines_file_path, 'r')
+    # Save the temperatures, t2, HbetaEW, and the column headers into special headers
+    mod_TO3 = mod.readline()
+    mod_TO2 = mod.readline()
+    mod_T0t2 = mod.readline()   # NOT BEING USED FOR THE MOMENT
+    HbetaEW = mod.readline()   # NOT BEING USED FOR THE MOMENT
+    _ = mod.readline()  # columns header
+    for line in mod:   # read the rest of the file line by line as a string
+        line = line.strip()   # gets rid of \n at the end of the line
+        cols = line.split()   # splits the line into a list of columns
+        kk1 = string.split(cols[0], sep='A')
+        kk2 = string.split(kk1[0], sep='__')
+        ion = kk2[0]   # means that we have a case type 'HE_2__4686A'
+        if len(kk2) > 2:   # means that we have a case type 'H__1__6563A'
+            ion = kk2[0]+'_'+kk2[1]
+        lid = int(kk2[-1])
+        #print ion, lid
+        ions.append(ion)
+        mod_lineIDs.append(lid)
+        #mod_intensities.append(float(cols[1]))   # NOT BEING USED FOR THE MOMENT
+        mod_Isrel2Hbeta.append(float(cols[2]))
+    mod.close()
+    kk = string.split(mod_TO3, sep='=')
+    mod_TO3 = kk[1] 
+    kk = string.split(mod_TO2, sep='=')
+    mod_TO2 = kk[1]  
+    #print 'model_Te_O3 =', mod_TO3, 'model_Te_O2 =', mod_TO2
+    modeled_Otemperatures = [mod_TO3, mod_TO2]
+    modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
+    # Do the cleaning
+    final_default_extensions_list = ['.in', '.out', '.txt']
+    for fdf in final_default_extensions_list:
+        file2beerased = glob(dir+model_name+'*'+fdf)
+        #print file2beerased[0]
+        os.remove(file2beerased[0])
+    return modeled_Otemperatures, modeled_lines
+
+def find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, IDmod, Imod):
+    new_Iobs = []
+    new_Iobserr = []
+    new_Imod = []
+    for idtheo in IDmod:
+        Itheo_idx = IDmod.index(idtheo)
+        Itheo = Imod[Itheo_idx]
+        if idtheo in IDobs:
+            idx = IDobs.index(idtheo)
+            iobs= Iobs[idx]
+            ierr = Iobserr[idx]
+            new_Iobs.append(iobs)
+            new_Iobserr.append(ierr)
+            new_Imod.append(Itheo)
+    return new_Iobs, new_Iobserr, new_Imod
+
+def lnlikehd(new_Iobs, new_Iobserr, new_Imod):
+    model = np.array(new_Imod)
+    y = np.array(new_Iobs)
+    e = np.array(new_Iobserr)
+    csq = ( y - model )**2 / e**2
+    Chi2 = csq.sum()
+    return -Chi2 / 2.0
+
+def lnpriors(theta):
+    ''' 
+    This function encodes any previous knowledge that we have about the parameters: results from other experiments, 
+    physically acceptable ranges, etc. It is necessary that you write down priors if you are going to use MCMC because 
+    all that MCMC does is draw samples from a probability distribution and you want that to be a probability distribution
+    for your parameters. We will use 2 functions: Gaussian and top-hat.
+    '''
+    He, O, CoverO, NoverO, NeoverO, SoverO = theta
+    print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
+    # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
+    # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
+    he = lntophat(He, 9.5, 12.0) 
+    o = lntophat(O, 7.5, 8.7) 
+    c = lntophat(CoverO, -1.6, 1.7)
+    n = lntophat(NoverO, -1.7, 1.6) 
+    ne = lntophat(NeoverO, -1.0, 0.01) 
+    s = lntophat(SoverO, -2.3, -1.4) 
+    print 'top hat results:', he , c , n , o , ne , s
+    # check that all conditions are met
+    if he != -np.inf and c != -np.inf and n != -np.inf and o != -np.inf and ne != -np.inf and s != -np.inf:
+        return he + c + n + o + ne + s 
+    else:
+        return -np.inf
+
+def lnprob(theta, measured_lines, initial_Cloudy_conditions, mod_temps):
+    lp = lnpriors(theta)
+    if lp != -np.inf:
+        # Get the benchmark intensity lines
+        IDobs, Iobs, Iobserr, _, _ = measured_lines
+        print ' ---> Running model number: ', len(mod_temps)+1
+        # Get the Cloudy modeled lines
+        modeled_Otemperatures, modeled_lines = get_modeled_lines(theta, initial_Cloudy_conditions)
+        mod_temps.append(modeled_Otemperatures)
+        mod_TO3, mod_TO2 = modeled_Otemperatures
+        print 'model_Te_O3 =', mod_TO3, 'model_Te_O2 =', mod_TO2
+        IDmod, _, Imod = modeled_lines
+        # Get the relevant lines from the measurements and de model
+        new_Iobs, new_Iobserr, new_Imod = find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, IDmod, Imod)
+        # Get the Chi2 and add it to the priors' probability 
+        return lp + lnlikehd(new_Iobs, new_Iobserr, new_Imod)
+    else:
+        return lp
+    
+def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, measured_lines, initial_Cloudy_conditions, mod_temps):
+    # start the timer to compute the whole running time
+    start_time = time.time()
+    
+    #ndim, nwalkers, nruns = 6, 100, 100
+    ndim = len(theta)
+    randadd2point = lambda x: x+np.random.rand(1)
+    p0 = [[float(randadd2point(x)) for x in true_abunds] for i in range(nwalkers)] 
+    '''
+    pool = MPIPool()
+    if not pool.is_master():
+        pool.wait()
+        sys.exit(0)
+    '''
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[measured_lines, initial_Cloudy_conditions, mod_temps],
+                                    threads=2)#pool=pool)
+    pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
+
+    # PLOTS
+    # samples has an attribute called chain, which is an array with shape (nwalkers, nruns, ndim)
+    samples = sampler.chain[:, nruns*0.2:, :].reshape((-1, ndim)) # this discards the first 20% of the runs
+    # but for now we'll use all the runs:
+    #samples = sampler.chain[:, :, :].reshape((-1, ndim))
+    fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
+                          truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
+                                  true_abunds[4], true_abunds[5]])
+    fig.savefig(os.path.abspath(dir+model_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+    fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
+    fig.savefig(os.path.abspath(dir+model_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+    # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+    samples[:, ndim-1] = np.exp(samples[:, ndim-1])
+    percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
+    p_mcmc1 = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+    p_mcmc2 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+
+    # Store the chain....
+    chain_file = os.path.abspath(dir+model_name+"_chain.dat")
+    f = open(chain_file, "w")
+    f.close()
+    time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
+    meas_lineIDs, _, _, _, _ = measured_lines
+    lines4chi = 'Used %i lines to determine Chi2.' % len(meas_lineIDs)
+    # best model
+    wh = np.where( prob == prob.max() )[0][0]
+    p = pos[ wh, : ]
+    TOs = mod_temps[wh]
+    temps = 'model_Te_O3 = %s     model_Te_O2 = %s' % (TOs[0], TOs[1])
+    f = open(chain_file, "a")
+    trueabs0 = 'Values of the BENCHMARK abundances:\n'
+    trueabs1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (true_abunds[0], true_abunds[1], true_abunds[2], 
+                                                                                                    true_abunds[3], true_abunds[4], true_abunds[5])
+    trueabs2= 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (true_abunds[0], true_abunds[1], true_abunds[2]+true_abunds[1],
+                                                                                           true_abunds[3]+true_abunds[1], true_abunds[4]+true_abunds[1], 
+                                                                                           true_abunds[5]+true_abunds[1])
+    line1 = 'Values of the %i dimensions that best fit the data in %i runs with %i walkers, are the following:' % (ndim, nruns, nwalkers)
+    #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+    line2 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
+    line3 = 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2]+true_abunds[1], 
+                                                                                         p[3]+true_abunds[1], p[4]+true_abunds[1],
+                                                                                         p[5]+true_abunds[1])
+    f.write(time2run+"\n")
+    f.write(trueabs0)
+    f.write(trueabs1+"\n")
+    f.write(trueabs2+"\n")
+    f.write(line1+"\n")
+    f.write(line2+"\n")
+    f.write(line3+"\n")
+    f.write(temps)
+    f.write(lines4chi+"\n")
+    f.write(percentiles+"\n")
+    f.write(repr(p_mcmc2)+"\n")
+    f.write(repr(p_mcmc1)+"\n")
+    f.close()
+
+    count = 1
+    
+    for posn, prob, state in sampler.sample( pos, iterations=50, storechain=True ):
+        print "COUNT", count
+        if count % 1 == 0:
+            f = open(chain_file, "a")
+            for k in range( posn.shape[0] ):
+                strout = ""
+                for p in pos[k]: strout += "{:8.3f} ".format( p )
+                strout += "{:<10}".format( self.mod_temps[k] )
+                strout += "{:<20.3f}".format( prob[k] )
+                print strout
+                f.write(strout+"\n")
+            f.close()
+        count += 1
+    print 'The chain was saved in:', chain_file
+    
+    print '\n'
+    print time2run
+    print temps
+    print lines4chi
+    print trueabs0
+    print trueabs1
+    print trueabs2
+    print line1
+    print line2
+    print line3
+    print percentiles
+    print p_mcmc1
+    print p_mcmc2
+    
+    fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                          samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
+                          truths=[true_abunds[0], true_abunds[1], true_abunds[2]+true_abunds[1], 
+                                  true_abunds[3]+true_abunds[1], true_abunds[4]+true_abunds[1], 
+                                  true_abunds[5]+true_abunds[1]])
+    fig.savefig(os.path.abspath(dir+model_name+"_abstot_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+    fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                          samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
+    fig.savefig(os.path.abspath(dir+model_name+"_abstot2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+
+
+
+'''
 class MCMC:
-    ''' This class does the actual Markov Chain Monte Carlo (MCMC). This is done to marginalize over some parameters and 
+    ''' '''This class does the actual Markov Chain Monte Carlo (MCMC). This is done to marginalize over some parameters and 
     estimate of the posterior probability function, that is the distribution of parameters that is consistent with the
     data set. The posterior probability function can be described as follows:
                             p(m,b,f|x,y,sigma)  proportional2  p(m,b,f) * p(y|x,sigma,m,b,f),
-    where p(y|x,sigma,m,b,f) is the likelihood function and p(m,b,f) is the prior function.   
-    '''
+    where p(y|x,sigma,m,b,f) is the likelihood function and p(m,b,f) is the prior function.   '''
+'''
     def __init__(self, object_name, manual_measurement, initial_Cloudy_conditions): 
         self.object_name = object_name   # name of the object
         self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
@@ -338,7 +620,7 @@ class MCMC:
         meas.close()
         self.measured_lines = [meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW]
         return self.measured_lines
-
+    
     def get_modeled_lines(self, theta):
         # get the Cloudy model
         #He, O, C, N, Ne, S = theta   # convert the list into a value and a dictionary
@@ -347,13 +629,18 @@ class MCMC:
         abunds['He'] = He-12.
         abunds['O'] = O-12.
         abunds['C'] = CoverO+O-12
-        abunds['N'] = NoverO+O-12-12.
-        abunds['Ne'] = NeoverO+O-12-12.
-        abunds['S'] = SoverO+O-12-12.
+        abunds['N'] = NoverO+O-12.
+        abunds['Ne'] = NeoverO+O-12.
+        abunds['S'] = SoverO+O-12.
         self.model_name, dens, emis_tab, _, stb99_table, age, self.dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
         initiate_PyCmodel = PyCloudy_model(self.model_name, dens, emis_tab, abunds, stb99_table, age, self.dir, verbosity, options, iterations, keep_files)
         cldymod = initiate_PyCmodel.mk_model()
-        modeled_lines_file_path = os.path.abspath(cldymod)
+        
+        ##copy_reg.pickle(PyCloudy_model, pickle_Cldymodel)
+        #cldymod = PyCloudy_model(self.model_name, dens, emis_tab, abunds, stb99_table, age, self.dir, verbosity, options, iterations, keep_files)
+        ##cldymod = copy.copy(kk)
+        
+        modeled_lines_file_path = os.path.abspath(cldymod)#.lines_file)
         mod_lineIDs = []
         ions = []
         #mod_intensities = []   # NOT BEING USED FOR THE MOMENT
@@ -414,6 +701,7 @@ class MCMC:
     def lnlikehd(self, theta, IDobs, Iobs, Iobserr):
         modeled_Otemperatures, modeled_lines = self.get_modeled_lines(theta)
         self.mod_temps.append(modeled_Otemperatures)
+        print '--->  len(self.mod_temps) =', len(self.mod_temps), '   modeled_Otemperatures:', modeled_Otemperatures
         mod_lineIDs, ions, mod_Isrel2Hbeta = modeled_lines
         new_Iobs, new_Iobserr, new_Imod = self.find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, mod_lineIDs, mod_Isrel2Hbeta)
         model = np.array(new_Imod)
@@ -424,11 +712,12 @@ class MCMC:
         return -Chi2 / 2.0
     
     def lnpriors(self, theta):
-        ''' This function encodes any previous knowledge that we have about the parameters: results from other experiments, 
+''' 
+'''This function encodes any previous knowledge that we have about the parameters: results from other experiments, 
         physically acceptable ranges, etc. It is necessary that you write down priors if you are going to use MCMC because 
         all that MCMC does is draw samples from a probability distribution and you want that to be a probability distribution
-        for your parameters. We will use 2 functions: Gaussian and top-hat. 
-        '''
+        for your parameters. We will use 2 functions: Gaussian and top-hat. '''
+'''
         #He, O, C, N, Ne, S = theta
         He, O, CoverO, NoverO, NeoverO, SoverO = theta
         print 'theta = He, O, C/O, N/O, Ne/O, S/O = ', theta
@@ -446,11 +735,10 @@ class MCMC:
             return he + c + n + o + ne + s 
         else:
             return -np.inf
-
+    
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
         lp = self.lnpriors(theta)
         if lp != -np.inf:
-            print '--->  len(self.mod_temps) =', len(self.mod_temps)
             return lp + self.lnlikehd(theta, IDobs, Iobs, Iobserr)
         else:
             return lp
@@ -477,7 +765,7 @@ class MCMC:
         # d) initialize semi-randomly -- with previous knowledge
         #p0 = [[np.random.uniform(9.5, 11.), np.random.uniform(7.1, 8.9), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.), np.random.uniform(-1.7, 2.)] for i in range(nwalkers)]
         #p0 = [[np.random.uniform(9.5, 11.),np.random.uniform(7., 8.1),np.random.uniform(7., 8.7),np.random.uniform(7., 8.9),np.random.uniform(7., 8.2),np.random.uniform(5., 6.7)] for _ in range(nwalkers)]
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))#, threads=8)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, _lnprob, args=[self, meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr], threads=4)
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
@@ -490,16 +778,9 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test4_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2_test4_initb.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
-                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
-                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
-                                      self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test4_initb.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test4_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
@@ -546,7 +827,7 @@ class MCMC:
 
         count = 1
         
-        for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
+        for posn, prob, state in sampler.sample( pos, iterations=50, storechain=True ):
             print "COUNT", count
             if count % 1 == 0:
                 f = open(chain_file, "a")
@@ -575,4 +856,15 @@ class MCMC:
         print percentiles
         print p_mcmc1
         print p_mcmc2
+        
+        fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                              samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
+                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
+                                      self.true_abunds[5]+self.true_abunds[1]])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_abstot_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+        fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                              samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_abstot2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+'''
         
