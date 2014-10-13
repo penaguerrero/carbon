@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyCloudy as pc
 import time
-import mcmc_infrastructure as mcmcis
+#import mcmc_infrastructure as mcmcis
+import mcmc_infrastruc_multipross as mcmcis
 
 ##################################################################################################################
 # name of the object
@@ -53,6 +54,9 @@ options = ('no molecules',
 
 age = 'age=5.0'
 dens = 2.7 #log cm-3
+
+# Number of processors
+n_proc = 8
 
 ##################################################################################################################
 
@@ -109,7 +113,7 @@ verb = 3
 iterations = 2
 keep_files = None
 initial_Cloudy_conditions = [model_name, dens, emis_tab, theta, stb99_table, age, dir, verb, options, iterations, keep_files] 
-mchammer = mcmcis.MCMC(object_name, manual_measurement, initial_Cloudy_conditions)
+mchammer = mcmcis.MCMC(object_name, manual_measurement, initial_Cloudy_conditions, n_proc)
 mchammer.run_chain()
 
 print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
