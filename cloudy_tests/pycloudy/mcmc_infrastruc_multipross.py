@@ -124,7 +124,8 @@ class PyCloudy_model:
         
         # Running Cloudy with a timer. Here we reset it to 0.
         pc.log_.timer('Starting Cloudy', quiet = True, calling = 'stb99_test1')
-        print '*** Going to use ', self.n_proc, ' processors'
+        if self.n_proc > 1:
+            print '*** Going to use ', self.n_proc, ' processors while running Cloudy, emcee is using only 1...'
         c_input.run_cloudy(n_proc=self.n_proc)
         pc.log_.timer('Cloudy ended after seconds:', calling = 'stb99_test1')
         
@@ -352,10 +353,10 @@ class MCMC:
         abunds = {}
         abunds['He'] = He-12.
         abunds['O'] = O-12.
-        abunds['C'] = CoverO+O-12
-        abunds['N'] = NoverO+O-12-12.
-        abunds['Ne'] = NeoverO+O-12-12.
-        abunds['S'] = SoverO+O-12-12.
+        abunds['C'] = CoverO+O-12.
+        abunds['N'] = NoverO+O-12.
+        abunds['Ne'] = NeoverO+O-12.
+        abunds['S'] = SoverO+O-12.
         self.model_name, dens, emis_tab, _, stb99_table, age, self.dir, verbosity, options, iterations, keep_files = self.initial_Cloudy_conditions
         initiate_PyCmodel = PyCloudy_model(self.model_name, dens, emis_tab, abunds, stb99_table, age, self.dir, verbosity, options, 
                                            iterations, keep_files, self.n_proc)
@@ -390,7 +391,7 @@ class MCMC:
         kk = string.split(mod_TO3, sep='=')
         mod_TO3 = kk[1] 
         kk = string.split(mod_TO2, sep='=')
-        self.mod_TO2 = kk[1]  
+        mod_TO2 = kk[1]  
         print 'model_Te_O3 =', mod_TO3, 'model_Te_O2 =', mod_TO2
         modeled_Otemperatures = [mod_TO3, mod_TO2]
         modeled_lines = [mod_lineIDs, ions, mod_Isrel2Hbeta]
@@ -457,7 +458,7 @@ class MCMC:
     def lnprob(self, theta, IDobs, Iobs, Iobserr):
         lp = self.lnpriors(theta)
         if lp != -np.inf:
-            print '--->  len(self.mod_temps) =', len(self.mod_temps)
+            print '--->  Running model number:', len(self.mod_temps)+1
             return lp + self.lnlikehd(theta, IDobs, Iobs, Iobserr)
         else:
             return lp
@@ -476,7 +477,7 @@ class MCMC:
         start_time = time.time()
         
         meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW = self.measured_lines
-        ndim, nwalkers, nruns = 6, 12, 12
+        ndim, nwalkers, nruns = 6, 100, 100
         # Initialization of theta through different methods:
         # a) initialize with a small Gaussian ball around the maximum likelihood result, for which we use optimize
         #nll = lambda *args: self.lnlikehd(*args)
@@ -517,16 +518,9 @@ class MCMC:
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1],self.true_abunds[2], self.true_abunds[3],
                                       self.true_abunds[4], self.true_abunds[5]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_ratios_test4_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-        fig.savefig(os.path.abspath(self.dir+"triangle_ratios2_test4_initb.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
-                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
-                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
-                                      self.true_abunds[5]+self.true_abunds[1]])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test4_initb.jpg"))
-        fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test3_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
@@ -602,4 +596,16 @@ class MCMC:
         print percentiles
         print p_mcmc1
         print p_mcmc2
+
+        fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                              samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
+                              truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
+                                      self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
+                                      self.true_abunds[5]+self.true_abunds[1]])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_abstot_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+        fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
+                              samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"_abstot2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
+
+
         
