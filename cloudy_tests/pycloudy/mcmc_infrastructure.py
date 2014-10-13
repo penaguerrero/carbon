@@ -499,7 +499,7 @@ class MCMC:
                                       self.true_abunds[5]+self.true_abunds[1]])
         fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot_test4_initb.jpg"))
         fig = triangle.corner(samples, labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
-        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test3_initb.jpg"))
+        fig.savefig(os.path.abspath(self.dir+self.model_name+"triangle_abstot2_test4_initb.jpg"))
         # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
         samples[:, ndim-1] = np.exp(samples[:, ndim-1])
         percentiles = 'mcmc values and uncertainties according to 16th, 50th, and 84th percentiles:'
@@ -524,7 +524,7 @@ class MCMC:
         trueabs2= 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1],
                                                                                                self.true_abunds[3]+self.true_abunds[1], self.true_abunds[4]+self.true_abunds[1], 
                                                                                                self.true_abunds[5]+self.true_abunds[1])
-        line1 = 'Values of the %i dimensions that best fit the data in %i runs, are the following:' % (ndim, nruns)
+        line1 = 'Values of the %i dimensions that best fit the data in %i runs with %i walkers, are the following:' % (ndim, nruns, nwalkers)
         #line2 = '   He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line2 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (p[0], p[1], p[2], p[3], p[4], p[5])
         line3 = 'He = %0.2f   O = %0.2f   C = %0.2f   N = %0.2f   Ne = %0.2f   S = %0.2f' % (p[0], p[1], p[2]+self.true_abunds[1], 
