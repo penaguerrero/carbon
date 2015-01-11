@@ -4,22 +4,27 @@ import matplotlib.pyplot as plt
 import pyCloudy as pc
 import time
 import pickle
+import os
+import string
 
 # start the timer to compute the whole running time
 start_time = time.time()
 
 # Changing the location and version of the cloudy executable.
-cloudyexe_path = '../../../../Addons/cloudy/c13.03all/c13.03/source/cloudy.exe'
-full_cloudyexe_path = os.path.abspath(cloudyexe_path)
+cloudyexe = 'Addons/cloudy/c13.03all/c13.03/source/cloudy.exe'
+# This is EXCLUSIVELY for running in LINUX
+#cloudyexe = 'Addons/cloudy/cloudy_fast.exe'
+cloudy_path_list = string.split(os.getcwd(), sep='AptanaStudio3')
+full_cloudyexe_path = os.path.join(cloudy_path_list[0], cloudyexe)
 pc.config.cloudy_exe = full_cloudyexe_path
 # Define plots path
 pypics_path = os.path.abspath('pypics')
 # Define the path for the cloudy data
-cloudydata_path = '../../../../Addons/cloudy/c13.03all/c13.03/data'
-full_cloudydata_path = os.path.abspath(cloudydata_path)
+cloudydata = 'Addons/cloudy/c13.03all/c13.03/data'
+full_cloudydata_path = os.path.join(cloudy_path_list[0], cloudydata)
 
 # Define verbosity to high level (will print errors, warnings and messages)
-pc.log_.level = 0#3
+pc.log_.level = 3
 # The directory in which we will have the model
 # You may want to change this to a different place so that the current directory
 # will not receive all the Cloudy files.
@@ -36,7 +41,7 @@ options = ('no molecules',
             'atom he-like levels small',
             'COSMIC RAY BACKGROUND',
             'element limit off -8',
-            'print line optical depth', )
+            'print line optical depth')
 
 emis_tab = ['H  1  4861',
             'H  1  6563',
@@ -64,7 +69,7 @@ c_input = pc.CloudyInput(full_model_name)
 # Filling the object with the parameters
 # Defining the ionizing SED: Effective temperature and luminosity.
 # The lumi_unit is one of the Cloudy options, like "luminosity solar", "q(H)", "ionization parameter", etc... 
-c_input.set_star(SED = 'table star "starburst99.mod"', SED_params = 'age=4.0', lumi_unit='f(nu)', lumi_value=-12.3316)
+c_input.set_star(SED = 'table star "constSFR.mod"', SED_params = 'age=4.0', lumi_unit='f(nu)', lumi_value=-12.3316)
 # Defining the density. You may also use set_dlaw(parameters) if you have a density law defined in dense_fabden.cpp.
 c_input.set_cste_density(dens)
 c_input.set_abund(ab_dict = abund, nograins = True)
