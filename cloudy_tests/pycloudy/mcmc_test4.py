@@ -5,6 +5,7 @@ import pyCloudy as pc
 import time
 import copy
 import mcmc_infrastructure as mcmcis
+from sys import argv
 
 ##################################################################################################################
 # name of the object
@@ -12,7 +13,9 @@ import mcmc_infrastructure as mcmcis
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 12
+#object_number = 6 
+object_number = int(argv[1]) 
+recover = False   # set to True if you want to recover a previous chain and start a new one from there
 
 object_name = objects_list[object_number] 
 
@@ -102,8 +105,9 @@ manual_measurement = manual_measurement_lists[object_number]
 start_time = time.time()
 
 # Changing the location and version of the cloudy executable. Will turn the relative path into an absolute path.
-cloudyexe_path = '../../../../Addons/cloudy/c13.03all/c13.03/source/cloudy.exe'
-mcmcis.find_cloudyexe(cloudyexe_path)
+#cloudyexe_path = os.path.abspath('../../../../Addons/cloudy/c13.03all/c13.03/source/cloudy.exe')
+#print 'Path for the Cloudy executable: ', cloudyexe_path
+#mcmcis.find_cloudyexe(cloudyexe_path)
 
 # Define path where to save the plots
 pypics_path = os.path.abspath('pypics')
@@ -117,10 +121,25 @@ initial_Cloudy_conditions = [model_name, dens, emis_tab, theta, stb99_table, age
 #mchammer.run_chain()
 
 modeled_temperatures_list = []
-nwalkers = 100
+nwalkers = 100 # if grater than 50, please use multiples of 50 
 nruns = 100
+threads = 1
 true_abunds = copy.deepcopy(theta)
-measured_lines = mcmcis.get_measured_lines(object_name, manual_measurement)
-mchammer = mcmcis.run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, measured_lines, initial_Cloudy_conditions, modeled_temperatures_list)
 
-print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
+# With regular probability function
+#measured_lines = mcmcis.get_measured_lines(object_name, manual_measurement)
+#mchammer = mcmcis.run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, measured_lines, initial_Cloudy_conditions, modeled_temperatures_list)
+
+# With regular the NEW probability function that allows to use HTCondor
+init_Cldy_conds_file = os.path.abspath(object_name+'_initial_Cloudy_conditions.txt')
+f = open(init_Cldy_conds_file, 'w+')
+for item in initial_Cloudy_conditions:
+    print >> f, item
+#print 'Cloudy initial conditions printed in:', init_Cldy_conds_file
+f.close()
+mchammer = mcmcis.run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, object_name, manual_measurement, 
+                                     init_Cldy_conds_file, modeled_temperatures_list, threads=threads, recover=recover)
+
+print '\nCode finished! Took  %s  days to finish.' % ((time.time() - start_time) / 86400.0)
+
+
