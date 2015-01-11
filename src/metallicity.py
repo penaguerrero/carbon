@@ -9,7 +9,7 @@ import math
 import collections
 import pyneb as pn
 import PIL.Image as Image
-from uncertainties import unumpy
+#from uncertainties import unumpy
 from science import spectrum
 from matplotlib import pyplot
 from collections import OrderedDict
