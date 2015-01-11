@@ -17,7 +17,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10         11         12         13       14        15         16         17
 object_number = 17
 # Is this a TEST run?
-TEST_run = True
+TEST_run = False
 
 # If only wanting to perform the reddening and redshift correction set to True: first round of corrections
 first_redcorr = False
@@ -31,7 +31,7 @@ case = 'B'
 ############################################################################################################################################
 
 # Write the text file with line info?
-create_txt_lineinfo = True
+create_txt_lineinfo = False
 # Write the text file with temperatures, densities, and abundances?
 create_txt_temdenabunds = True
 
@@ -44,13 +44,13 @@ use_given_lineinfo_list = [False, True, True, True, False, False, False, False, 
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
-#                       0                1               2                3       4 (based on Na5)       5               6            7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8450.,9250.], [15000.,17000.], [9500.,11500.], [12300.,13600.], None,
+#                       0                1               2               3              4             5               6            7        
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8450.,9250.], [14000,15000], [9500.,11500.], [12300.,13600.], None,
                   [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
-#                   0         1                2          3     4          5                6          7     8           
+#                   0         1                2          3            4           5                6          7     8           
 forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,10900.], [12400.,13200.], None, None,
                   None, None, None, [12400.,12800.], [8300.,9000.], [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
 #                   9    10    11         12              13             14             15         16        17 
