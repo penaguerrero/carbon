@@ -117,4 +117,3 @@ for line in Mod.emis_labels:
 
 
 print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
-
