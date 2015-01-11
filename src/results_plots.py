@@ -1,5 +1,6 @@
 import numpy
 import os
+import string
 from matplotlib import pyplot as plt
 from copy import deepcopy
 
@@ -14,7 +15,7 @@ This scripts takes the found metallicities and produces:
 '''
 
 use_our_sample_ONLY = False
-save_images = True
+save_images = False
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
@@ -134,9 +135,18 @@ if use_our_sample_ONLY == False:
         indeces_list.append(i)
         i = i+1
 
+# Abundances obtained with Cloudy simulations
+Cldy_best_abunds = 'carbon/results/Cloudy_best_abunds.txt'
+abunds_path_list = string.split(os.getcwd(), sep='carbon')
+fname = os.path.join(abunds_path_list[0], Cldy_best_abunds)
+Clhe, Clo, Clc, Cln, Clne, Cls, Clto3, Clto2 = numpy.loadtxt(fname, skiprows=1, usecols=(2,3,4,5,6,7,8,9), unpack=True)
+
+
 # PLOTS
-# C/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
+# C/O vs O/H from SIMULATIONS
+plt.plot(Clo, Clc-Clo, 'ro')
+# C/O vs O/H from OBSERVATIONS
 #plt.errorbar(OH, CO, xerr=OHerr, yerr=COerr, fmt='ko')    # this plots ALL points with the same symbol
 for obj, i in zip(objects_list, indeces_list):
     if obj in objects_with_Te:
