@@ -14,11 +14,11 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 17
+object_number = 0
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [1]
+specs = [0]
 # set commented parameters, choose options 0 through 3
-choose_conditions4textfiles = 1
+choose_conditions4textfiles = 0
 
 ############################################################################################################################################
 '''
@@ -97,7 +97,7 @@ altern_file = False
 ##altern = '../results/sbs1319/sbs1319_opt_corr1.txt'
 ##f, w = numpy.loadtxt(altern, skiprows=5, usecols=(1,2), unpack=True)  ## OLD FILE
 for s in specs:
-    if (object_name=='iras08339') and (s==1):
+    if (object_name=='iras08339') and (s==2):
         altern = '../results/iras08339/iras08339_nir_corr.txt'
         altern_file = True
     if (object_name=='mrk1087') and (s==1):
@@ -176,7 +176,8 @@ for d, s in zip(data, specs):
     # Correct spectra for redshift and calculate continuum with a polynomial of nth order
     if correct_redshift == True:
         z = z_list[object_number]
-        text_table = False
+        #text_table = False
+        spectrum_region[s] = spectrum_region[s]+'_zcorr'
     else:
         z = 0.0  # this is non-important because we are NOT correcting for redshift
     object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, 
@@ -199,7 +200,7 @@ for d, s in zip(data, specs):
             print >> txt, '{:<7.3f} {:>25.5e} {:>32.5e}'.format(w, f, c)
         txt.close()
 
-    ### The followeing lines are just in case of wanting to create a text file to convert into readable splot fits
+    ### The following lines are just in case of wanting to create a text file to convert into readable splot fits
     if splot_text:
         if s == 0:
             part_of_spec = 'nuv'
