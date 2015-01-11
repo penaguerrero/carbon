@@ -16,6 +16,8 @@ This scripts takes the found metallicities and produces:
 
 use_our_sample_ONLY = False
 save_images = False
+use_our_sample_ONLY = True
+save_images = True
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
@@ -24,6 +26,7 @@ typeofimage = '.jpg'
 ############################################################################################################################################
 
 img_name1 = 'COvsOH'
+img_name1b = 'COvsOH_Cldy'
 img_name2 = 'NOvsOH'
 img_name3 = 'NeOvsOH'
 img_name4 = 'CNvsOH'
@@ -117,7 +120,7 @@ if correct_values:
         NeO[i+j+k+1] = NeO[i+j+k+1] + C_dust_correction - O_dust_correction
         #NeOor[i+j+k+1] = NeOor[i+j+k+1] + C_dust_correction - O_dust_correction
 
-# Complie all the names for the labeling in the same order
+# Compile all the names for the labeling in the same order
 objects_list = []
 indeces_list = []
 i = 0
@@ -143,6 +146,8 @@ Clhe, Clo, Clc, Cln, Clne, Cls, Clto3, Clto2 = numpy.loadtxt(fname, skiprows=1, 
 
 
 # PLOTS
+
+# C/O vs O/H from OBSERVATIONS
 fig1 = plt.figure(1, figsize=(12, 10))
 # C/O vs O/H from SIMULATIONS
 plt.plot(Clo, Clc-Clo, 'ro')
@@ -169,8 +174,9 @@ for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     if (z == 'pox4'):
         subxcoord = -8
         subycoord = -7
-    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
-        subycoord = -15
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'mrk5') or (z == 'Sun'):
+        subxcoord = -4
+        subycoord = -12
     if (z == 'iiizw107') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 5
         side = 'left'
@@ -184,6 +190,59 @@ plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (C/O)')
 if save_images:
     img_name = img_name1 + typeofimage
+    if use_our_sample_ONLY == False:
+        img_name = img_name1 + otherrefs + typeofimage
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
+plt.show()
+
+# C/O vs O/H from SIMULATIONS
+fig1 = plt.figure(1, figsize=(12, 10))
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    #plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
+    plt.plot(Clo, Clc-Clo, 'ro')
+plt.xlim(7.0, 9.0)
+yup = 1.02
+ylo = -1.8
+plt.ylim(ylo, yup)
+plt.xticks(numpy.arange(7.0, 9.0, 0.1))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
+for x, xe, y, ye, z in zip(Clo, OHerr, Clc-Clo, COerr, objects_list):
+    subxcoord = -4
+    subycoord = 5
+    side = 'right'
+    if (z == 'sbs1319'):
+        subxcoord = 16
+        subycoord = -12
+    if (z == 'pox4'):
+        subxcoord = 16
+        subycoord = 7
+    if (z == 'mrk5'):
+        subxcoord = 34
+        subycoord = -2
+    if (z == 'iras08339') or (z == 'Sun'):
+        subycoord = -12
+        side = 'left'
+    if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'arp252') or (z == 'Orion'):
+        subxcoord = 5
+        side = 'left'
+    if (z == 'ngc346'):
+        subxcoord = 4
+        subycoord = -11
+        side = 'left'
+    plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
+plt.title('C/O vs O/H from Cloudy')
+plt.xlabel('12 + log (O/H)')
+plt.ylabel('log (C/O)')
+if save_images:
+    img_name = img_name1b + typeofimage
     if use_our_sample_ONLY == False:
         img_name = img_name1 + otherrefs + typeofimage
     destination = os.path.join(full_results_path+'/plots', img_name)
