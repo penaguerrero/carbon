@@ -308,7 +308,7 @@ class MCMC:
                             p(m,b,f|x,y,sigma)  proportional2  p(m,b,f) * p(y|x,sigma,m,b,f),
     where p(y|x,sigma,m,b,f) is the likelihood function and p(m,b,f) is the prior function.   
     '''
-    def __init__(self, object_name, manual_measurement, initial_Cloudy_conditions, n_proc=1): 
+    def __init__(self, object_name, manual_measurement, initial_Cloudy_conditions, n_proc=1, recover=False): 
         self.object_name = object_name   # name of the object
         self.manual_measurement = manual_measurement   # manual (manual_measurement=True) or code's measurements (manual_measurement=False) 
         self.get_measured_lines()   # this is part of the initialization because I only want it to locate and read the file once
@@ -317,6 +317,7 @@ class MCMC:
         self.mod_temps = []   # list where all [TO3, TO2] lists will be stored
         self.lines4Chi2calculation = len(emis_tab)
         self.n_proc = n_proc   # number of processors
+        self.recover = recover   # if wanting to use a previous chain and start from there, set to True
     
     def get_measured_lines(self):
         # get the benchmark measurements
@@ -445,7 +446,7 @@ class MCMC:
         he = lntophat(He, 9.5, 12.0) 
         o = lntophat(O, 7.5, 8.7) 
         c = lntophat(CoverO, -1.6, 1.7)
-        n = lntophat(NoverO, -1.7, 1.6) 
+        n = lntophat(NoverO, -1.7, -0.6) 
         ne = lntophat(NeoverO, -1.0, 0.01) 
         s = lntophat(SoverO, -2.3, -1.4) 
         print 'top hat results:', he , c , n , o , ne , s
@@ -471,7 +472,73 @@ class MCMC:
         print >> jf, 'Universe = Vanilla'
         print >> jf, 'Executable = ./mcmc_CCC.py'
         jf.close()
-    
+
+    def matrix_lastpos(self, He, O, CO, NO, NeO, SO, nwalkers):
+        last_pos_idx = len(He)-nwalkers
+        He = He[last_pos_idx:]
+        O = O[last_pos_idx:]
+        CO = CO[last_pos_idx:]
+        NO = NO[last_pos_idx:]
+        NeO = NeO[last_pos_idx:]
+        SO = SO[last_pos_idx:]
+        pos_matrix = np.array([]).reshape(0, 6)
+        for he, o, co, no, neo, so in zip(He, O, CO, NO, NeO, SO):
+            theta = np.array([he, o, co, no, neo, so])
+            pos_matrix = np.vstack((pos_matrix, theta))
+        return pos_matrix
+
+    def read_chain4starting_posmatrix(self, nwalkers):
+        chainfile = os.path.abspath('mcmc_'+self.object_name+'_chain.dat')
+        f = open(chainfile, 'r')
+        i = 0
+        for line in f.readlines():
+            if i == 0:
+                prev_run_time_string = line.strip()
+                prev_run_time_list = string.split(prev_run_time_string)#, sep=" ")
+                prev_run_time = float(prev_run_time_list[3])
+                break
+        f.close()
+        try: 
+            He, O, CO, NO, NeO, SO, TO3, TO2, Chi2 = np.loadtxt(chainfile, skiprows=17, unpack=True)
+        except ValueError:
+            f = open(chainfile, 'r')
+            TO3_list = []
+            TO2_list = []
+            Chi2_list = []
+            i = 17
+            for line in f.readlines():
+                ''' skip the first 16 lines of the file, which contain the previous running time, benchmark abundances, best
+                chi2 fitted model, and the uncertainties associated with that particular model.'''
+                # skip the rest of the info until the actual chain
+                if i > 16:
+                # Check that if the file has strings in the main body
+                    if '[' or '\n' in line:
+                        abunds_temps_chi2_string = line.strip()
+                        abunds_temps_chi2_list = string.split(abunds_temps_chi2_string, sep="[")
+                        temps_chi2_list = string.split(abunds_temps_chi2_list[1], sep="\\n")
+                        to3 = float(string.replace(temps_chi2_list[0], "' ", ""))
+                        to2 = float(string.replace(temps_chi2_list[1], "', ' ", ""))
+                        chi = float(string.replace(temps_chi2_list[2], "']", ""))
+                        TO3_list.append(to3)
+                        TO2_list.append(to2)
+                        Chi2_list.append(chi)
+                    else:
+                        He, O, CO, NO, NeO, SO, TO3, TO2, Chi2 = np.loadtxt(chainfile, skiprows=17, unpack=True)
+                        # last positions
+                        pos_matrix = self.matrix_lastpos(He, O, CO, NO, NeO, SO, nwalkers)
+                        return prev_run_time, pos_matrix, He, O, CO, NO, NeO, SO, TO3, TO2, Chi2
+                i = i + 1
+            f.close()
+            # Turn lists into numpy arrays
+            TO3 = np.array(TO3_list)
+            TO2 = np.array(TO2_list)
+            Chi2 = np.array(Chi2_list)
+            # Now read the abundances part of the file
+            He, O, CO, NO, NeO, SO = np.loadtxt(chainfile, skiprows=17, usecols=(0,1,2,3,4,5), unpack=True)
+        # last positions
+        pos_matrix = self.matrix_lastpos(He, O, CO, NO, NeO, SO, nwalkers)
+        return prev_run_time, pos_matrix, He, O, CO, NO, NeO, SO, TO3, TO2, Chi2
+        
     def run_chain(self):
         # start the timer to compute the whole running time
         start_time = time.time()
@@ -490,7 +557,7 @@ class MCMC:
         # c) initialize positions randomly
         #p0 = [np.random.rand(ndim) for i in xrange(nwalkers)]
         # d) initialize semi-randomly -- with previous knowledge
-        p0 = [[np.random.uniform(9.6, 11.9), np.random.uniform(7.6, 8.6), np.random.uniform(-1.5, 1.6), np.random.uniform(-1.6, 1.5),
+        p0 = [[np.random.uniform(9.6, 11.9), np.random.uniform(7.6, 8.6), np.random.uniform(-1.5, 1.6), np.random.uniform(-1.6, -0.5),
                np.random.uniform(-0.9, 0.009), np.random.uniform(-2.2, -1.3)] for i in range(nwalkers)]
         
         #pool = mp.Pool()   # using multiprocessing module 
@@ -499,13 +566,19 @@ class MCMC:
         #if not pool.is_master():
         #    pool.wait()
         #    sys.exit(0)
-            
+        
+        #Start the chain from where it left off last time
+        if self.recover:
+            print '\nUsing previous position matrix for next Cloudy models...'
+            prev_run_time, p0, He, O, CO, NO, NeO, SO, TO3, TO2, Chi2 = self.read_chain4starting_posmatrix(nwalkers)
+        
+        # Initialize the sampler
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=(meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr))#, threads=self.n_proc)#pool=pool)
         
         #pool.close()   # using multiprocessing module or the MPI module
         
         #print 'THESE ARE THE true abundances:', self.true_abunds
-        print 'THIS IS p0:', p0
+        #print 'THIS IS p0:', p0
         #p0, prob, state = sampler.run_mcmc(p0, 10)   # this allows for the first few steps to be "burn-in" type
         #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", p0
         pos, prob, rstate = sampler.run_mcmc(p0, nruns)   # do the mcmc starting at p0 for nruns steps
@@ -531,6 +604,7 @@ class MCMC:
         chain_file = os.path.abspath(self.dir+self.model_name+"_chain.dat")
         f = open(chain_file, "w")
         f.close()
+            
         time2run = 'Chain finished! Took  %s  seconds to finish.' % (time.time() - start_time)
         lines4chi = 'Used %i lines to determine Chi2.' % self.lines4Chi2calculation
         # best model
@@ -565,16 +639,24 @@ class MCMC:
         f.write(repr(p_mcmc1)+"\n")
         f.close()
 
+        # if there is a previous chain
+        if self.recover:
+            f = open(chain_file, "a")
+            for he, o, co, no, neo, so, to3, to2, chi2 in zip(He, O, CO, NO, NeO, SO, TO3, TO2, Chi2):
+                print >> f, "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
+            f.close()
+            
         count = 1
         
-        for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
+        for posn, prob, state in sampler.sample( pos, iterations=50, storechain=True ):
             print "COUNT", count
             if count % 1 == 0:
                 f = open(chain_file, "a")
                 for k in range( posn.shape[0] ):
                     strout = ""
-                    for p in pos[k]: strout += "{:8.3f} ".format( p )
-                    strout += "{:<10}".format( self.mod_temps[k] )
+                    for p in pos[k]: strout += "{:<8.3f} ".format( p )
+                    TO3, TO2 = self.mod_temps[k]
+                    strout += "{:<15} {:<15}".format( float(TO3), float(TO2) )
                     strout += "{:<20.3f}".format( prob[k] )
                     print strout
                     f.write(strout+"\n")
@@ -596,7 +678,7 @@ class MCMC:
         print percentiles
         print p_mcmc1
         print p_mcmc2
-
+        '''
         fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
                               samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"], 
                               truths=[self.true_abunds[0], self.true_abunds[1], self.true_abunds[2]+self.true_abunds[1], 
@@ -606,6 +688,6 @@ class MCMC:
         fig = triangle.corner(samples[0], samples[1], samples[2]+samples[1], samples[3]+samples[1], samples[4]+samples[1], 
                               samples[5]+samples[1], labels=["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"])
         fig.savefig(os.path.abspath(self.dir+self.model_name+"_abstot2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"))
-
+        '''
 
         
