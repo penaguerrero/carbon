@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pyCloudy as pc
 import time
 #import mcmc_infrastructure as mcmcis
-import mcmc_infrastruc_multipross as mcmcis
+import mcmc_infrastruc_classes as mcmcis
 
 ##################################################################################################################
 # name of the object
@@ -12,7 +12,8 @@ import mcmc_infrastruc_multipross as mcmcis
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 1
+object_number = 2 
+recover = False   # set to True if you want to recover a previous chain and start a new one from there
 
 object_name = objects_list[object_number] 
 
@@ -114,11 +115,14 @@ iterations = 3
 keep_files = None
 
 # Number of processors
-n_proc = 8
+n_proc = 2 
 
 initial_Cloudy_conditions = [model_name, dens, emis_tab, theta, stb99_table, age, dir, verb, options, iterations, keep_files] 
-mchammer = mcmcis.MCMC(object_name, manual_measurement, initial_Cloudy_conditions, n_proc)
+mchammer = mcmcis.MCMC(object_name, manual_measurement, initial_Cloudy_conditions, n_proc, recover=recover)
 mchammer.run_chain()
 
-print '\nCode finished! Took  %s  seconds to finish.' % (time.time() - start_time)
+print '\nCode finished! Took  %s  days to finish.' % ((time.time() - start_time) / 86400.0)  # so that the final time is in days.
+
+exit()
+
 
