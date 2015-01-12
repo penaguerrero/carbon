@@ -30,6 +30,8 @@ yerr = np.array([np.random.uniform(-2., 2.) for _ in range(n)])   # error in the
 
 # likelihood function
 def lnlike(theta, xobs, yobs, yerrobs):
+    print len(theta), theta
+    print len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs
     model = line_eq(theta, xobs)
     chi2 = (yobs - model)**2 / yerrobs**2
     chi2 = chi2.sum()
@@ -56,7 +58,7 @@ def lnprob(theta, x, y, yerr):
     return lp + lnlike(theta, x, y, yerr)
 
 # now set stuff for the mcmc, start with number of dimensions, walkers, and number of runs 
-ndim, nwalkers, nruns = 2, 100, 50
+ndim, nwalkers, nruns = 2, 10, 1
 # now we need a starting point for each walker, a ndim-vector to get a nwalkers-by-ndim array.
 # there are 2 ways to initialize the walkers:
 '''
@@ -70,13 +72,17 @@ sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, yerr))
 # b) randomly and letting the first few walks to be "burn-in" in order to explore the parameter space
 p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
+#print 'pos=', p0
 pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 steps to be "burn-in" type
+#print 'pos=', pos
+#print 'prob=', prob
+#print 'state=', state
 
 # To store the chain....
 f = open("line_chain.dat", "w")
 f.close()
 count = 1
-for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
+for posn, prob, state in sampler.sample( pos, iterations=20, storechain=False ):
     print "COUNT", count
     if count % 1 == 0:
         f = open("line_chain.dat", "a")
@@ -89,9 +95,9 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=True ):
         f.close()
     count += 1
 
-sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
+#sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
 
-pos, prob, state = sampler.run_mcmc(pos, nruns)   # do the mcmc which nruns steps
+#pos, prob, state = sampler.run_mcmc(pos, nruns)   # do the mcmc which nruns steps
 #print 'pos=', pos
 #print 'prob=', prob
 #print 'state=', state
