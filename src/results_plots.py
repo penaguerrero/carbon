@@ -149,9 +149,6 @@ Clhe, Clo, Clc, Cln, Clne, Cls, Clto3, Clto2 = numpy.loadtxt(fname, skiprows=1, 
 
 # C/O vs O/H from OBSERVATIONS
 fig1 = plt.figure(1, figsize=(12, 10))
-# C/O vs O/H from SIMULATIONS
-plt.plot(Clo, Clc-Clo, 'ro')
-# C/O vs O/H from OBSERVATIONS
 #plt.errorbar(OH, CO, xerr=OHerr, yerr=COerr, fmt='ko')    # this plots ALL points with the same symbol
 for obj, i in zip(objects_list, indeces_list):
     if obj in objects_with_Te:
@@ -218,12 +215,12 @@ for x, xe, y, ye, z in zip(Clo, OHerr, Clc-Clo, COerr, objects_list):
     subxcoord = -4
     subycoord = 5
     side = 'right'
-    if (z == 'sbs1319'):
+    if (z == 'sbs1319') or (z == 'pox4'):
         subxcoord = 16
-        subycoord = -12
-    if (z == 'pox4'):
-        subxcoord = 16
-        subycoord = 7
+        subycoord = -13
+    #if (z == 'pox4'):
+    #    subxcoord = 16
+    #    subycoord = 7
     if (z == 'mrk5'):
         subxcoord = 34
         subycoord = -2
