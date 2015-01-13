@@ -377,6 +377,15 @@ def clean_directory(object_name, debug=False):
     os.system('rm -f test_walker*'+object_name+'*.job')
     os.system('rm -f logs/*'+object_name+'*.out')
     os.system('rm -f logs/*'+object_name+'*.log')
+    # If the Cloudy out file is empty erase it, else move it to the out files directory.
+    files_path = "/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/"+object_name
+    files_list = glob(files_path+"/mcmc_"+object_name+"*.out")
+    for f in files_list:
+        empty_file = os.stat(f).st_size == 0
+        if empty_file:
+            os.system("rm "+f)
+        else:
+            os.system("mv "+f+" outfiles")
     
     
 def matrix_lastpos(He, O, CO, NO, NeO, SO, nwalkers):
