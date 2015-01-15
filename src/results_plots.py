@@ -11,17 +11,17 @@ This scripts takes the found metallicities and produces:
  * plot of N/O vs Otot
  * plot of Ne/O vs Otot
  
- NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanches & Esteban 2010
+ NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanchez & Esteban 2010
 '''
 
 use_our_sample_ONLY = False
 save_images = False
 use_our_sample_ONLY = True
-save_images = True
+save_images = False
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
-typeofimage = '.jpg'
+typeofimage = '.eps'
 
 ############################################################################################################################################
 
@@ -168,13 +168,13 @@ for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     subxcoord = -4
     subycoord = 5
     side = 'right'
-    if (z == 'pox4'):
-        subxcoord = -8
-        subycoord = -7
+    #if (z == 'pox4'):
+    #    subxcoord = -8
+    #    subycoord = -7
     if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'mrk5') or (z == 'Sun'):
         subxcoord = -4
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'pox4') or (z == 'iiizw107') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 5
         side = 'left'
     if (z == 'ngc346'):
@@ -212,22 +212,20 @@ plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, xe, y, ye, z in zip(Clo, OHerr, Clc-Clo, COerr, objects_list):
-    subxcoord = -4
+    subxcoord = -1
     subycoord = 5
     side = 'right'
-    if (z == 'sbs1319') or (z == 'pox4'):
-        subxcoord = 16
+    if (z == 'pox4') or (z == 'sbs0948'):
+        subxcoord = 3
         subycoord = -13
-    #if (z == 'pox4'):
-    #    subxcoord = 16
-    #    subycoord = 7
-    if (z == 'mrk5'):
-        subxcoord = 34
+    if (z == 'mrk5') or (z == 'sbs1319') or (z == 'sbs1054'):
+        subxcoord = 5
         subycoord = -2
+        side = 'left'
     if (z == 'iras08339') or (z == 'Sun'):
         subycoord = -12
         side = 'left'
-    if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'iras08208') or (z == 'arp252') or (z == 'Orion'):
         subxcoord = 5
         side = 'left'
     if (z == 'ngc346'):
