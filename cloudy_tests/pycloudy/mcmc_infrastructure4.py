@@ -385,7 +385,7 @@ def clean_directory(object_name, debug=False):
         if empty_file:
             os.system("rm "+f)
         else:
-            os.system("mv "+f+" outfiles")
+            os.system("mv "+f+" /user/pena/pycloudy_stuff/"+object_name+"/outfiles/")
     
     
 def matrix_lastpos(He, O, CO, NO, NeO, SO, nwalkers):
@@ -488,6 +488,11 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
     if recover:
         if debug:
             print '\nUsing previous position matrix for next Cloudy models...'
+        string_step = raw_input('If wanting to restart the chain from a certain step type the number, else press Enter   ')
+        if string_step == " ":
+            restart_from = 0
+        else:
+            restart_from = int(string_step) - 1
         prev_run_time, pos_matrix, He, O, CO, NO, NeO, SO, TO3, TO2, Chi2 = read_chain4starting_posmatrix(chain_file, object_name, nwalkers)
         # create a new chain file and write the previous info
         f = open(chain_file, "w")
@@ -524,13 +529,10 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
                                     threads=threads)
 
     for main_counter in range(nruns):
+        if main_counter == 0:
+            main_counter = restart_from
         print '\n*** --->  Starting step number: ', main_counter+1, '\n'
-        path2file = 'carbon/cloudy_tests/pycloudy/'+object_name
-        path2file_list = string.split(os.getcwd(), sep='carbon')
-        testwalkstxt = 'carbon/cloudy_tests/pycloudy/'+object_name+'/'+object_name+'_testwalks.txt'
-        testwalks_file = os.path.join(path2file_list[0], testwalkstxt)
-        f = open(testwalks_file, "w")
-        f.close()
+        # If restarting the chain set counter to desired step, else start from 0
         if debug:
             print 'obtaining next position matrix...'
         pos_matrix, prob, rstate = sampler.run_mcmc(pos_matrix, 1)
