@@ -21,9 +21,9 @@ Choose parameters to run script
 
 # name of the object
 #                  0            1           2          3         4        5         6         7         8
-objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
-               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
-#                 9           10         11         12         13       14        15         16         17
+objects_list = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
+                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+#                  9           10         11         12         13       14        15         16         17
 # Type number for specific analysis or 'all' for only intensities and S/N of the given lines 
 object_number = 'all'
 
@@ -121,6 +121,39 @@ def find_ticks(main_ticks_repeated, minor_ticks_repeated):
     minorLocator   = MultipleLocator(minor_ticks_repeated)
     return majorLocator, majorFormatter, minorLocator
 
+def pretty_print_info(objects_list, float_data_all, s2n_all, sub_list):
+    diffs_abunds_list, diffs_temps_list, lines_info_list = [], [], []
+    for obj in sub_list:
+        object_number = objects_list.index(obj)
+        #wave, flambda, flux, ferr, fperr, intensity, ierr, iperr, ew, ewerr, ewperr = float_data_all[object_number]
+        wave, _, _, _, _, intensity, _, _, _, _, _ = float_data_all[object_number]
+        s2n = s2n_all[object_number]
+        lines_info = []
+        # get ONLY the intensity and S/N to print for all objects
+        for l in lines2look4:
+            if l in rounded_wavs:
+                _, idx = spectrum.find_nearest(wave, l)
+                linfo = [ intensity[idx], s2n[idx] ]
+                lines_info.append(linfo)
+        lines_info_list.append(lines_info)
+        lines2print = ''
+        for li in lines_info:
+            lines2print = lines2print+'{:>8.2f} {:<8.2f}'.format(li[0], li[1])
+        # Calculate the differences with the benchmark values
+        diffs_abunds, diffs_temps = get_diff2benchmark(object_number)
+        diffs_abunds_list.append(diffs_abunds)
+        diffs_temps_list.append(diffs_temps)
+        diffs_abundss2print = ''
+        for d in diffs_abunds:
+            diffs_abundss2print = diffs_abundss2print+'{:>6.2f} {:>5.2f} {:>5.2f} {:>5.2f} {:>5.2f} {:>5.2f}'.format(
+                                                                                  d[0], d[1], d[2], d[3], d[4], d[5] )        
+        # Print as a formated string the whole line per object
+        diffs_temps2print = ''
+        for dt in diffs_temps:
+            diffs_temps2print = diffs_temps2print+'{:>6} {:>6}'.format(int(dt[0]), int(dt[1]))        
+        print '{:<10}'.format(objects_list[object_number]), lines2print, diffs_abundss2print, diffs_temps2print
+    return diffs_abunds_list, diffs_temps_list, lines_info_list
+
 
 #### CODE
 
@@ -133,6 +166,11 @@ use_given_lineinfo_list = [False, True, True, True, True, False, False, False, F
                            False, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
     
+# Divide the sample into 2 lists: 
+flatCO = ['mrk5', 'ngc1741', 'sbs0926', 'tol1457', 'tol9', 'iras08208']
+slopeCO = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk960', 'pox4', 'sbs0218',
+           'sbs0948', 'sbs1054', 'sbs1319', 'arp252', 'sbs1415']
+
 if object_number == 'all':
     str_data_all, float_data_all, s2n_all = [], [], []
     for object_number in range(len(objects_list)):
@@ -149,7 +187,7 @@ if object_number == 'all':
             float_lines2look4.append(l)
     # Headers
     colhead0 = '{:<50}'.format('# ')
-    colhead0 = colhead0+' {:<130} {:>60}'.format('Intensity/Hbeta  and  S/N  for the following lines', 'Differences with benchmark values')
+    colhead0 = colhead0+' {:<130} {:>40}'.format('Intensity/Hbeta  and  S/N  for the following lines', 'Differences with benchmark values')
     colhead = '{:8}'.format('#Galaxy')
     for line_of_interest in float_lines2look4:
         colhead = colhead+' {:>16}'.format(line_of_interest)
@@ -158,6 +196,24 @@ if object_number == 'all':
     print colhead
     # Create the lines to print 
     diffs_abunds_list, diffs_temps_list, lines_info_list = [], [], []
+    print '\nFlat C/O vs O/H behavior'
+    diffs_abunds_list1, diffs_temps_list1, lines_info_list1 = pretty_print_info(objects_list, float_data_all, s2n_all, flatCO)
+    print '\nSlope C/O vs O/H behavior'
+    diffs_abunds_list2, diffs_temps_list2, lines_info_list2 = pretty_print_info(objects_list, float_data_all, s2n_all, slopeCO)
+    # combine information in the right order
+    for obj in objects_list:
+        if obj in flatCO:
+            i = flatCO.index(obj)
+            diffs_abunds_list.append(diffs_abunds_list1[i])
+            diffs_temps_list.append(diffs_temps_list1[i])
+            lines_info_list.append(lines_info_list1[i])
+        elif obj in slopeCO:
+            i = slopeCO.index(obj)
+            diffs_abunds_list.append(diffs_abunds_list2[i])
+            diffs_temps_list.append(diffs_temps_list2[i])
+            lines_info_list.append(lines_info_list2[i])
+    
+    '''
     for object_number in range(len(objects_list)):
         wave, flambda, flux, ferr, fperr, intensity, ierr, iperr, ew, ewerr, ewperr = float_data_all[object_number]
         s2n = s2n_all[object_number]
@@ -185,7 +241,8 @@ if object_number == 'all':
         for dt in diffs_temps:
             diffs_temps2print = diffs_temps2print+'{:>6} {:>6}'.format(int(dt[0]), int(dt[1]))        
         print '{:<10}'.format(objects_list[object_number]), lines2print, diffs_abundss2print, diffs_temps2print
-        
+    '''
+      
     # PLOTS
     path_list = string.split(os.getcwd(), sep='carbon')
     carbon_dir = 'carbon/cloudy_tests/pycloudy/'
