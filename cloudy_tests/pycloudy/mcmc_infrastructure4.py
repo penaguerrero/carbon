@@ -528,9 +528,7 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
     sampler = emcee.EnsembleSampler(nwalkers, ndim, new_lnprob, args=[object_name, manual_measurement, init_Cldy_conds_file, debug],
                                     threads=threads)
 
-    for main_counter in range(nruns):
-        if main_counter == 0:
-            main_counter = restart_from
+    for main_counter in range(restart_from, nruns):
         print '\n*** --->  Starting step number: ', main_counter+1, '\n'
         # If restarting the chain set counter to desired step, else start from 0
         if debug:
