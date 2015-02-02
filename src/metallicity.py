@@ -2068,13 +2068,52 @@ class AdvancedOps(BasicOps):
         #O23sq = (Otot * 0.35)**2
         Ototerr = numpy.sqrt(O23sq)
         O_errp = (Ototerr*100) / Otot
-        #print '    absOtot = ', Otot, '+-', Ototerr, ', which is', O_errp,'% of error'
-        print '    absOtot = %0.3e +- %0.3e (~%0.3f percent)' % (Otot, Ototerr, O_errp)
-        print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
+        O2per = self.atom_abun['O2'][1]*100 / self.atom_abun['O2'][0]
+        logO2 = 12+numpy.log10(self.atom_abun['O2'][0])
+        errlogO2 = self.atom_abun['O2'][1]/(2.303*self.atom_abun['O2'][0])
+        O3per = self.atom_abun['O3'][1]*100 / self.atom_abun['O3'][0]
+        logO3 = 12+numpy.log10(self.atom_abun['O3'][0])
+        errlogO3 = self.atom_abun['O3'][1]/(2.303*self.atom_abun['O3'][0])
         # For such assumption see Lopez-Sanchez & Esteban (2009) and Izotov et al. (2006) 
         logOtot = 12+numpy.log10(Otot)
         #logOtoterr = numpy.log10(numpy.abs(100+O_errp) / numpy.abs(100-O_errp))/2.0
         logOtoterr = Ototerr / (2.303 * Otot)        # equivalent method to above
+        print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
+        print '     O^3+/H+ = ', self.atom_abun['O3'][0], ' +- ', self.atom_abun['O3'][1], '= %0.0f percent' % (O3per)
+        print '     O^3+/H+ = %0.2f  +- %0.2f' % (logO3, errlogO3)
+        print '     O^2+/H+ = ', self.atom_abun['O2'][0], ' +- ', self.atom_abun['O2'][1], '= %0.0f percent' % (O2per)
+        print '     O^2+/H+ = %0.2f  +- %0.2f' % (logO2, errlogO2)
+        #print '    absOtot = ', Otot, '+-', Ototerr, ', which is', O_errp,'% of error'
+        print '    absOtot = %0.3e +- %0.3e (~%0.0f percent)' % (Otot, Ototerr, O_errp)
+        print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
+        # To "play" with different uncertainites usefollowing lines, else press enter...
+        useOerr_definition = 'y'
+        print 'Use ', Ototerr, ' (', logOtoterr, ' dex) as O error?  '
+        useOerr = raw_input('If YES press enter or type "y", otherwise type the desired DEX to be used   ') 
+        if (useOerr == useOerr_definition) or (useOerr == ''):
+            Ototerr = Ototerr
+            O2err = self.atom_abun['O2'][1]
+            O3err = self.atom_abun['O3'][1]
+        else:
+            logOtoterr = float(useOerr)
+            Otot_up = 10**(logOtot+logOtoterr - 12.0) - 10**(logOtot - 12.0)
+            Otot_down = 10**(logOtot - 12.0) - 10**(logOtot-logOtoterr - 12.0)
+            Ototerr = (Otot_up + Otot_down) / 2.0
+            O_errp = (Ototerr*100) / Otot
+            print 'Assuming that the uncertainty of O^2+ is always higher than that for O^3+ by about 1/3 of the uncertainty of O2...'
+            O2logerr = logOtoterr + 0.02
+            O2err_up = 10**(logO2+O2logerr - 12.0) - 10**(logO2 - 12.0)
+            O2err_down = 10**(logO2 - 12.0) - 10**(logO2-O2logerr - 12.0)
+            O2err = (O2err_up + O2err_down) / 2.0
+            O3logerr = O2logerr - O2logerr/3.0 
+            O3err_up = 10**(logO3+O3logerr - 12.0) - 10**(logO3 - 12.0)
+            O3err_down = 10**(logO3+O3logerr - 12.0) - 10**(logO3 - 12.0)
+            O3err = (O3err_up + O3err_down) / 2.0
+            O23sq = O2err**2 + O3err**2
+            print O23sq, Ototerr**2
+            print 'Using:\n    absOtot = %0.3e +- %0.3e (~%0.0f percent)' % (Otot, Ototerr, O_errp)
+            print '     O^3+/H+ = %0.2f  +- %0.2f' % (12+numpy.log10(self.atom_abun['O3'][0]), O3err/(2.303*self.atom_abun['O3'][0]))
+            print '     O^2+/H+ = %0.2f  +- %0.2f' % (12+numpy.log10(self.atom_abun['O2'][0]), O2err/(2.303*self.atom_abun['O2'][0]))
         R = Otot / Otot
         Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 )
@@ -2363,10 +2402,16 @@ class AdvancedOps(BasicOps):
         
         # METHODS NOT IN PYNEB
         
+        # Oxygen ionization degree (Pena-Guerrero et al. 2012b):
+        OID = self.atom_abun['O3'][0] / (self.atom_abun['O2'][0] + self.atom_abun['O3'][0])
+        errO2pO3 = numpy.sqrt( (O2err)**2 + (O3err)**2 )
+        oiderr = numpy.sqrt( (O3err/self.atom_abun['O3'][0])**2 + (errO2pO3/(self.atom_abun['O2'][0]+self.atom_abun['O3'][0]))**2 )
+        print '\n***  OID = O^3+ / ( O^2+ + O^3+) =  %0.02f +- %0.2f' % (OID, oiderr) 
+
         # Corrected Auroral Line Method (Pena-Guerrero et al. 2012b):
         Ocalm = 1.0825 * elem_abun['O'][3] - 0.375
         errOcalm = 1.0825 * elem_abun['O'][4]
-        print '\nO_direct = %0.2f +- %0.2f    O_CALM = %0.2f +- %0.2f' % (elem_abun['O'][3], elem_abun['O'][4], Ocalm, errOcalm)
+        print 'O_direct = %0.2f +- %0.2f    O_CALM = %0.2f +- %0.2f' % (elem_abun['O'][3], elem_abun['O'][4], Ocalm, errOcalm)
         
         # Recalibrated R23 Method O abundances (Pena-Guerrero et al. 2012b):
         #if (self.I_3727[0] != 0.0) and (self.I_4959[0] != 0.0) and (self.I_5007[0] != 0.0):
@@ -2381,7 +2426,7 @@ class AdvancedOps(BasicOps):
             errP2 = 2*P*errP
             print 'R_23 = %0.2f +- %0.2f        P = %0.2f +- %0.2f' % (R23, errR23, P, errP)
             if Ocalm >= 8.55:#elem_abun['O'][3] >= 8.25:
-                Orrm = (R23 + 1837.0 + 2146.0*P + 850.0*P*P) / (209.5 + 201.7*P + 43.98*P*P + 1.793*R23)
+                Orrm = (R23 + 1837.0 + 2146.0*P + 850.0*P*P) / (209.5 + 201.7*P + 107.2*P*P + 4.37*R23)
                 e1 = numpy.sqrt(errR23**2 + 2146.0*errP**2 + 850.0*errP2**2)
                 e2 = numpy.sqrt(201.7*errP**2 + 43.98*errP2**2 + 1.793*errR23**2)  
                 errOrrm = Orrm * numpy.sqrt((e1/(R23 + 1837.0 + 2146.0*P + 850.0*P*P))**2 + (e2/(209.5 + 201.7*P + 43.98*P*P + 1.793*R23))**2)
@@ -3124,7 +3169,7 @@ class AdvancedOps(BasicOps):
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             CHbeta, cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
-            write_RedCorfile(self.object_name, self.tfile2ndRedCor, cols_2write_in_file)
+            write_RedCorfile(self.tfile2ndRedCor, cols_2write_in_file)
             # cols_2write_in_file contains the following columns:
             # catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, norm_fluxes, errflux, percerrflx, 
             # norm_Idered, percent_Iuncert, absolute_Iuncert, EW, err_EW, perrEW
