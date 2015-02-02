@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 17
+object_number = 5
 # Is this a TEST run?
 TEST_run = False
 
@@ -33,7 +33,7 @@ case = 'B'
 # Write the text file with line info?
 create_txt_lineinfo = False
 # Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = True
+create_txt_temdenabunds = False
 
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
@@ -50,16 +50,16 @@ forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8450.,9250.]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
-#                   0         1                2          3            4           5                6          7     8           
-forceTeO2_list = [None, [9100.,10100.], [10500.,12500.], None, None, [9000.,10900.], [12400.,13200.], None, None,
-                  None, None, None, [12400.,12800.], [8300.,9000.], [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
-#                   9    10    11         12              13             14             15         16        17 
+#                        0               1                2           3      4           5                6          7           8           
+forceTeO2_list = [[10500.,11500.], [9100.,10100.], [10500.,12500.], 8900., None, [9600.,10900.], [12400.,13200.], None, [12200.,12750.],
+                  None, [12200.,12800.], None, [12400.,12800.], None, [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
+#                   9         10          11         12          13        14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
 
-#                   0           1             2              3        4         5             6        7        8           
-forceNe_list = [[200,900], [100., 650.], [100., 3000.], [800, 2100], None, [100., 3000.], [100,300], None, [100., 655],
-                200.,  [100, 200.], None, None, None, None, [100, 1000], 100., [100, 200.]]
-#                 9        10*       11    12    13    14        15      16         17 
+#                   0           1             2              3        4         5             6           7           8           
+forceNe_list = [[200,900], [100., 650.], [115., 3000.], [100, 2100], None, [100., 3000.], [100,300], [250.,80.], [140., 80],
+                [250.,80],  [100,200.], None, None, None, [180.,60.], [300,100], 100., [100, 200.]]
+#                   9          10        11    12    13       14         15      16         17 
 forceNe = forceNe_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
@@ -444,7 +444,7 @@ He_value = He_value_list[object_number]
 advops = metallicity.AdvancedOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
                                  case, use_Chbeta, theoCE, He_value, writeouts, verbose, tfile2ndRedCor)
 
-lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE, )
+lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE)
 
 
 print '\n Code finished!'
