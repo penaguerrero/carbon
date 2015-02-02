@@ -313,7 +313,7 @@ true_abunds, true_temps = get_true_abunds(object_name)
 # Load the chain and create the samples
 chain_file = os.path.abspath('mcmc_'+object_name+'_chain.dat')
 if not_final:
-    chain_file = os.path.abspath('mcmc_'+object_name+'_chain0.dat')
+    chain_file = os.path.abspath('mcmc_'+object_name+'_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
 He, O, CO, NO, NeO, SO, TO3, TO2, prob = np.loadtxt(chain_file, skiprows=17, unpack=True)
 samples = np.array([]).reshape(0, len(true_abunds))
 for he, o, co, no, neo, so in zip(He, O, CO, NO, NeO, SO):
@@ -416,7 +416,7 @@ if mk_plots or contours:
                           truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
                                   true_abunds[4], true_abunds[5]] ,
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
-                          extents=[(9.5, 12.0), (7.5, 8.8), (-1.5, 1.7), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
+                          extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
                           )
     pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"
     fig.savefig(os.path.abspath(pltbench))
