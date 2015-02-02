@@ -58,7 +58,7 @@ def lnprob(theta, x, y, yerr):
     return lp + lnlike(theta, x, y, yerr)
 
 # now set stuff for the mcmc, start with number of dimensions, walkers, and number of runs 
-ndim, nwalkers, nruns = 2, 10, 1
+ndim, nwalkers, nruns = 2, 100, 100
 # now we need a starting point for each walker, a ndim-vector to get a nwalkers-by-ndim array.
 # there are 2 ways to initialize the walkers:
 '''
@@ -77,7 +77,7 @@ pos, prob, state = sampler.run_mcmc(p0, 50)   # this allows for the first 50 ste
 #print 'pos=', pos
 #print 'prob=', prob
 #print 'state=', state
-
+'''
 # To store the chain....
 f = open("line_chain.dat", "w")
 f.close()
@@ -94,7 +94,7 @@ for posn, prob, state in sampler.sample( pos, iterations=20, storechain=False ):
             f.write(strout+"\n")
         f.close()
     count += 1
-
+'''
 #sampler.reset()   # then restart the mcmc at the final position of the "burn-in", pos
 
 #pos, prob, state = sampler.run_mcmc(pos, nruns)   # do the mcmc which nruns steps
