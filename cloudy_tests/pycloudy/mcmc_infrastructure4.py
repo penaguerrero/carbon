@@ -148,9 +148,9 @@ def new_lnprob(theta, object_name, manual_measurement, init_Cldy_conds_file, deb
         return lp + lnChi2
     return lp
 
-
+'''
 def store_chain(object_name, chain_file, debug=False):
-    ''' Store the chain.... '''
+    # Store the chain....
     if debug:
         print 'Entering store_chain function...'
     He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list = get_abstempschis(object_name, debug=debug)
@@ -164,7 +164,50 @@ def store_chain(object_name, chain_file, debug=False):
         #strout = "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
         #f.write(strout+'\n')
     f.close()
+'''
+def store_chain(object_name, pos_matrix, chain_file, debug=False):
+    # Store the chain.... 
+    if debug:
+        print 'Entering store_chain function...'
+    He_files, O_files, CO_files, NO_files, NeO_files, SO_files = np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
+    for set in pos_matrix:
+        He_files = np.append(He_files, set[0])
+        O_files = np.append(O_files, set[1])
+        CO_files = np.append(CO_files, set[2])
+        NO_files = np.append(NO_files, set[3])
+        NeO_files = np.append(NeO_files, set[4])
+        SO_files = np.append(SO_files, set[5])
+    TO3_files, TO2_files, Chi2list = get_from_files(object_name, pos_matrix, debug=debug)
+    if debug:
+        print 'lengths of lists to append to chain_file:'
+        print len(He_files), len(O_files), len(CO_files), len(NO_files), len(NeO_files), len(SO_files), len(TO3_files), len(TO2_files), len(Chi2list)
+    f = open(chain_file, "a")
+    for he, o, co, no, neo, so, to3, to2, chi2 in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list):
+        if to3 and to2 != 0:
+            print >> f, "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
+    f.close()
     
+'''def get_from_files(object_name, debug=False):
+    TO2, TO3 = [], []
+    He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list = get_abstempschis(object_name, debug=debug)
+    for he, o, co, no, neo, so, to3, to2, chi in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list):
+        set = [he, o, co, no, neo, so]
+        TO2 = np.append(TO2, to2)
+        TO3 = np.append(TO3, to3)
+    return TO3, TO2'''
+def get_from_files(object_name, pos_matrix, debug=False):
+    TO2, TO3, probs = np.array([]), np.array([]), np.array([])
+    He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list = get_abstempschis(object_name, debug=debug)
+    i = 0
+    for he, o, co, no, neo, so, to3, to2, chi in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list):
+        set = [he, o, co, no, neo, so]
+        if set in pos_matrix:
+            TO2 = np.append(TO2, TO2_files[i])
+            TO3 = np.append(TO3, TO3_files[i])
+            probs = np.append(probs, Chi2list[i])
+        i = i + 1
+    print 'Lengths of temperatures and likelihood arrays: ', len(TO3), len(TO2), len(probs)
+    return TO3, TO2, probs
 
 def create_HTConjob(jobname, positions, unique_names_list, object_name, manual_measurement, init_Cldy_conds_file, single_job=None, rint=None, debug=False):
     if debug:
@@ -485,6 +528,7 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
     chain_file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name+'/'+model_name+'_chain0.dat'
     
     # If there was a previous chain ran, start from there
+    restart_from = 0
     if recover:
         if debug:
             print '\nUsing previous position matrix for next Cloudy models...'
@@ -540,7 +584,8 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
             print 'got it! shape of NEXT position matrix: ', np.shape(pos_matrix)
             #print pos_matrix
             print 'ok! Now storing the chain for step number: ', main_counter+1, '\n'
-        store_chain(object_name, chain_file, debug=debug)
+        #store_chain(object_name, chain_file, debug=debug)
+        store_chain(object_name, pos_matrix, chain_file, debug=debug)
         
         # Clean...
         if debug:
