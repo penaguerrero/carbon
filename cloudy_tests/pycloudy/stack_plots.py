@@ -288,7 +288,7 @@ fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7.5, 8.7), (ymin, ymax)]
 if save_figs:
     fn = object_name+'_CHvsOH.jpg'
     fig.savefig(os.path.abspath(fn))
-    print 'Figure ', CHOH, 'saved!' 
+    print 'Figure ', fn, 'saved!' 
 if show_plots:
     plt.plot(x, y, 'k.')
     plt.show()
