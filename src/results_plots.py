@@ -60,8 +60,8 @@ else:
 ordered_sample = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                   'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 # now divide the sample in objects for in which we found Te and those in which we did not
-objects_with_Te = ['pox4', 'sbs0948', 'sbs1054', 'tol1457', 'iras08208']
-objects_Te_literature = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'sbs0218',
+objects_with_Te = ['mrk5', 'pox4', 'sbs0948', 'sbs1054', 'tol1457', 'iras08208']
+objects_Te_literature = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk960', 'ngc1741', 'sbs0218',
                          'sbs0926', 'sbs1319', 'tol9', 'arp252', 'sbs1415']
 
 # objects not in the sample
@@ -165,16 +165,13 @@ plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.0, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
-    subxcoord = -4
+    subxcoord = -3
     subycoord = 5
     side = 'right'
-    #if (z == 'pox4'):
-    #    subxcoord = -8
-    #    subycoord = -7
-    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'mrk5') or (z == 'Sun'):
+    if (z == 'mrk960') or (z == 'mrk5') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
         subxcoord = -4
         subycoord = -12
-    if (z == 'pox4') or (z == 'iiizw107') or (z == 'ngc456') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion'):
         subxcoord = 5
         side = 'left'
     if (z == 'ngc346'):
@@ -216,17 +213,22 @@ for x, xe, y, ye, z in zip(Clo, OHerr, Clc-Clo, COerr, objects_list):
     subycoord = 5
     side = 'right'
     if (z == 'pox4') or (z == 'sbs0948'):
-        subxcoord = 3
+        subxcoord = 5
+        subycoord = -6
+        side = 'left'
+    if (z == 'sbs0926'):
+        subxcoord = 25
+    if (z == 'sbs0218'):
         subycoord = -13
     if (z == 'mrk5') or (z == 'sbs1319') or (z == 'sbs1054'):
         subxcoord = 5
         subycoord = -2
         side = 'left'
     if (z == 'iras08339') or (z == 'Sun'):
-        subycoord = -12
+        subycoord = -13
         side = 'left'
     if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'iras08208') or (z == 'arp252') or (z == 'Orion'):
-        subxcoord = 5
+        subxcoord = 3
         side = 'left'
     if (z == 'ngc346'):
         subxcoord = 4
@@ -316,13 +318,13 @@ for x, y, z in zip(OH, NO, objects_list):
     if (z == 'mrk5'):
         subxcoord = 7
         side = 'left'
-    if (z == 'Sun') or (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346') or (z == 'sbs0948'):
+    if (z == 'Sun') or (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346'):
         subxcoord = 4
         subycoord = 4
         side = 'left'
     if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'sbs0948') or (z == 'Orion'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
@@ -364,7 +366,7 @@ for x, y, z in zip(OH, NeO, objects_list):
     side = 'right'
     if (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948') or (z == 'ngc346'):
         subycoord = -10
-    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'Orion'):
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5'):
         subxcoord = 5
         subycoord = 4
         side = 'left'
@@ -409,7 +411,7 @@ for x, y, z in zip(OH, CN, objects_list):
     side = 'right'
     if (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948') or (z == 'ngc346') or (z == '30Dor'):
         subycoord = -10
-    if(z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'sbs0948') or (z == 'arp252') or (z == 'Orion'):
+    if(z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'sbs0948') or (z == 'arp252'):
         subxcoord = 5
         subycoord = 4
         side = 'left'
