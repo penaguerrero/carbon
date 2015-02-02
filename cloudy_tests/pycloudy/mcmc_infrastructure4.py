@@ -198,14 +198,12 @@ def store_chain(object_name, pos_matrix, chain_file, debug=False):
 def get_from_files(object_name, pos_matrix, debug=False):
     TO2, TO3, probs = np.array([]), np.array([]), np.array([])
     He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list = get_abstempschis(object_name, debug=debug)
-    i = 0
     for he, o, co, no, neo, so, to3, to2, chi in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list):
         set = [he, o, co, no, neo, so]
         if set in pos_matrix:
-            TO2 = np.append(TO2, TO2_files[i])
-            TO3 = np.append(TO3, TO3_files[i])
-            probs = np.append(probs, Chi2list[i])
-        i = i + 1
+            TO2 = np.append(TO2, to2)
+            TO3 = np.append(TO3, to3)
+            probs = np.append(probs, chi)
     print 'Lengths of temperatures and likelihood arrays: ', len(TO3), len(TO2), len(probs)
     return TO3, TO2, probs
 
