@@ -167,9 +167,9 @@ use_given_lineinfo_list = [False, True, True, True, True, False, False, False, F
 #                            9     10     11     12    13     14     15    16    17
     
 # Divide the sample into 2 lists: 
-flatCO = ['mrk5', 'ngc1741', 'sbs0926', 'tol1457', 'tol9', 'iras08208']
+flatCO = ['mrk5', 'ngc1741', 'tol1457', 'tol9', 'iras08208']
 slopeCO = ['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk960', 'pox4', 'sbs0218',
-           'sbs0948', 'sbs1054', 'sbs1319', 'arp252', 'sbs1415']
+           'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'arp252', 'sbs1415']
 
 if object_number == 'all':
     str_data_all, float_data_all, s2n_all = [], [], []
@@ -331,7 +331,7 @@ if object_number == 'all':
     diffc = get_list2plot(diffs_abunds_list, 2)   
     f4.plot(sn1909, diffc, 'k.')
     f4.set_xlim(-35.0, 120.0)
-    #f4.set_ylim(-0.75, 0.4)
+    f4.set_ylim(-0.85, 0.45)
     f4.set_ylabel('Difference to C')
     #f4.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     
@@ -362,13 +362,9 @@ if object_number == 'all':
             subycoord = 4            
         if (obj == 'mrk5') or (obj == 'sbs1415'):
             subycoord = -10            
-        if (obj == 'iras08339') or (obj == 'arp252') or (obj == 'sbs0218') or (obj == 'mrk960'):
+        if (obj == 'iras08339') or (obj == 'arp252') or (obj == 'iras08208') or (obj == 'mrk960') or (obj == 'sbs1054') or (obj == 'tol1457'):
             side = 'right'
             subxcoord = -4
-        if (obj == 'iras08208'):
-            side = 'right'
-            subxcoord = -4
-            subycoord = -10
         if (obj == 'sbs0948'):
             side = 'right'
             subxcoord = -2
@@ -376,52 +372,60 @@ if object_number == 'all':
         f1.annotate('{}'.format(obj), xy=(sn1666[i], diffo[i]), xytext=(subxcoord, subycoord), ha=side, 
                     textcoords='offset points', fontsize=13)
         # plot of S/N of 4363  VS  Difference to O benchmark
-        subxcoord = 6
+        subxcoord = 4
         subycoord = -7
         side = 'left'
         if (obj == 'mrk1199'):            
-            subycoord = 4            
-        if (obj == 'iras08339') or (obj == 'arp252') or (obj == 'iiizw107') or (obj == 'sbs0218') or (obj == 'iras08208'):
+            subycoord = 6            
+        #if :            
+        #    side = 'right'
+        #    subxcoord = -2
+        #    subycoord = -11            
+        if (obj == 'mrk5') or (obj == 'pox4'):            
+            side = 'right'
+            subxcoord = -2
+            subycoord = -7            
+        if (obj == 'iras08339') or (obj == 'iiizw107') or (obj == 'arp252') or (obj == 'sbs0218'):
             side = 'right'
             subxcoord = -4
             subycoord = 0
-        if (obj == 'ngc1741') or (obj == 'sbs1415') or (obj == 'pox4'):
+        if (obj == 'ngc1741') or (obj == 'sbs1415') or (obj == 'tol1457'):
             subycoord = -10
-        if (obj == 'iras08339') or (obj == 'sbs1054') or (obj == 'tol1457') or (obj == 'sbs1319'):
+        if (obj == 'iras08339') or (obj == 'sbs1054') or (obj == 'sbs1319'):
             subycoord = -1
-        if (obj == 'iras08208') or (obj == 'mrk960') or (obj == 'sbs0948'):
+        if (obj == 'iras08208') or (obj == 'mrk960') or (obj == 'sbs0948') or (obj == 'iras08208'):
             subycoord = -5
         f2.annotate('{}'.format(obj), xy=(sn4363[i], diffo[i]), xytext=(subxcoord, subycoord), ha=side, 
                     textcoords='offset points', fontsize=13)
         # plot of S/N of 5007  VS  Difference to O benchmark
-        subxcoord = 6
+        subxcoord = 4
         subycoord = -4
         side = 'left'
-        if (obj == 'sbs1415') or (obj == 'arp252') or (obj == 'iiizw107') or (obj == 'mrk960') or (obj == 'sbs0218') or (obj == 'sbs1054'):
+        if (obj == 'sbs1415') or (obj == 'arp252') or (obj == 'iiizw107') or (obj == 'mrk960') or (obj == 'sbs1054') or (obj == 'mrk5'):
             side = 'right'
             subxcoord = -4
-        if (obj == 'ngc1741') or (obj == 'iras08208') or (obj == 'sbs0948'):
+        if (obj == 'ngc1741') or (obj == 'sbs0926'):
             side = 'right'
             subxcoord = -4
             subycoord = -8
-        if (obj == 'sbs1054') or (obj == 'mrk1199'):
-            subycoord = 0            
+        if (obj == 'sbs1054') or (obj == 'mrk1199') or (obj == 'sbs0218'):
+            subycoord = 2            
+        if (obj == 'pox4'):
+            subycoord = -10            
         f3.annotate('{}'.format(obj), xy=(sn5007[i], diffo[i]), xytext=(subxcoord, subycoord), ha=side, 
                     textcoords='offset points', fontsize=13)
         # plot of S/N of 1909  VS  Difference to C benchmark
-        subxcoord = 6
+        subxcoord = 4
         subycoord = -6
         side = 'left'
-        if (obj == 'mrk1087'):            
+        if (obj == 'sbs1415') or (obj == 'sbs0218'):            
+            subycoord = 0            
+        if (obj == 'mrk1087') or (obj == 'mrk1199'):            
             subycoord = -10            
-        if (obj == 'iras08339') or (obj == 'iras08208'):
+        if (obj == 'iras08339') or (obj == 'iras08208') or (obj == 'tol1457'):
             side = 'right'
             subxcoord = -4
             subycoord = -4
-        if (obj == 'tol1457') or (obj == 'ngc1741'):
-            side = 'right'
-            subxcoord = -4
-            subycoord = 0
         if (obj == 'arp252'):
             side = 'right'
             subxcoord = -4
@@ -432,10 +436,12 @@ if object_number == 'all':
         subxcoord = -5
         subycoord = -2
         side = 'right'
+        if (obj == 'iiizw107') or (obj == 'sbs1319') or (obj == 'sbs0926'):
+            subycoord = -8
         if (obj == 'sbs0948') or (obj == 'tol1457') or (obj == 'iras08208') or (obj == 'tol9'):
             side = 'left'
             subxcoord = 6
-        if (obj == 'pox4'):
+        if (obj == 'pox4') or (obj == 'sbs1415'):
             side = 'left'
             subxcoord = 4
             subycoord = -10
@@ -445,18 +451,24 @@ if object_number == 'all':
         subxcoord = -4
         subycoord = -4
         side = 'right'
-        if (obj == 'sbs0218') or (obj == 'sbs0926'):            
-            subycoord = -7          
-        if (obj == 'sbs1319'):            
-            subycoord = 1            
-        if (obj == 'sbs1415') or (obj == 'iras08208') or (obj == 'mrk5') or (obj == 'pox4'):
+        if (obj == 'iiizw107') or (obj == 'sbs1319'):
+            subycoord = 1
+        if (obj == 'sbs1054'):
+            subycoord = -11
+        if (obj == 'sbs0218'):            
+            subycoord = 2          
+        if (obj == 'tol1457'):
+            side = 'left'
+            subxcoord = -15
+            subycoord = -15
+        if (obj == 'sbs1415') or (obj == 'pox4') or (obj == 'sbs0926'):
             side = 'left'
             subxcoord = 4
-            subycoord = -8
-        if (obj == 'tol1457') or (obj == 'mrk1199'):
+            subycoord = -10
+        if (obj == 'mrk1199') or (obj == 'mrk5') or (obj == 'iras08208') or (obj == 'tol9'):
             side = 'left'
             subxcoord = 4
-            subycoord = -2
+            subycoord = 0
         f6.annotate('{}'.format(obj), xy=(sn4686[i], diffo[i]), xytext=(subxcoord, subycoord), ha=side, 
                     textcoords='offset points', fontsize=13)
     #ax = plt.gca() 
