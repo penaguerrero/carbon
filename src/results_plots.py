@@ -17,7 +17,7 @@ This scripts takes the found metallicities and produces:
 use_our_sample_ONLY = False
 save_images = False
 use_our_sample_ONLY = True
-save_images = False
+save_images = True
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
@@ -28,6 +28,7 @@ typeofimage = '.eps'
 img_name1 = 'COvsOH'
 img_name1b = 'COvsOH_Cldy'
 img_name2 = 'NOvsOH'
+img_name2b = 'NCvsCH'
 img_name3 = 'NeOvsOH'
 img_name4 = 'CNvsOH'
 img_name5 = 'C+2N+2vsOH'
@@ -340,6 +341,58 @@ if save_images:
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
 plt.show()
+
+# N/C vs C/H
+# Calculate errors for N/C and C/H
+CH = CO+OH
+errCH = numpy.sqrt( COerr**2 + OHerr**2 )
+NC = (NO+OH) - (CO+OH)
+#nc_errup = 10**(NO+OH - 12.0) - 10**()
+errNC = numpy.sqrt( NOerr**2 + OHerr**2 + COerr**2 + OHerr**2)
+#            O2err_up = 10**(logO2+O2logerr - 12.0) - 10**(logO2 - 12.0)
+#            O2err_down = 10**(logO2 - 12.0) - 10**(logO2-O2logerr - 12.0)
+#            O2err = (O2err_up + O2err_down) / 2.0
+fig1 = plt.figure(1, figsize=(12, 10))
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    #plt.plot(CH[i], NC[i], 'ko')
+    plt.errorbar(CH[i], NC[i], xerr=errCH[i], yerr=errNC[i], fmt=fmt, ecolor='k')
+plt.xlim(5.5, 9.0)
+yup = 0.7
+ylo = -2.6
+plt.ylim(ylo, yup)
+plt.xticks(numpy.arange(5.5, 9.0, 0.2))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
+for x, y, z in zip(CH, NC, objects_list):
+    # Annotate the points 5 _points_ above and to the left of the vertex
+    #print z, x, y
+    subxcoord = -2
+    subycoord = 5
+    side = 'right'
+    if (z == 'sbs0948') or (z == 'sbs1054') or (z == 'sbs1319') or (z == 'sbs0218') or (z == 'Orion'):
+        subxcoord = 4
+        subycoord = -14
+        side = 'left'
+    if (z == 'sbs0926'):
+        subycoord = -14        
+    plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
+plt.title('N/C vs C/H')
+plt.xlabel('12 + log (C/H)')
+plt.ylabel('log (N/C)')
+if save_images:
+    img_name = img_name2 + typeofimage
+    if use_our_sample_ONLY == False:
+        img_name = img_name2b + otherrefs + typeofimage
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
+plt.show()
+
 
 # Ne/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
