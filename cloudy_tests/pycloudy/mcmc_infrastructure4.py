@@ -274,7 +274,8 @@ def send_condor_job(job_name, object_name, rint, debug=False):
     #subproc = os.system('condor_submit '+job_name)
     args = shlex.split('condor_submit '+job_name)
     subproc = subprocess.call(args)
-    args2 = str('condor_wait logs/Chi2_'+object_name+'_'+rint+'.log').split()
+    #args2 = str('condor_wait logs/Chi2_'+object_name+'_'+rint+'.log').split()
+    args2 = shlex.split('condor_wait logs/Chi2_'+object_name+'_'+rint+'.log')
     subproc2 = subprocess.call(args2, stdout=subprocess.PIPE)
     
 
