@@ -21,17 +21,17 @@ save_images = True
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
-typeofimage = '.eps'
+typeofimage = '.jpg'
 
 ############################################################################################################################################
 
 img_name1 = 'COvsOH'
 img_name1b = 'COvsOH_Cldy'
 img_name2 = 'NOvsOH'
-img_name2b = 'NCvsCH'
 img_name3 = 'NeOvsOH'
 img_name4 = 'CNvsOH'
 img_name5 = 'C+2N+2vsOH'
+img_name6 = 'NCvsCH'
 otherrefs = '_plusOtherRefs'
 
 # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
@@ -70,10 +70,10 @@ objects_ref = ['30Dor', 'Orion', 'izw18', 'Sun'] # these are useful points of re
 # additional data points not in the sample
 objects_not_in_sample = ['ngc346', 'ngc456', 'ngc6822']
 
-CN = CO - NO
+CN = (CO+OH) - (NO+OH)   # though OH cancels out, I left it explicit to better trace the error propagation 
 CNerr = []
-for coe, noe in zip(COerr, NOerr):
-    cne = numpy.sqrt(coe**2 + noe**2)
+for coe, noe, oe in zip(COerr, NOerr, OHerr):
+    cne = numpy.sqrt(coe**2 + noe**2 + 2*oe**2)
     CNerr.append(cne)
 
 if correct_values:
@@ -159,11 +159,11 @@ for obj, i in zip(objects_list, indeces_list):
     elif (obj in objects_not_in_sample) or (obj in objects_ref):
         fmt='b^'
     plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
-plt.xlim(7.0, 9.0)
+plt.xlim(6.8, 8.9)
 yup = 1.02
 ylo = -1.8
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.0, 9.0, 0.1))
+plt.xticks(numpy.arange(6.9, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     subxcoord = -3
@@ -172,7 +172,7 @@ for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     if (z == 'mrk960') or (z == 'mrk5') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
         subxcoord = -4
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion') or (z == 'izw18'):
         subxcoord = 5
         side = 'left'
     if (z == 'ngc346'):
@@ -203,11 +203,11 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     #plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
     plt.plot(Clo, Clc-Clo, 'ro')
-plt.xlim(7.0, 9.0)
+plt.xlim(6.8, 8.9)
 yup = 1.02
 ylo = -1.8
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.0, 9.0, 0.1))
+plt.xticks(numpy.arange(6.9, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, xe, y, ye, z in zip(Clo, OHerr, Clc-Clo, COerr, objects_list):
     subxcoord = -1
@@ -247,6 +247,7 @@ if save_images:
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
 plt.show()
+
 '''
 # C2/O2 vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
@@ -293,6 +294,7 @@ if save_images:
     print('Plot %s was saved!' % destination)
 plt.show()
 '''
+
 # N/O vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
 #plt.errorbar(OH, NO, xerr=OHerr, yerr=NOerr, fmt='ko')
@@ -304,12 +306,12 @@ for obj, i in zip(objects_list, indeces_list):
     elif (obj in objects_not_in_sample) or (obj in objects_ref):
         fmt='b^'
     plt.errorbar(OH[i], NO[i], xerr=OHerr[i], yerr=NOerr[i], fmt=fmt, ecolor='k')
-plt.xlim(7.0, 9.0)
+plt.xlim(6.8, 9.0)
 yup = -0.5
-ylo = -1.8
+ylo = -2.1
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.2))
+plt.xticks(numpy.arange(6.9, 9.0, 0.1))
+plt.yticks(numpy.arange(ylo, yup, 0.1))
 for x, y, z in zip(OH, NO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
@@ -325,7 +327,7 @@ for x, y, z in zip(OH, NO, objects_list):
         side = 'left'
     if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'sbs0948') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'iras08339') or (z == 'sbs0948') or (z == 'Orion') or (z == 'izw18'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
@@ -342,56 +344,6 @@ if save_images:
     print('Plot %s was saved!' % destination)
 plt.show()
 
-# N/C vs C/H
-# Calculate errors for N/C and C/H
-CH = CO+OH
-errCH = numpy.sqrt( COerr**2 + OHerr**2 )
-NC = (NO+OH) - (CO+OH)
-#nc_errup = 10**(NO+OH - 12.0) - 10**()
-errNC = numpy.sqrt( NOerr**2 + OHerr**2 + COerr**2 + OHerr**2)
-#            O2err_up = 10**(logO2+O2logerr - 12.0) - 10**(logO2 - 12.0)
-#            O2err_down = 10**(logO2 - 12.0) - 10**(logO2-O2logerr - 12.0)
-#            O2err = (O2err_up + O2err_down) / 2.0
-fig1 = plt.figure(1, figsize=(12, 10))
-for obj, i in zip(objects_list, indeces_list):
-    if obj in objects_with_Te:
-        fmt='ko'
-    elif obj in objects_Te_literature:
-        fmt='wo'
-    elif (obj in objects_not_in_sample) or (obj in objects_ref):
-        fmt='b^'
-    #plt.plot(CH[i], NC[i], 'ko')
-    plt.errorbar(CH[i], NC[i], xerr=errCH[i], yerr=errNC[i], fmt=fmt, ecolor='k')
-plt.xlim(5.5, 9.0)
-yup = 0.7
-ylo = -2.6
-plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(5.5, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.2))
-for x, y, z in zip(CH, NC, objects_list):
-    # Annotate the points 5 _points_ above and to the left of the vertex
-    #print z, x, y
-    subxcoord = -2
-    subycoord = 5
-    side = 'right'
-    if (z == 'sbs0948') or (z == 'sbs1054') or (z == 'sbs1319') or (z == 'sbs0218') or (z == 'Orion'):
-        subxcoord = 4
-        subycoord = -14
-        side = 'left'
-    if (z == 'sbs0926'):
-        subycoord = -14        
-    plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
-plt.title('N/C vs C/H')
-plt.xlabel('12 + log (C/H)')
-plt.ylabel('log (N/C)')
-if save_images:
-    img_name = img_name2 + typeofimage
-    if use_our_sample_ONLY == False:
-        img_name = img_name2b + otherrefs + typeofimage
-    destination = os.path.join(full_results_path+'/plots', img_name)
-    plt.savefig(destination)
-    print('Plot %s was saved!' % destination)
-plt.show()
 
 
 # Ne/O vs O/H
@@ -405,25 +357,29 @@ for obj, i in zip(objects_list, indeces_list):
     elif (obj in objects_not_in_sample) or (obj in objects_ref):
         fmt='b^'
     plt.errorbar(OH[i], NeO[i], xerr=OHerr[i], yerr=NeOerr[i], fmt=fmt, ecolor='k')
-plt.xlim(7.0, 9.0)
+plt.xlim(7.6, 9.0)
 yup = -0.2
-ylo = -1.0
+ylo = -1.1
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-plt.yticks(numpy.arange(ylo, yup, 0.2))
+plt.xticks(numpy.arange(7.6, 9.0, 0.1))
+plt.yticks(numpy.arange(ylo, yup, 0.1))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948') or (z == 'ngc346'):
-        subycoord = -10
-    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5'):
+    if (z == 'ngc1741') or (z == 'mrk5') or (z == 'ngc346'):
+        subycoord = -11
+    if (z == '30Dor'):
         subxcoord = 5
+        subycoord = -11
+        side = 'left'
+    if (z == 'mrk960') or (z == 'sbs1319') or (z == 'iiizw107') or (z == 'iras08208') or (z == 'pox4') or (z == 'arp252') or (z == 'iras08339'):
+        subxcoord = 4
         subycoord = 4
         side = 'left'
-    if (z == 'sbs1054') or (z == 'ngc6822'):
+    if (z == 'sbs1054') or (z == 'ngc6822') or (z == 'sbs0948'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
@@ -450,21 +406,24 @@ for obj, i in zip(objects_list, indeces_list):
     elif (obj in objects_not_in_sample) or (obj in objects_ref):
         fmt='b^'
     plt.errorbar(OH[i], CN[i], xerr=OHerr[i], yerr=CNerr[i], fmt=fmt, ecolor='k')
-plt.xlim(7.0, 9.0)
-#yup = -0.2
-#ylo = -1.2
-#plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.0, 9.0, 0.2))
-#plt.yticks(numpy.arange(ylo, yup, 0.2))
+plt.xlim(6.8, 9.0)
+yup = 2.6
+ylo = -0.6
+plt.ylim(ylo, yup)
+plt.xticks(numpy.arange(6.9, 9.0, 0.1))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, y, z in zip(OH, CN, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
-    #print z, x, y
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'ngc1741') or (z == 'pox4') or (z == 'sbs0948') or (z == 'ngc346') or (z == '30Dor'):
+    if (z == 'ngc1741') or (z == 'sbs0948') or (z == 'ngc346'):
         subycoord = -10
-    if(z == 'sbs1319') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'sbs0948') or (z == 'arp252'):
+    if (z == 'mrk960') or (z == 'pox4') or (z == '30Dor'):
+        subxcoord = 5
+        subycoord = -12
+        side = 'left'
+    if (z == 'sbs1319') or (z == 'sbs1054') or (z == 'iiizw107') or (z == 'mrk5') or (z == 'sbs0948') or (z == 'arp252') or (z == 'tol9') or (z == 'izw18'):
         subxcoord = 5
         subycoord = 4
         side = 'left'
@@ -484,6 +443,7 @@ if save_images:
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
 plt.show()
+
 '''
 # C2/N2 vs O/H
 fig1 = plt.figure(1, figsize=(12, 10))
@@ -532,5 +492,59 @@ if save_images:
     print('Plot %s was saved!' % destination)
 plt.show()
 '''
+
+# N/C vs C/H
+# Calculate errors for N/C and C/H
+CH = CO+OH
+errCH = numpy.sqrt( COerr**2 + OHerr**2 )
+NC = (NO+OH) - (CO+OH)
+#nc_errup = 10**(NO+OH - 12.0) - 10**()
+errNC = numpy.sqrt( NOerr**2 + OHerr**2 + COerr**2 + OHerr**2)
+#            O2err_up = 10**(logO2+O2logerr - 12.0) - 10**(logO2 - 12.0)
+#            O2err_down = 10**(logO2 - 12.0) - 10**(logO2-O2logerr - 12.0)
+#            O2err = (O2err_up + O2err_down) / 2.0
+fig1 = plt.figure(1, figsize=(12, 10))
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='wo'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    #plt.plot(CH[i], NC[i], 'ko')
+    plt.errorbar(CH[i], NC[i], xerr=errCH[i], yerr=errNC[i], fmt=fmt, ecolor='k')
+plt.xlim(5.5, 9.0)
+yup = 0.7
+ylo = -2.6
+plt.ylim(ylo, yup)
+plt.xticks(numpy.arange(5.5, 9.0, 0.2))
+plt.yticks(numpy.arange(ylo, yup, 0.2))
+for x, y, z in zip(CH, NC, objects_list):
+    # Annotate the points 5 _points_ above and to the left of the vertex
+    #print z, x, y
+    subxcoord = -2
+    subycoord = 5
+    side = 'right'
+    if (z == 'sbs0948') or (z == 'sbs1054') or (z == 'sbs1319') or (z == 'sbs0218') or (z == 'iras08339') or (z == 'Orion'):
+        subxcoord = 4
+        subycoord = -14
+        side = 'left'
+    if (z == 'sbs1319') or (z == 'sbs0948'):
+        subxcoord = 4
+        side = 'left'
+    if (z == 'sbs0926'):
+        subycoord = -14        
+    plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
+plt.title('N/C vs C/H')
+plt.xlabel('12 + log (C/H)')
+plt.ylabel('log (N/C)')
+if save_images:
+    img_name = img_name6 + typeofimage
+    if use_our_sample_ONLY == False:
+        img_name = img_name6 + otherrefs + typeofimage
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
+plt.show()
 
 print ' Code finished!'
