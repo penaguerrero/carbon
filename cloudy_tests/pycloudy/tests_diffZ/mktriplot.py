@@ -109,14 +109,14 @@ def get_true_abunds(object_name):
     #print 'these are the benchmark abundances: \n', true_abunds
     return true_abunds, true_temps
 
-def get_Te_percentiles(percentiles_arr, Te_arr):
+def get_Te_percentiles(percentiles_arr, Te_arr, samples2use):
     Te_pencentiles = []
     theta_p16 = np.array([[percentiles_arr[0][0], percentiles_arr[1][0], percentiles_arr[2][0], percentiles_arr[3][0], percentiles_arr[4][0], percentiles_arr[5][0]]])
     theta_p50 = np.array([[percentiles_arr[0][1], percentiles_arr[1][1], percentiles_arr[2][1], percentiles_arr[3][1], percentiles_arr[4][1], percentiles_arr[5][1]]])
     theta_p80 = np.array([[percentiles_arr[0][2], percentiles_arr[1][2], percentiles_arr[2][2], percentiles_arr[3][2], percentiles_arr[4][2], percentiles_arr[5][2]]])
-    wp16 = np.where(samples == theta_p16)[0][0]
-    wp50 = np.where(samples == theta_p50)[0][0]
-    wp80 = np.where(samples == theta_p80)[0][0]
+    wp16 = np.where(samples2use == theta_p16)[0][0]
+    wp50 = np.where(samples2use == theta_p50)[0][0]
+    wp80 = np.where(samples2use == theta_p80)[0][0]
     Tep16 = Te_arr[wp16]
     Tep50 = Te_arr[wp50]
     Tep80 = Te_arr[wp80]
@@ -195,10 +195,33 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
                                    avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, int(avgTO3), int(avgTO2))
     subavgabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                                     avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
+    # find temperatures of these sets:
+    p_subavgabunds0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
+    p_subavgabunds1 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
+    TO3_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO3_nearby), subsamples)
+    TO2_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO2_nearby), subsamples)
+    perc = [p_subavgabunds1[0], p_subavgabunds1[1], p_subavgabunds1[2], p_subavgabunds1[3], p_subavgabunds1[4], p_subavgabunds1[5], TO3_perc, TO2_perc]
+    p_subavgabunds2 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+                     perc[0][0], perc[1][0], perc[2][0], perc[3][0], perc[4][0], perc[5][0], int(perc[6][0]), int(perc[7][0]),
+                     perc[2][0]+perc[1][0], perc[3][0]+perc[1][0], perc[4][0]+perc[1][0], perc[5][0]+perc[1][0] )
+    p_subavgabunds3 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+                     perc[0][1], perc[1][1], perc[2][1], perc[3][1], perc[4][1], perc[5][1], int(perc[6][1]), int(perc[7][1]),
+                     perc[2][1]+perc[1][1], perc[3][1]+perc[1][1], perc[4][1]+perc[1][1], perc[5][1]+perc[1][1] )
+    p_subavgabunds4 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+                     perc[0][2], perc[1][2], perc[2][2], perc[3][2], perc[4][2], perc[5][2], int(perc[6][2]), int(perc[7][2]),
+                     perc[2][2]+perc[1][2], perc[3][2]+perc[1][2], perc[4][2]+perc[1][2], perc[5][2]+perc[1][2] )
     print '\n'
     print subavgabunds0
     print subavgabunds1 
     print subavgabunds2
+    print p_subavgabunds0
+    print 'He      O       C      N      Ne      S      Te_O3   Te_O2'
+    print '16th percentile:'
+    print p_subavgabunds2
+    print '50th percentile:'
+    print p_subavgabunds3
+    print '80th percentile:'
+    print p_subavgabunds4
     
     # Chi^2 minimization within subsets
     whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
@@ -230,12 +253,12 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
                                                                p[3]+true_abunds[1], p[4]+true_abunds[1], p[5]+true_abunds[1])
     # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
     #samples[:, ndim-1] = np.exp(samples[:, ndim-1])
-    percentiles0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
+    percentiles0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles FOR ALL models:'
     p_mcmc1 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
     p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
     # find temperatures of these sets:
-    TO3_perc = get_Te_percentiles(p_mcmc1, TO3)
-    TO2_perc = get_Te_percentiles(p_mcmc1, TO2)
+    TO3_perc = get_Te_percentiles(p_mcmc1, TO3, samples)
+    TO2_perc = get_Te_percentiles(p_mcmc1, TO2, samples)
     perc = [p_mcmc1[0], p_mcmc1[1], p_mcmc1[2], p_mcmc1[3], p_mcmc1[4], p_mcmc1[5], TO3_perc, TO2_perc]
     #print p_mcmc1[5][0]#perc[6], perc[7]
     percentiles1 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
@@ -330,8 +353,9 @@ def fit_line(arrx, arry):
     coefficients = np.polyfit(arrx, arry, order)
     polynomial = np.poly1d(coefficients)
     f_pol = polynomial(arrx)
-    fitted_line = np.array([arry, f_pol])
-    return coefficients, fitted_line
+    #fitted_line = np.array([arry, f_pol])
+    #print 'this is x and y of the fitted_line = ', fitted_line
+    return coefficients, f_pol
 
 
 #### CODE 
@@ -430,7 +454,8 @@ if mk_plots or contours:
     elif contours:
         x, y, z = get_zarr(TO3, CO)
         plt.plot(x, y, 'k.')
-        fig1 = triangle.corner(z, labels=[xlab, ylab])
+        print 'These are the quantiles for Te_OIII vs C/O'
+        fig1 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84])
     COTemp = object_name+gen_tracks+'_tempsVsCO.jpg'
     fig1.savefig(os.path.abspath(COTemp))
     #plt.show()
@@ -466,12 +491,14 @@ if mk_plots or contours:
     ymin = 6.0
     ymax = 8.8
     plt.ylim(ymin, ymax)
+    plt.xlim(7.5, 8.9)
     if mk_plots:
         plt.plot(O, CO+O, 'k.')
     elif contours:
         x, y, z = get_zarr(O, CO+O)
         plt.plot(x, y, 'k.')
         plt.plot(x, line_fit, 'b:')
+        print 'These are the quantiles for C/H to O/H'
         fig3 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(7.5, 9.0), (ymin, ymax)])
     CHHO = object_name+gen_tracks+'_CHvsOH.jpg'
     fig3.savefig(os.path.abspath(CHHO))
@@ -497,6 +524,7 @@ if mk_plots or contours:
     nwalkers = 100
     nruns = 100
     # plot of abundance ratios including the benchmark abundances
+    print 'These are the quantiles for triangle plot: '
     fig = triangle.corner(samples, 
                           labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
                           truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
