@@ -197,7 +197,8 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
                                                                     avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
     # find temperatures of these sets:
     p_subavgabunds0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
-    p_subavgabunds1 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
+    p_subavgabunds1 = map(lambda v: (v), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
+    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
     TO3_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO3_nearby), subsamples)
     TO2_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO2_nearby), subsamples)
     perc = [p_subavgabunds1[0], p_subavgabunds1[1], p_subavgabunds1[2], p_subavgabunds1[3], p_subavgabunds1[4], p_subavgabunds1[5], TO3_perc, TO2_perc]
@@ -222,6 +223,8 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print p_subavgabunds3
     print '80th percentile:'
     print p_subavgabunds4
+    print '\n DIFFERENCES of percentiles with respect to 50th percentile: '
+    print p_subavgabunds1a
     
     # Chi^2 minimization within subsets
     whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
@@ -283,7 +286,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print percentiles2
     print '80th percentile:'
     print percentiles3
-    print '\n DIFFERENCES of percentiles with respect to 50th percentile: '
+    print '\n DIFFERENCES of percentiles with respect to 50th percentile for ALL the sample: '
     print p_mcmc2
     
     true_abstemps = [trueabs0, trueabs1, trueabs2, temps0, temps1]
@@ -373,6 +376,9 @@ g0h = args.g0h
 g4l = args.g4l
 g4h = args.g4h
 
+# Format of images to save
+img_type = '.jpg'
+
 # Obtain the benchmark or "true" abundances
 true_abunds, true_temps = get_true_abunds(object_name)
 
@@ -456,7 +462,7 @@ if mk_plots or contours:
         plt.plot(x, y, 'k.')
         print 'These are the quantiles for Te_OIII vs C/O'
         fig1 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84])
-    COTemp = object_name+gen_tracks+'_tempsVsCO.jpg'
+    COTemp = object_name+gen_tracks+'_tempsVsCO'+img_type
     fig1.savefig(os.path.abspath(COTemp))
     #plt.show()
     
@@ -472,7 +478,7 @@ if mk_plots or contours:
         x, y, z = get_zarr(O, CO)
         plt.plot(x, y, 'k.')
         fig2 = triangle.corner(z, labels=[xlab, ylab])
-    COHO = object_name+gen_tracks+'_COvsOH.jpg'
+    COHO = object_name+gen_tracks+'_COvsOH'+img_type
     fig2.savefig(os.path.abspath(COHO))
     #plt.show()
 
@@ -500,7 +506,7 @@ if mk_plots or contours:
         plt.plot(x, line_fit, 'b:')
         print 'These are the quantiles for C/H to O/H'
         fig3 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(7.5, 9.0), (ymin, ymax)])
-    CHHO = object_name+gen_tracks+'_CHvsOH.jpg'
+    CHHO = object_name+gen_tracks+'_CHvsOH'+img_type
     fig3.savefig(os.path.abspath(CHHO))
     plt.show()
 
@@ -517,8 +523,25 @@ if mk_plots or contours:
         x, y, z = get_zarr(TO3, CO+O)
         plt.plot(x, y, 'k.')
         fig4 = triangle.corner(z, labels=[xlab, ylab], extents=[(8000.0, 18000.0), (ymin, ymax)])
-    CTemp = object_name+gen_tracks+'_tempsVsCH.jpg'
+    CTemp = object_name+gen_tracks+'_tempsVsCH'+img_type
     fig4.savefig(os.path.abspath(CTemp))
+    #plt.show()
+
+    fig5 = plt.figure(1, figsize=(12, 10))
+    plt.title('N/C vs C/H')
+    xlab = '12 + log (C/H)'
+    ylab = 'log (N/C)'
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.ylim(6.0, 8.8)
+    if mk_plots:
+        plt.plot(CO+O, NO-CO, 'k.')
+    elif contours:
+        x, y, z = get_zarr(CO+O, NO-CO)
+        plt.plot(x, y, 'k.')
+        fig5 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(6.0, 8.8), (-2.6, 0.7)])
+    NC = object_name+'_NCvsCH'+img_type
+    fig5.savefig(os.path.abspath(NC))
     #plt.show()
 
     nwalkers = 100
@@ -533,12 +556,12 @@ if mk_plots or contours:
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
                           extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
                           )
-    pltbench = 'mcmc_'+object_name+gen_tracks+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"
+    pltbench = 'mcmc_'+object_name+gen_tracks+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
     fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-    pltwithoutbench = 'mcmc_'+object_name+gen_tracks+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"
+    pltwithoutbench = 'mcmc_'+object_name+gen_tracks+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltwithoutbench))    
 
 if use_subset:
