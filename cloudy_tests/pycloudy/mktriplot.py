@@ -307,6 +307,9 @@ mk_plots = args.mk_plots
 contours = args.contours
 wt_file = args.wt_file
 
+# Format of images to save
+img_type = '.jpg'
+
 # Obtain the benchmark or "true" abundances
 true_abunds, true_temps = get_true_abunds(object_name)
 
@@ -352,7 +355,7 @@ if mk_plots or contours:
         x, y, z = get_zarr(TO3, CO)
         plt.plot(x, y, 'k.')
         fig1 = triangle.corner(z, labels=[xlab, ylab])
-    COTemp = object_name+'_tempsVsCO.jpg'
+    COTemp = object_name+'_tempsVsCO'+img_type
     fig1.savefig(os.path.abspath(COTemp))
     #plt.show()
     
@@ -368,7 +371,7 @@ if mk_plots or contours:
         x, y, z = get_zarr(O, CO)
         plt.plot(x, y, 'k.')
         fig2 = triangle.corner(z, labels=[xlab, ylab])
-    COHO = object_name+'_COvsOH.jpg'
+    COHO = object_name+'_COvsOH'+img_type
     fig2.savefig(os.path.abspath(COHO))
     #plt.show()
 
@@ -387,7 +390,7 @@ if mk_plots or contours:
         x, y, z = get_zarr(O, CO+O)
         plt.plot(x, y, 'k.')
         fig3 = triangle.corner(z, labels=[xlab, ylab], extents=[(7.5, 9.0), (ymin, ymax)])
-    CHHO = object_name+'_CHvsOH.jpg'
+    CHHO = object_name+'_CHvsOH'+img_type
     fig3.savefig(os.path.abspath(CHHO))
     #plt.show()
 
@@ -404,8 +407,25 @@ if mk_plots or contours:
         x, y, z = get_zarr(TO3, CO+O)
         plt.plot(x, y, 'k.')
         fig4 = triangle.corner(z, labels=[xlab, ylab], extents=[(8000.0, 18000.0), (ymin, ymax)])
-    CTemp = object_name+'_tempsVsCH.jpg'
+    CTemp = object_name+'_tempsVsCH'+img_type
     fig4.savefig(os.path.abspath(CTemp))
+    #plt.show()
+
+    fig5 = plt.figure(1, figsize=(12, 10))
+    plt.title('N/C vs C/H')
+    xlab = '12 + log (C/H)'
+    ylab = 'log (N/C)'
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.ylim(6.0, 8.8)
+    if mk_plots:
+        plt.plot(CO+O, NO-CO, 'k.')
+    elif contours:
+        x, y, z = get_zarr(CO+O, NO-CO)
+        plt.plot(x, y, 'k.')
+        fig5 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(6.0, 8.8), (-2.6, 0.7)])
+    NC = object_name+'_NCvsCH'+img_type
+    fig5.savefig(os.path.abspath(NC))
     #plt.show()
 
     nwalkers = 100
@@ -418,12 +438,12 @@ if mk_plots or contours:
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
                           extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
                           )
-    pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"
+    pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
     fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
-    pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb.jpg"
+    pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltwithoutbench))    
 
 if use_subset:
