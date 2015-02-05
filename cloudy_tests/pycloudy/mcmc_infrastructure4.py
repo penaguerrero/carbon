@@ -212,7 +212,7 @@ def get_from_files(object_name, pos_matrix, debug=False):
         set = [he, o, co, no, neo, so]
         all_runs = np.vstack((all_runs, set))
     for set, to3, to2, chi in zip(all_runs, TO3_files, TO2_files, Chi2_files):
-        if set in pos_matrix:
+        if set.all() in pos_matrix:
             TO2 = np.append(TO2, to2)
             TO3 = np.append(TO3, to3)
             probs = np.append(probs, chi)
