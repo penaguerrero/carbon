@@ -211,19 +211,30 @@ def get_from_files(object_name, pos_matrix, debug=False):
     for he, o, co, no, neo, so in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files):
         set = [he, o, co, no, neo, so]
         all_runs = np.vstack((all_runs, set))
-    for set, to3, to2, chi in zip(all_runs, TO3_files, TO2_files, Chi2_files):
-        if set.all() in pos_matrix:
-            TO2 = np.append(TO2, to2)
-            TO3 = np.append(TO3, to3)
-            probs = np.append(probs, chi)
-    '''
+    decimals = 5
+    for i in range(len(pos_matrix)):
+        pos_matrix[i][0] = np.round(pos_matrix[i][0], decimals=decimals)
+        pos_matrix[i][1] = np.round(pos_matrix[i][1], decimals=decimals)
+        pos_matrix[i][2] = np.round(pos_matrix[i][2], decimals=decimals)
+        pos_matrix[i][3] = np.round(pos_matrix[i][3], decimals=decimals)
+        pos_matrix[i][4] = np.round(pos_matrix[i][4], decimals=decimals)
+        pos_matrix[i][5] = np.round(pos_matrix[i][5], decimals=decimals)
+        #print pos_matrix[i]
+    #print '\n'    
     for he, o, co, no, neo, so, to3, to2, chi in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2_files):
+        he = np.round(he, decimals=decimals)
+        o = np.round(o, decimals=decimals)
+        co = np.round(co, decimals=decimals)
+        no = np.round(no, decimals=decimals)
+        neo = np.round(neo, decimals=decimals)
+        so = np.round(so, decimals=decimals)
         set = [he, o, co, no, neo, so]
+        #print set, to3, to2, chi
         if set in pos_matrix:
+            #print 'set in position matrix'
             TO2 = np.append(TO2, to2)
             TO3 = np.append(TO3, to3)
             probs = np.append(probs, chi)
-    '''
     print 'Lengths of temperatures and likelihood arrays: ', len(TO3), len(TO2), len(probs)
     files_info = [He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2_files]
     return files_info, TO3, TO2, probs
