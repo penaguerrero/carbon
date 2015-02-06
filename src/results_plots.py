@@ -498,11 +498,7 @@ plt.show()
 CH = CO+OH
 errCH = numpy.sqrt( COerr**2 + OHerr**2 )
 NC = (NO+OH) - (CO+OH)
-#nc_errup = 10**(NO+OH - 12.0) - 10**()
-errNC = numpy.sqrt( NOerr**2 + OHerr**2 + COerr**2 + OHerr**2)
-#            O2err_up = 10**(logO2+O2logerr - 12.0) - 10**(logO2 - 12.0)
-#            O2err_down = 10**(logO2 - 12.0) - 10**(logO2-O2logerr - 12.0)
-#            O2err = (O2err_up + O2err_down) / 2.0
+errNC = numpy.sqrt( NOerr**2 + COerr**2 + 2*OHerr**2)
 fig1 = plt.figure(1, figsize=(12, 10))
 for obj, i in zip(objects_list, indeces_list):
     if obj in objects_with_Te:
