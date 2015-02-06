@@ -198,7 +198,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     # find temperatures of these sets:
     p_subavgabunds0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
     p_subavgabunds1 = map(lambda v: (v), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
-    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
+    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [25, 50, 75], axis=0)))
     TO3_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO3_nearby), subsamples)
     TO2_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO2_nearby), subsamples)
     perc = [p_subavgabunds1[0], p_subavgabunds1[1], p_subavgabunds1[2], p_subavgabunds1[3], p_subavgabunds1[4], p_subavgabunds1[5], TO3_perc, TO2_perc]
@@ -258,7 +258,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     #samples[:, ndim-1] = np.exp(samples[:, ndim-1])
     percentiles0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles FOR ALL models:'
     p_mcmc1 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-    p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+    p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [25, 50, 75], axis=0)))
     # find temperatures of these sets:
     TO3_perc = get_Te_percentiles(p_mcmc1, TO3, samples)
     TO2_perc = get_Te_percentiles(p_mcmc1, TO2, samples)
