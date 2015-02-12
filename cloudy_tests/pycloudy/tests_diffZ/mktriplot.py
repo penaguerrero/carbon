@@ -80,6 +80,11 @@ parser.add_argument("-g4h",
                     dest="g4h",
                     default=False,
                     help='Used the Geneva tracks with v40, Solar UV radiation, and high metallicity.')
+parser.add_argument("-g4ha",
+                    action='store_true',
+                    dest="g4ha",
+                    default=False,
+                    help='Used the Geneva tracks with v40, Solar UV radiation, and high metallicity, but when the total abundances instead of the ratios.')
 args = parser.parse_args()
 
 # name of the object
@@ -375,12 +380,18 @@ g0l = args.g0l
 g0h = args.g0h
 g4l = args.g4l
 g4h = args.g4h
+g4ha = args.g4ha
 
 # Format of images to save
 img_type = '.jpg'
 
 # Obtain the benchmark or "true" abundances
 true_abunds, true_temps = get_true_abunds(object_name)
+if g4ha:
+    true_abunds[2] = true_abunds[2] + true_abunds[1]
+    true_abunds[3] = true_abunds[3] + true_abunds[1]
+    true_abunds[4] = true_abunds[4] + true_abunds[1]
+    true_abunds[5] = true_abunds[5] + true_abunds[1]
 
 # Load the chain and create the samples
 chain_file = os.path.abspath('mcmc_'+object_name+'_chain.dat')
@@ -407,6 +418,12 @@ if g4h:
 if g4h and FULL_chain_file:
     chain_file = os.path.abspath('mcmc_'+object_name+'_cSFRg40hZsolarUV_FULL_chain0.dat')   # equivalent to runs of all models
     gen_tracks = '_cSFRg40hZsolarUV_FULL'
+if g4ha:
+    chain_file = os.path.abspath('mcmc_'+object_name+'_cSFRg40_hZ_sUV_abundsXH_chain0.dat')   # equivalent to runs of all models
+    gen_tracks = '_cSFRg40_hZ_sUV_abundsXH'
+if g4ha and FULL_chain_file:
+    chain_file = os.path.abspath('mcmc_'+object_name+'_cSFRg40_hZ_sUV_abundsXH_FULL_chain0.dat')   # equivalent to runs of all models
+    gen_tracks = '_cSFRg40_hZ_sUV_abundsXH_FULL'
 if g4l:
     chain_file = os.path.abspath('mcmc_'+object_name+'_cSFRg40lZsolarUV_chain0.dat')
     gen_tracks = '_cSFRg40lZsolarUV'
@@ -455,10 +472,14 @@ if mk_plots or contours:
     ylab = 'log (C/O)'
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    x = TO3
+    y = CO
+    if g4ha:
+        y = CO-O
     if mk_plots:
-        plt.plot(TO3, CO, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(TO3, CO)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         print 'These are the quantiles for Te_OIII vs C/O'
         fig1 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84])
@@ -472,10 +493,15 @@ if mk_plots or contours:
     ylab ='log (C/O)'
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    x = O
+    y = CO
+    if g4ha:
+        y = CO-O 
+    plt.xlim(7.5, 8.9)
     if mk_plots:
-        plt.plot(O, CO, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(O, CO)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         fig2 = triangle.corner(z, labels=[xlab, ylab])
     COHO = object_name+gen_tracks+'_COvsOH'+img_type
@@ -484,7 +510,11 @@ if mk_plots or contours:
 
     fig3 = plt.figure(1, figsize=(12, 10))
     # Polynomial fit
-    coeffs, line_fit = fit_line(O, CO+O)
+    x = O
+    y = CO+O
+    if g4ha:
+        y = CO
+    coeffs, line_fit = fit_line(x, y)
     print 'Linear fit: y = mx + b'
     print line_fit
     print 'Coefficients: '
@@ -499,16 +529,16 @@ if mk_plots or contours:
     plt.ylim(ymin, ymax)
     plt.xlim(7.5, 8.9)
     if mk_plots:
-        plt.plot(O, CO+O, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(O, CO+O)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         plt.plot(x, line_fit, 'b:')
         print 'These are the quantiles for C/H to O/H'
         fig3 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(7.5, 9.0), (ymin, ymax)])
     CHHO = object_name+gen_tracks+'_CHvsOH'+img_type
     fig3.savefig(os.path.abspath(CHHO))
-    plt.show()
+    #plt.show()
 
     fig4 = plt.figure(1, figsize=(12, 10))
     plt.title('C/H vs O3_Temps')
@@ -517,10 +547,14 @@ if mk_plots or contours:
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.ylim(ymin, ymax)
+    x = TO3
+    y = CO+O
+    if g4ha:
+        y = CO
     if mk_plots:
-        plt.plot(TO3, CO+O, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(TO3, CO+O)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         fig4 = triangle.corner(z, labels=[xlab, ylab], extents=[(8000.0, 18000.0), (ymin, ymax)])
     CTemp = object_name+gen_tracks+'_tempsVsCH'+img_type
@@ -534,13 +568,17 @@ if mk_plots or contours:
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.ylim(6.0, 8.8)
+    x = CO+O
+    y = NO-CO
+    if g4ha:
+        x = CO
     if mk_plots:
-        plt.plot(CO+O, NO-CO, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(CO+O, NO-CO)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         fig5 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(6.0, 8.8), (-2.6, 0.7)])
-    NC = object_name+'_NCvsCH'+img_type
+    NC = object_name+gen_tracks+'_NCvsCH'+img_type
     fig5.savefig(os.path.abspath(NC))
     #plt.show()
 
@@ -548,19 +586,22 @@ if mk_plots or contours:
     nruns = 100
     # plot of abundance ratios including the benchmark abundances
     print 'These are the quantiles for triangle plot: '
+    labels = ["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"]
+    if g4ha:
+        labels = ["$He$", "$O$", "$C$", "$N$", "$Ne$", "$S$"]
     fig = triangle.corner(samples, 
-                          labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
+                          labels=labels, 
                           truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
                                   true_abunds[4], true_abunds[5]],
-                          quantiles=[0.16, 0.5, 0.84],
+                          quantiles=[0.16, 0.5, 0.84]
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
-                          extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
+                          #extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
                           )
     pltbench = 'mcmc_'+object_name+gen_tracks+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
-    fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
+    fig = triangle.corner(samples, labels=labels)
     pltwithoutbench = 'mcmc_'+object_name+gen_tracks+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltwithoutbench))    
 
@@ -592,7 +633,10 @@ if wt_file:
     f1 = open(final_chain_file, "w")
     for item in stats:
         print >> f1, item
-    print >> f1, "\n{:<8} {:<8} {:<8} {:<8} {:<8} {:<8} {:<15} {:<15} {:<20}".format('He', 'O', 'C/O', 'N/O', 'Ne/O', 'S/O', 'TeO3', 'TeO2', 'ln (-0.5*Chi2)')
+    if g4ha:
+        print >> f1, "\n{:<8} {:<8} {:<8} {:<8} {:<8} {:<8} {:<15} {:<15} {:<20}".format('He', 'O', 'C', 'N', 'Ne', 'S', 'TeO3', 'TeO2', 'ln (-0.5*Chi2)')
+    else:
+        print >> f1, "\n{:<8} {:<8} {:<8} {:<8} {:<8} {:<8} {:<15} {:<15} {:<20}".format('He', 'O', 'C/O', 'N/O', 'Ne/O', 'S/O', 'TeO3', 'TeO2', 'ln (-0.5*Chi2)')
     for he, o, co, no, neo, so, to3, to2, chi2 in zip(He, O, CO, NO, NeO, SO, TO3, TO2, Chi2):
         print >> f1, "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
     f1.close()
