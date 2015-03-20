@@ -30,8 +30,8 @@ def round_wavs(catalog_wavelength, decimals=None):
         rounded_catalog_wavelength.append(roundwav)
     return rounded_catalog_wavelength
 
-def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data, cont_data, err_stis_list, all_err_cont_fit, reject=0.0, start_w=None, create_txt=False, name_out_file=None):
-    all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs = read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit)
+def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data, cont_data, err_stis_list, all_err_cont_fit, divided_by_continuum, reject=0.0, start_w=None, create_txt=False, name_out_file=None):
+    all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs = read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit, divided_by_continuum=divided_by_continuum)
     data_arrays_list = [all_wavs, all_flxs, all_cont, all_ews, all_ferrs, all_cerrs, all_ewerrs]
     wavelengths, fluxes, continua, ews, errfluxes, errcontinua, errews = gather_measured_lineinfo(data_arrays_list, reject, start_w)
     data_arrays_list = [wavelengths, fluxes, continua, ews, errfluxes, errcontinua, errews]
@@ -41,7 +41,7 @@ def use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data
     # flxEW_errs contains: errs_net_fluxes, errs_ews, errs_conts
     return cols_in_file, flxEW_errs
   
-def read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit):
+def read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_list, all_err_cont_fit, divided_by_continuum=False):
     # object_file is the full path of the object in study
     # specs is a list of the spectral regions to be considered (i.e. specs=[0,1,2] )
     # cont_data is a list of numpy arrays of wavs and continuum fluxes for the specs in study
@@ -70,8 +70,16 @@ def read_measured_lineinfo_files(object_file, specs, data, cont_data, err_stis_l
         measuredewserrs = numpy.array([])
         for mw, nf, nc, mew in zip(mwavs, normflxs, normconts, mews):
             c = numpy.interp(mw, realcont[0], realcont[1])
-            mc = nc * c
-            mf = nf * numpy.abs(c)
+            if divided_by_continuum:
+                mc = nc * c
+                mf = nf * numpy.abs(c)
+            else:
+                if nc < 0.0 and nf > 0.0:
+                    nc = nc * -1.0 
+                    mews_idx = numpy.where(mews == mew)[0][0]
+                    mews[mews_idx] = mew * -1
+                mc = nc 
+                mf = nf
             measuredconts = numpy.append(measuredconts, mc)
             measuredflxs = numpy.append(measuredflxs, mf)
             # errors
@@ -1209,7 +1217,7 @@ class AdvancedOps(BasicOps):
                 print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
             # Carbon
             if line.wave == 1907:           # C 3
-                I_1907 = line.corrIntens
+                self.I_1907 = line.corrIntens
             elif line.wave == 1909:
                 self.I_1909 = line.corrIntens 
             elif line.wave == 2326:         # C 2
@@ -1502,6 +1510,8 @@ class AdvancedOps(BasicOps):
             self.S3 = pn.Atom("S", "3")
             S3ratio = I_6312 / I_9531 
             self.strongS3 = I_9531
+            #S3ratio = I_6312 / I_9069   # with other strong line
+            #self.strongS3 = I_9069
             #print 'ratio of S3 = ', S3ratio
             self.TS3 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
             print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 3]','6312/9531', 'High', self.TS3[0], self.TS3[1])
@@ -1594,8 +1604,8 @@ class AdvancedOps(BasicOps):
         try:
             self.C3 = pn.Atom("C", "3")
             den_diag_C3 = 'L(1907) / L(1909)'
-            self.strongC3 = I_1907
-            self.denC3 = self.C3.getTemDen(I_1907/self.I_1909, tem=10000.0, to_eval=den_diag_C3) 
+            self.strongC3 = self.I_1907
+            self.denC3 = self.C3.getTemDen(self.I_1907/self.I_1909, tem=10000.0, to_eval=den_diag_C3) 
             print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('C 3]','1907/1909', 'Medium', self.denC3[0], self.denC3[1])
             if self.writeouts:
                 den = self.denC3
@@ -1733,6 +1743,7 @@ class AdvancedOps(BasicOps):
             (NameError,),e
             
         ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
+        self.TO2gar = [0.0, 0.0]
         if self.TO3[0] != 0.0:
             if not math.isnan(self.TO3[0]):
                 # Iron
@@ -1779,8 +1790,6 @@ class AdvancedOps(BasicOps):
                 print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
                 if self.writeouts:
                     print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2gar[0], self.TO2gar[1], TO2gar_err)
-            else:
-                self.TO2gar = [0.0, 0.0]
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
@@ -2119,7 +2128,7 @@ class AdvancedOps(BasicOps):
         Ratioerr = numpy.sqrt((Ototerr/Otot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['O'] = [Otot, Ototerr, O_errp, logOtot, logOtoterr, Ratio, Ratioerr]        
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
-        logOtot_sun = 8.66 #+-0.05    taken from Asplund et al. 2005
+        logOtot_sun = 8.73 #+-0.05    taken from Asplund et al. 2009
         logOtot_sun_err = 0.05
         OH = logOtot - logOtot_sun
         OHerr = numpy.sqrt(logOtoterr**2 + logOtot_sun_err**2)
@@ -2536,8 +2545,14 @@ class AdvancedOps(BasicOps):
             errinten = self.AdvOpscols_in_file[11]        
         # We are interested in the flambda values in order to obtain the C(lambda) to correct the flux of that wavelength range
         rounded_catwavs = round_wavs(catalog_wavelength)
-        idx1661 = rounded_catwavs.index(1661.0)
-        idx1907 = rounded_catwavs.index(1907.0)
+        if self.I_1666[0] <= 0.0:  # in case 1666 has a negative flux use the other OIII] line
+            idx1661 = rounded_catwavs.index(1661.0)
+        else:
+            idx1661 = rounded_catwavs.index(1666.0)
+        if self.I_1909[0] <= 0.0:  # in case 1666 has a negative flux use the other OIII] line
+            idx1907 = rounded_catwavs.index(1907.0)
+        else:
+            idx1907 = rounded_catwavs.index(1909.0)
         deltaflambda = numpy.abs(flambdas[idx1907] - flambdas[idx1661])
         avgC = 10**(CHbeta*deltaflambda)
         IC3IO3_ratio = norm_fluxes[idx1907] / norm_fluxes[idx1661] * avgC
@@ -2546,10 +2561,12 @@ class AdvancedOps(BasicOps):
             idxO3 = rounded_catwavs.index(4959.0)
             # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/4959
             ionic_ratio = 6.771e-24 / 1.222e-21     # from ionic with Te=10,000 and ne=100
+            #ionic_ratio = 1.858e-25 / 3.988e-22     # from ionic with Te=7,000 and ne=100
         else:
             idxO3 = rounded_catwavs.index(5007.0)
             # With the corresponding temperature and density, we need a theoretical ratio of the intensity of 1661/5007
             ionic_ratio = 6.771e-24 / 3.531e-21     # from ionic with Te=10,000 and ne=100
+            ionic_ratio = 1.858e-25 / 1.52e-21     # from ionic with Te=7,000 and ne=100
         I1661 = norm_intenties[idxO3] * ionic_ratio
         err_I1661 = errinten[idxO3] * ionic_ratio
         # now from the IC3IO3_ratio equation, solve for the I1661 intensity and use the optical 4959 to find C3] 1907
@@ -2581,9 +2598,15 @@ class AdvancedOps(BasicOps):
         Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303)            
         elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
-        print ' C/O = %0.2f +- %0.2f\n' % (Ratio, Ratioerr)
+        print ' C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         #raw_input(' ***  press enter to continue')
         
+        CO_sun = -0.26 #+-0.15    taken from Asplund et al. 2009
+        CO_sun_err = 0.15
+        CO_wr_sun = Ratio - CO_sun
+        CO_wr_sun_err = numpy.sqrt(Ratioerr**2 + CO_sun_err**2)
+        print ' [C/O]  =  log(C/O) - log(C/O)_sun  =  %0.2f +- %0.2f \n' % (CO_wr_sun, CO_wr_sun_err)
+
         te_used = te_low#te_high
         tc = te_used[0]/10000.0         # central temp
         tpluserr = te_used[1]/10000.0   # central temp plus error
