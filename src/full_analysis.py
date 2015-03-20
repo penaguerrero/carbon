@@ -15,7 +15,8 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 5
+object_number = 7
+
 # Is this a TEST run?
 TEST_run = False
 
@@ -35,9 +36,10 @@ create_txt_lineinfo = False
 # Write the text file with temperatures, densities, and abundances?
 create_txt_temdenabunds = False
 
+
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
-#                            0     1     2     3     4       5      6      7     8
+#                            0     1     2     3      4       5      6      7     8
 use_given_lineinfo_list = [False, True, True, True, False, False, False, False, False, 
                            True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
@@ -45,13 +47,13 @@ use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2               3              4             5               6            7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [8450.,9250.], [14000,15000], [9500.,11500.], [12300.,13600.], None,
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [6950.,7950.], [14000,15000], [9500.,11500.], [11500.,12200.], None,
                   [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
-#                        0               1                2           3      4           5                6          7           8           
-forceTeO2_list = [[10500.,11500.], [9100.,10100.], [10500.,12500.], 8900., None, [9600.,10900.], [12400.,13200.], None, [12200.,12750.],
+#                        0               1                2               3        4           5                6          7           8           
+forceTeO2_list = [[10500.,11500.], [9100.,10100.], [10500.,12500.], [7400.,8400], None, [9600.,10900.], [12000.,12400.], None, [12200.,12750.],
                   None, [12200.,12800.], None, [12400.,12800.], None, [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
 #                   9         10          11         12          13        14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
@@ -64,14 +66,14 @@ forceNe = forceNe_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
 #                  0      1     2     3      4     5     6      7      8
-faintObj_list = [False, False, True, False, True, True, True, True, True, 
+faintObj_list = [False, False, True, False, True, True, False, True, True, 
                  False, False, False, False, True, True, True, False, True]
 #                  9      10    11    12     13    14     15     16     17
 faintObj = faintObj_list[object_number]
 
 # use this option if wanting to rebin or not
 #                       0      1      2     3      4      5     6     7     8
-perform_rebin_list = [False, False, True, False, False, True, True, True, False, 
+perform_rebin_list = [True, False, True, True, False, True, True, True, False, 
                       False, False, True, True, True, True, True, True, True]
 #                      9      10    11    12     13    14    15     16     17
 perform_rebin = perform_rebin_list[object_number]
@@ -91,7 +93,7 @@ I_theo_HaHb = 2.86
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 2.5], [2.0, 2.3], [2.0, 2.8], [0.7, 0.6], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
+combos_list = [[2.0, 2.85], [2.0, 2.3], [2.0, 2.8], [2.0, 0.75], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
                [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
@@ -110,10 +112,10 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-#                                    0              1                 2                 3              4                5
-desired_disp_listoflists = [[1.6, 3.0, 5.0], [1.6, 6.5, 5.0], [1.6, or2*2.6, or3*1.5], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+#                                    0                               1                 2                 3              4                5
+desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [1.6, or2*2.6, or3*1.5], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
-                            [1.6, 5.6, 7.4], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
+                            [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
                             [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
@@ -350,9 +352,13 @@ if use_given_lineinfo == False:
     cols_in_file, flxEW_errs, all_err_fit = spectrum.gather_specs(text_file_list, name_out_file, reject=50.0, start_w=None, create_txt=True, err_cont_fit=True, errs_files=errs_files)
 else:
     # Load the text files with the measured lines and equivalent widths and write the corresponding file
-    nameoutfile = os.path.join(results4object_path, object_name+"_measuredLI_linesNUV2NIR.txt")  
+    nameoutfile = os.path.join(results4object_path, object_name+"_measuredLI_linesNUV2NIR.txt") 
+    divided_by_continuum = True   # Change to true if when fitted continuum used division to normalize  
+    if object_number == 3:
+        divided_by_continuum = False   
     cols_in_file, flxEW_errs = metallicity.use_measured_lineinfo_files(object_file, faintObj, Halpha_width, specs, data, cont_data, err_stis_list, 
-                                                                       all_err_cont_fit, reject=50.0, start_w=None, create_txt=True, name_out_file=nameoutfile)
+                                                                       all_err_cont_fit, divided_by_continuum=divided_by_continuum,
+                                                                       reject=1.0, start_w=None, create_txt=True, name_out_file=nameoutfile)
 
 catalog_wavelength, observed_wavelength, element, ion, forbidden, how_forbidden, width, flux, continuum, EW = cols_in_file
 err_flux, err_EW, cont_errs = flxEW_errs
