@@ -194,6 +194,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     avgSO = sum(SO_nearby+O_nearby)/len(He_nearby) 
     avgTO3 = sum(TO3_nearby)/len(He_nearby) 
     avgTO2 = sum(TO2_nearby)/len(He_nearby) 
+    avg = [avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, avgTO3, avgTO2]
     subset = str(len(O_nearby))
     subavgabunds0 = 'Average abundances with O temperatures within '+str(nearby)+' from the benchmark values (i.e. averages of '+subset+' models): '
     subavgabunds1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f   Te_O3 = %d   Te_O2 = %d' % (
@@ -201,21 +202,30 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     subavgabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                                     avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
     # find temperatures of these sets:
-    p_subavgabunds0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
-    p_subavgabunds1 = map(lambda v: (v), zip(*np.percentile(subsamples, [16, 50, 84], axis=0)))
-    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, [25, 50, 75], axis=0)))
+    p_subavgabunds0 = 'MCMC values and uncertainties according to 25th, 50th, and 75th percentiles:'
+    percentiles = [25, 50, 75]
+    p_subavgabunds1 = map(lambda v: (v), zip(*np.percentile(subsamples, percentiles, axis=0)))
+    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, percentiles, axis=0)))
+    TO3_p = np.percentile(np.array(TO3_nearby), percentiles)
+    TO2_p = np.percentile(np.array(TO2_nearby), percentiles)
+    print 'TO3_p = ', TO3_p
+    print 'errors with respect to average value: ', int(avgTO3-TO3_p[0]), int(avgTO3-TO3_p[1]), int(TO3_p[2]-avgTO3)
+    print 'TO2_p = ', TO2_p
+    print 'errors with respect to average value: ', int(avgTO2-TO2_p[0]), int(avgTO2-TO2_p[1]), int(TO2_p[2]-avgTO2)
     TO3_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO3_nearby), subsamples)
     TO2_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO2_nearby), subsamples)
     perc = [p_subavgabunds1[0], p_subavgabunds1[1], p_subavgabunds1[2], p_subavgabunds1[3], p_subavgabunds1[4], p_subavgabunds1[5], TO3_perc, TO2_perc]
-    p_subavgabunds2 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+    p_subavgabunds2 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f} \n {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9}'.format(
                      perc[0][0], perc[1][0], perc[2][0], perc[3][0], perc[4][0], perc[5][0], int(perc[6][0]), int(perc[7][0]),
-                     perc[2][0]+perc[1][0], perc[3][0]+perc[1][0], perc[4][0]+perc[1][0], perc[5][0]+perc[1][0] )
+                     perc[2][0]+perc[1][0], perc[3][0]+perc[1][0], perc[4][0]+perc[1][0], perc[5][0]+perc[1][0], 
+                     avg[0]-perc[0][0], avg[1]-perc[1][0], avg[2]-perc[2][0], avg[3]-perc[3][0], avg[4]-perc[4][0], avg[5]-perc[5][0], int(avg[6]-perc[6][0]), int(avg[7]-perc[7][0]) )
     p_subavgabunds3 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
                      perc[0][1], perc[1][1], perc[2][1], perc[3][1], perc[4][1], perc[5][1], int(perc[6][1]), int(perc[7][1]),
                      perc[2][1]+perc[1][1], perc[3][1]+perc[1][1], perc[4][1]+perc[1][1], perc[5][1]+perc[1][1] )
-    p_subavgabunds4 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+    p_subavgabunds4 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f} \n {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9}'.format(
                      perc[0][2], perc[1][2], perc[2][2], perc[3][2], perc[4][2], perc[5][2], int(perc[6][2]), int(perc[7][2]),
-                     perc[2][2]+perc[1][2], perc[3][2]+perc[1][2], perc[4][2]+perc[1][2], perc[5][2]+perc[1][2] )
+                     perc[2][2]+perc[1][2], perc[3][2]+perc[1][2], perc[4][2]+perc[1][2], perc[5][2]+perc[1][2], 
+                     perc[0][2]-avg[0], perc[1][2]-avg[1], perc[2][2]-avg[2], perc[3][2]-avg[3], perc[4][2]-avg[4], perc[5][2]-avg[5], int(perc[6][2]-avg[6]), int(perc[7][2]-avg[7]) )
     print '\n'
     print subavgabunds0
     print subavgabunds1 
