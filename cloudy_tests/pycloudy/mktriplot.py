@@ -85,22 +85,20 @@ def get_true_abunds(object_name):
     #print 'these are the benchmark abundances: \n', true_abunds
     return true_abunds, true_temps
 
-def get_Te_percentiles(percentiles_arr, Te_arr):
+def get_Te_percentiles(percentiles_arr, Te_arr, samples2use):
     Te_pencentiles = []
-    theta_p16 = np.array([[percentiles_arr[0][0], percentiles_arr[1][0], percentiles_arr[2][0], percentiles_arr[3][0], percentiles_arr[4][0], percentiles_arr[5][0]]])
-    theta_p50 = np.array([[percentiles_arr[0][1], percentiles_arr[1][1], percentiles_arr[2][1], percentiles_arr[3][1], percentiles_arr[4][1], percentiles_arr[5][1]]])
-    theta_p80 = np.array([[percentiles_arr[0][2], percentiles_arr[1][2], percentiles_arr[2][2], percentiles_arr[3][2], percentiles_arr[4][2], percentiles_arr[5][2]]])
-    wp16 = np.where(samples == theta_p16)[0][0]
-    wp50 = np.where(samples == theta_p50)[0][0]
-    wp80 = np.where(samples == theta_p80)[0][0]
-    Tep16 = Te_arr[wp16]
-    Tep50 = Te_arr[wp50]
-    Tep80 = Te_arr[wp80]
-    #print theta_p16, '\n', theta_p50, '\n', theta_p80
-    #print Tep16, Tep50, Tep80
-    Te_pencentiles.append(Tep16)
-    Te_pencentiles.append(Tep50)
-    Te_pencentiles.append(Tep80)
+    theta_p1 = np.array([[percentiles_arr[0][0], percentiles_arr[1][0], percentiles_arr[2][0], percentiles_arr[3][0], percentiles_arr[4][0], percentiles_arr[5][0]]])
+    theta_p2 = np.array([[percentiles_arr[0][1], percentiles_arr[1][1], percentiles_arr[2][1], percentiles_arr[3][1], percentiles_arr[4][1], percentiles_arr[5][1]]])
+    theta_p3 = np.array([[percentiles_arr[0][2], percentiles_arr[1][2], percentiles_arr[2][2], percentiles_arr[3][2], percentiles_arr[4][2], percentiles_arr[5][2]]])
+    wp1 = np.where(samples2use == theta_p1)[0][0]
+    wp2 = np.where(samples2use == theta_p2)[0][0]
+    wp3 = np.where(samples2use == theta_p3)[0][0]
+    Tep1 = Te_arr[wp1]
+    Tep2 = Te_arr[wp2]
+    Tep3 = Te_arr[wp3]
+    Te_pencentiles.append(Tep1)
+    Te_pencentiles.append(Tep2)
+    Te_pencentiles.append(Tep3)
     return Te_pencentiles
 
 def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, true_temps):
@@ -168,15 +166,66 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     avgTO3 = sum(TO3_nearby)/len(He_nearby) 
     avgTO2 = sum(TO2_nearby)/len(He_nearby) 
     subset = str(len(O_nearby))
+    avg = [avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, avgTO3, avgTO2]
     subavgabunds0 = 'Average abundances with O temperatures within '+str(nearby)+' from the benchmark values (i.e. averages of '+subset+' models): '
     subavgabunds1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f   Te_O3 = %d   Te_O2 = %d' % (
-                                   avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, int(avgTO3), int(avgTO2))
+                                   avg[0], avg[1], avg[2], avg[3], avg[4], avg[5], int(avg[6]), int(avg[7]))
     subavgabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                                     avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
+    # find temperatures of these sets:
+    p_subavgabunds0 = 'MCMC values and uncertainties according to 25th, 50th, and 75th percentiles:'
+    percentiles = [25, 50, 75]
+    p_subavgabunds1 = map(lambda v: (v), zip(*np.percentile(subsamples, percentiles, axis=0)))
+    p_subavgabunds1a = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(subsamples, percentiles, axis=0)))
+    TO3_p = np.percentile(np.array(TO3_nearby), percentiles)
+    TO2_p = np.percentile(np.array(TO2_nearby), percentiles)
+    print 'TO3_p = ', TO3_p
+    print 'errors with respect to average value: ', int(avgTO3-TO3_p[0]), int(avgTO3-TO3_p[1]), int(TO3_p[2]-avgTO3)
+    print 'TO2_p = ', TO2_p
+    print 'errors with respect to average value: ', int(avgTO2-TO2_p[0]), int(avgTO2-TO2_p[1]), int(TO2_p[2]-avgTO2)
+    TO3_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO3_nearby), subsamples)
+    TO2_perc = get_Te_percentiles(p_subavgabunds1, np.array(TO2_nearby), subsamples)
+    perc = [p_subavgabunds1[0], p_subavgabunds1[1], p_subavgabunds1[2], p_subavgabunds1[3], p_subavgabunds1[4], p_subavgabunds1[5], TO3_perc, TO2_perc]
+    p_subavgabunds2 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f} \n {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9}'.format(
+                     perc[0][0], perc[1][0], perc[2][0], perc[3][0], perc[4][0], perc[5][0], int(perc[6][0]), int(perc[7][0]),
+                     perc[2][0]+perc[1][0], perc[3][0]+perc[1][0], perc[4][0]+perc[1][0], perc[5][0]+perc[1][0], 
+                     avg[0]-perc[0][0], avg[1]-perc[1][0], avg[2]-perc[2][0], avg[3]-perc[3][0], avg[4]-perc[4][0], avg[5]-perc[5][0], int(avg[6]-perc[6][0]), int(avg[7]-perc[7][0]) )
+    p_subavgabunds3 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
+                     perc[0][1], perc[1][1], perc[2][1], perc[3][1], perc[4][1], perc[5][1], int(perc[6][1]), int(perc[7][1]),
+                     perc[2][1]+perc[1][1], perc[3][1]+perc[1][1], perc[4][1]+perc[1][1], perc[5][1]+perc[1][1] )
+    p_subavgabunds4 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f} \n {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9}'.format(
+                     perc[0][2], perc[1][2], perc[2][2], perc[3][2], perc[4][2], perc[5][2], int(perc[6][2]), int(perc[7][2]),
+                     perc[2][2]+perc[1][2], perc[3][2]+perc[1][2], perc[4][2]+perc[1][2], perc[5][2]+perc[1][2], 
+                     perc[0][2]-avg[0], perc[1][2]-avg[1], perc[2][2]-avg[2], perc[3][2]-avg[3], perc[4][2]-avg[4], perc[5][2]-avg[5], int(perc[6][2]-avg[6]), int(perc[7][2]-avg[7]) )
     print '\n'
     print subavgabunds0
     print subavgabunds1 
     print subavgabunds2
+    print p_subavgabunds0
+    print 'He      O       C      N      Ne      S      Te_O3   Te_O2'
+    print '25th percentile:'
+    print p_subavgabunds2
+    print '50th percentile:'
+    print p_subavgabunds3
+    print '75th percentile:'
+    print p_subavgabunds4
+    print '\n DIFFERENCES of percentiles with respect to 50th percentile: '
+    print p_subavgabunds1a
+    
+    # Chi^2 minimization within subsets
+    whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
+    psub = subsamples[ whsub, : ]
+    TO3whsub = TO3_nearby[whsub]
+    TO2whsub = TO2_nearby[whsub]
+    subchi0 = 'Values that best fit the data  from Chi^2 minimization within then '+str(nearby)+'K temperature tolerance are the following:'
+    subchi1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f  Te_O3 = %d   Te_O2 = %d' % (
+                                        psub[0], psub[1], psub[2],  psub[3], psub[4], psub[5], int(TO3whsub), int(TO2whsub) )
+    subchi2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f' % (psub[0], psub[1], 
+                      psub[2]+true_abunds[1], psub[3]+true_abunds[1], psub[4]+true_abunds[1], psub[5]+true_abunds[1] )
+    print '\n'
+    print subchi0
+    print subchi1
+    print subchi2
     
     # Chi^2 minimization within subsets
     whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
@@ -212,8 +261,8 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     p_mcmc1 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
     p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
     # find temperatures of these sets:
-    TO3_perc = get_Te_percentiles(p_mcmc1, TO3)
-    TO2_perc = get_Te_percentiles(p_mcmc1, TO2)
+    TO3_perc = get_Te_percentiles(p_mcmc1, TO3, samples)
+    TO2_perc = get_Te_percentiles(p_mcmc1, TO2, samples)
     perc = [p_mcmc1[0], p_mcmc1[1], p_mcmc1[2], p_mcmc1[3], p_mcmc1[4], p_mcmc1[5], TO3_perc, TO2_perc]
     #print p_mcmc1[5][0]#perc[6], perc[7]
     percentiles1 = '{:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:<6.2f} {:>8} {:<9} \n {:>17.2f} {:>7.2f} {:>6.2f} {:>6.2f}'.format(
@@ -296,6 +345,22 @@ def get_zarr(x, y):
         z = np.vstack((z, zi))
     return x, y, z
 
+def fit_line(arrx, arry):
+    '''
+    This function fits a line to the given array.
+    arrx, arry = numpy arrays 
+    RETURNS:
+    - constants of the line
+    - fitted line
+    '''
+    order = 1
+    coefficients = np.polyfit(arrx, arry, order)
+    polynomial = np.poly1d(coefficients)
+    f_pol = polynomial(arrx)
+    #fitted_line = np.array([arry, f_pol])
+    #print 'this is x and y of the fitted_line = ', fitted_line
+    return coefficients, f_pol
+
 
 #### CODE 
 
@@ -341,6 +406,7 @@ print 'The SUBsamples* shape is: ', np.shape(subsamples)
 print '* SUBsamples is the set of models without repeated abundance and temperature sets.'
     
 # PLOTS
+quantiles = [0.25, 0.5, 0.75] #[0.16, 0.5, 0.84]
 if mk_plots or contours:
     # plot of the temperatures without the benchmark values
     fig1 = plt.figure(1, figsize=(12, 10))
@@ -349,12 +415,15 @@ if mk_plots or contours:
     ylab = 'log (C/O)'
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    x = TO3
+    y = CO
     if mk_plots:
-        plt.plot(TO3, CO, 'k.')
-    elif contours:
-        x, y, z = get_zarr(TO3, CO)
         plt.plot(x, y, 'k.')
-        fig1 = triangle.corner(z, labels=[xlab, ylab])
+    elif contours:
+        x, y, z = get_zarr(x, y)
+        plt.plot(x, y, 'k.')
+        print 'These are the quantiles for Te_OIII vs C/O'
+        fig1 = triangle.corner(z, labels=[xlab, ylab], quantiles=quantiles)
     COTemp = object_name+'_tempsVsCO'+img_type
     fig1.savefig(os.path.abspath(COTemp))
     #plt.show()
@@ -365,10 +434,13 @@ if mk_plots or contours:
     ylab ='log (C/O)'
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    x = O
+    y = CO
+    plt.xlim(7.5, 8.9)
     if mk_plots:
-        plt.plot(O, CO, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(O, CO)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         fig2 = triangle.corner(z, labels=[xlab, ylab])
     COHO = object_name+'_COvsOH'+img_type
@@ -376,6 +448,14 @@ if mk_plots or contours:
     #plt.show()
 
     fig3 = plt.figure(1, figsize=(12, 10))
+    # Polynomial fit
+    x = O
+    y = CO+O
+    coeffs, line_fit = fit_line(x, y)
+    print 'Linear fit: y = mx + b'
+    print line_fit
+    print 'Coefficients: '
+    print coeffs
     plt.title('C/H vs O/H')
     xlab= '12 + log (O/H)'
     ylab ='12 + log (C/H)'
@@ -384,12 +464,16 @@ if mk_plots or contours:
     ymin = 6.0
     ymax = 8.8
     plt.ylim(ymin, ymax)
+    plt.xlim(7.5, 8.9)
     if mk_plots:
-        plt.plot(O, CO+O, 'k.')
-    elif contours:
-        x, y, z = get_zarr(O, CO+O)
         plt.plot(x, y, 'k.')
-        fig3 = triangle.corner(z, labels=[xlab, ylab], extents=[(7.5, 9.0), (ymin, ymax)])
+    elif contours:
+        x, y, z = get_zarr(x, y)
+        plt.plot(x, y, 'k.')
+        plt.plot(x, line_fit, 'b:')
+        print 'These are the quantiles for C/H to O/H'
+        fig3 = triangle.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
+                               extents=[(7.5, 9.0), (ymin, ymax)])
     CHHO = object_name+'_CHvsOH'+img_type
     fig3.savefig(os.path.abspath(CHHO))
     #plt.show()
@@ -401,10 +485,12 @@ if mk_plots or contours:
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.ylim(ymin, ymax)
+    x = TO3
+    y = CO+O
     if mk_plots:
-        plt.plot(TO3, CO+O, 'k.')
+        plt.plot(x, y, 'k.')
     elif contours:
-        x, y, z = get_zarr(TO3, CO+O)
+        x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         fig4 = triangle.corner(z, labels=[xlab, ylab], extents=[(8000.0, 18000.0), (ymin, ymax)])
     CTemp = object_name+'_tempsVsCH'+img_type
@@ -418,12 +504,15 @@ if mk_plots or contours:
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.ylim(6.0, 8.8)
+    x = CO+O
+    y = NO-CO
     if mk_plots:
-        plt.plot(CO+O, NO-CO, 'k.')
-    elif contours:
-        x, y, z = get_zarr(CO+O, NO-CO)
         plt.plot(x, y, 'k.')
-        fig5 = triangle.corner(z, labels=[xlab, ylab], quantiles=[0.16, 0.5, 0.84], extents=[(6.0, 8.8), (-2.6, 0.7)])
+    elif contours:
+        x, y, z = get_zarr(x, y)
+        plt.plot(x, y, 'k.')
+        fig5 = triangle.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
+                               extents=[(6.0, 8.8), (-2.6, 0.7)])
     NC = object_name+'_NCvsCH'+img_type
     fig5.savefig(os.path.abspath(NC))
     #plt.show()
@@ -431,20 +520,24 @@ if mk_plots or contours:
     nwalkers = 100
     nruns = 100
     # plot of abundance ratios including the benchmark abundances
+    print 'These are the quantiles for triangle plot: '
+    labels = ["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"]
     fig = triangle.corner(samples, 
-                          labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"], 
+                          labels=labels, 
                           truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
-                                  true_abunds[4], true_abunds[5]] ,
+                                  true_abunds[4], true_abunds[5]],
+                          #quantiles=quantiles,
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
-                          extents=[(9.5, 11.7), (7.5, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.3)]
+                          extents=[(9.5, 11.7), (7.55, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.4)]
                           )
     pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
-    fig = triangle.corner(samples, labels=["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"])
+    fig = triangle.corner(samples, labels=labels)
     pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     fig.savefig(os.path.abspath(pltwithoutbench))    
+
 
 if use_subset:
     He = subsamples[:, 0]
