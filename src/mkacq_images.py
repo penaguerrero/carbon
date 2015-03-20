@@ -31,19 +31,19 @@ vmin = 10
 vmax = 90
 
 # want to save images?  (type 'y' for yes or 'n' for no)
-save_plt = 'n'
+save_plt = 'y'
 # useful cmap options: Blues, Greens, Greys, hot, Purples, binary, rainbow, for default type None
 cmap = None#'Greys'
 
 # do you want to change the format of the image?
-change_format = False
+change_format = True
 new_filetype = 'eps'
 
 # Do you want to see the plots separate or together? (choose separate=True for creating the jpg images)
-separate = False
+separate = True
 
 # Do you want to see the rotation angle of the slit in the 2d spectra?
-rotate = False
+rotate = True
 
 ############################################################################################################################################
 
@@ -75,7 +75,10 @@ img_recenter = fits_raw[4].data      # Intensity data
 h1 = fits_raw[1].header
 PA_APER = h1['PA_APER']
 ORIENT = h1['ORIENTAT']
-PA = ORIENT-45.  # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
+print 'PA_APER = ', PA_APER
+print 'ORIENT = ', ORIENT
+offset = 45.35   # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
+PA = ORIENT #- offset
 print 'PA = ', PA
 
 
@@ -183,7 +186,7 @@ if separate:
     # before
     f1 = plt.figure(1, figsize=(10, 10))
     if rotate == True:
-        rotate_im = ndimage.rotate(img, PA)#, reshape=False)
+        rotate_im = ndimage.rotate(img, -ORIENT, reshape=False)
         im = plt.imshow(rotate_im, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     else:
         im = plt.imshow(img, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
@@ -198,7 +201,7 @@ if separate:
     # after
     f2 = plt.figure(1, figsize=(10, 10))
     if rotate == True:
-        rotate_im2 = ndimage.rotate(img_recenter, PA)#, reshape=False)
+        rotate_im2 = ndimage.rotate(img_recenter, -ORIENT, reshape=False)
         im2 = plt.imshow(rotate_im2, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     else:
         im2 = plt.imshow(img_recenter, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
@@ -222,9 +225,9 @@ else:
     # Before
     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20,10))
     if rotate == True:
-        rotate_im = ndimage.rotate(img, PA)#, reshape=False)
+        rotate_im = ndimage.rotate(img, -ORIENT, reshape=False)
         im1 = ax1.imshow(rotate_im, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
-        rotate_im2 = ndimage.rotate(img_recenter, PA)#, reshape=False)
+        rotate_im2 = ndimage.rotate(img_recenter, -ORIENT, reshape=False)
         im2 = ax2.imshow(rotate_im2, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     else:
         im1 = ax1.imshow(img, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
