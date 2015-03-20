@@ -43,9 +43,9 @@ img_format = '.jpg'
 def get_S2N(use_given_lineinfo, object_name):
     # Go into the directory of each object. Files assumed to be in: /Users/home_direcotry/Documents/AptanaStudio3/src/
     if use_given_lineinfo:
-        file2use = object_name+'_RedCor_Ebv.txt'
-    else:
         file2use = object_name+'_measuredLI_RedCor_Ebv.txt'
+    else:
+        file2use = object_name+'_RedCor_Ebv.txt'
     path2txt = 'carbon/results/'+object_name+'/'+file2use
     path2txt_list = string.split(os.getcwd(), sep='carbon')
     path2txt_path = os.path.join(path2txt_list[0], path2txt)
@@ -162,8 +162,8 @@ create_txt_lineinfo = True
 
 # Which set of line info did I use:  True = I measured the lines,   False = the code measured the lines
 #                            0     1     2     3     4       5      6      7     8
-use_given_lineinfo_list = [False, True, True, True, True, False, False, False, False, 
-                           False, False, True, False, False, True, False, True, False]
+use_given_lineinfo_list = [False, True, True, True, False, False, False, False, True, 
+                           True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
     
 # Divide the sample into 2 lists: 
@@ -289,17 +289,25 @@ if object_number == 'all':
     figs.subplots_adjust(wspace=0.25, hspace=0.2)
     # Set common labels
     figs.text(0.5, 0.06, 'S/N', ha='center', va='center')
-    figs.text(0.035, 0.5, 'Difference with respect to benchmark values [dex]', ha='center', va='center', rotation='vertical')
+    #figs.text(0.035, 0.5, 'Difference with respect to benchmark values [dex]', ha='center', va='center', rotation='vertical')
+    figs.text(0.035, 0.5, 'Observed abundances - Modeled abundances [dex]', ha='center', va='center', rotation='vertical')
     # Set conditions for each plot
     f1 = figs.add_subplot(231)
     f1.set_title('1666 O III]')
-    f1.set_xlim(-35.0, 120.0)
+    f1.set_xlim(-300.0, 800.0)
     f1.set_ylim(-0.6, 0.4)
     f1.set_ylabel('Difference to O')
     #f1.text(6.5, -30, 'stellar component')   
     # adding the enhancement of the stellar component  
-    sn1666 = get_list2plot(lines_info_list, 1, 1)
-    sn1666[3] = lines_info_list[3][1][0]
+    sn1666or = get_list2plot(lines_info_list, 1, 1)
+    # if the S/N of 1666 was negative use 1661
+    sn1666 = []
+    for i in range(len(objects_list)):
+        if sn1666or[i] <= 0.0:
+            sn1666pos = lines_info_list[i][0][1] 
+        else:
+            sn1666pos = sn1666or[i]
+        sn1666.append(sn1666pos)
     diffo = get_list2plot(diffs_abunds_list, 1)   
     f1.plot(sn1666, diffo, 'k.')
     # remove the first tick so that they do not overlap
@@ -309,8 +317,8 @@ if object_number == 'all':
     f2.set_title('4363 [O III]')
     sn4363 = get_list2plot(lines_info_list, 1, 6)
     f2.plot(sn4363, diffo, 'k.')
-    f2.set_xlim(-70.0, 330.0)
-    f2.set_ylim(-0.6, 0.4)
+    #f2.set_xlim(-70.0, 330.0)
+    #f2.set_ylim(-0.6, 0.4)
     #f2.xaxis.set_major_formatter( NullFormatter() )
     #f2.yaxis.set_major_formatter( NullFormatter() )
     f2.set_ylabel('Difference to O')
@@ -320,8 +328,8 @@ if object_number == 'all':
     f3.set_title('5007 [O III]')
     sn5007 = get_list2plot(lines_info_list, 1, 9)
     f3.plot(sn5007, diffo, 'k.')
-    f3.set_xlim(-1950.0, 11500.0)
-    f3.set_ylim(-0.6, 0.4)
+    #f3.set_xlim(-1950.0, 11500.0)
+    #f3.set_ylim(-0.6, 0.4)
     f3.set_ylabel('Difference to O')
     #f3.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     
@@ -330,8 +338,8 @@ if object_number == 'all':
     sn1909 = get_list2plot(lines_info_list, 1, 4)
     diffc = get_list2plot(diffs_abunds_list, 2)   
     f4.plot(sn1909, diffc, 'k.')
-    f4.set_xlim(-35.0, 120.0)
-    f4.set_ylim(-0.85, 0.45)
+    #f4.set_xlim(-35.0, 120.0)
+    #f4.set_ylim(-0.85, 0.45)
     f4.set_ylabel('Difference to C')
     #f4.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     
@@ -340,35 +348,39 @@ if object_number == 'all':
     sn4686 = get_list2plot(lines_info_list, 1, 7)
     diffhe = get_list2plot(diffs_abunds_list, 0)   
     f5.plot(sn4686, diffhe, 'k.')
-    f5.set_xlim(-83.0, 300.0)
+    #f5.set_xlim(-83.0, 300.0)
     f5.set_ylabel('Difference to He')
     #f5.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     
     f6 = figs.add_subplot(236)
     f6.set_title('4686 He II')
     f6.plot(sn4686, diffo, 'k.')
-    f6.set_xlim(-83.0, 300.0)
-    f6.set_ylim(-0.6, 0.4)
+    #f6.set_xlim(-83.0, 300.0)
+    #f6.set_ylim(-0.6, 0.4)
     f6.set_ylabel('Difference to O')
     #f6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     
     # Create the tile
     for i, obj in enumerate(objects_list):
         subxcoord = 5
-        subycoord = -4
+        subycoord = -3
         side = 'left'
         # plot of S/N of 1666  VS  Difference to O benchmark
-        if (obj == 'mrk1199') or (obj == 'sbs1319'):            
+        if (obj == 'mrk1199') or (obj == 'iras08208'):            
             subycoord = 4            
-        if (obj == 'mrk5') or (obj == 'sbs1415'):
+        if (obj == 'mrk5'):
             subycoord = -10            
-        if (obj == 'iras08339') or (obj == 'arp252') or (obj == 'iras08208') or (obj == 'mrk960') or (obj == 'sbs1054') or (obj == 'tol1457'):
+        if (obj == 'iras08339') or (obj == 'mrk960') or (obj == 'sbs1054'):
             side = 'right'
             subxcoord = -4
-        if (obj == 'sbs0948'):
+        if (obj == 'ngc1741') or (obj == 'sbs1415') or (obj == 'arp252') or (obj == 'pox4') or (obj == 'sbs1054'):
             side = 'right'
             subxcoord = -2
             subycoord = -13            
+        if (obj == 'sbs0218') or (obj == 'tol9') or (obj == 'sbs0948'):
+            side = 'right'
+            subxcoord = -5
+            subycoord = -2          
         f1.annotate('{}'.format(obj), xy=(sn1666[i], diffo[i]), xytext=(subxcoord, subycoord), ha=side, 
                     textcoords='offset points', fontsize=13)
         # plot of S/N of 4363  VS  Difference to O benchmark
@@ -377,10 +389,6 @@ if object_number == 'all':
         side = 'left'
         if (obj == 'mrk1199'):            
             subycoord = 6            
-        #if :            
-        #    side = 'right'
-        #    subxcoord = -2
-        #    subycoord = -11            
         if (obj == 'mrk5') or (obj == 'pox4'):            
             side = 'right'
             subxcoord = -2
