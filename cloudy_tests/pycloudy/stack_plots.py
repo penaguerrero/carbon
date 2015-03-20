@@ -15,11 +15,13 @@ from collections import OrderedDict
 
 '''
 This script creates the following output for ALL objects in the sample:
-            - plot or contours of temperature of [O III] vs C/O
-            - plot or contours of C/O vs O/H
-            - plot or contours of C/H vs O/H
-            - plot or contours of temperature of [O III] vs C/H 
-            - triangle plot after the MCMC chain has been ran
+            1. - plot or contours of temperature of [O III] vs C/O
+            2. - plot or contours of C/O vs O/H
+            3. - plot or contours of C/H vs O/H
+            4. - plot or contours of temperature of [O III] vs C/H
+            5. - plot of N/C vs O/H
+            6. - plot of C/N vs. N/O --> fits a line to this data points   
+            7. - triangle plot after the MCMC chain has been ran
 '''
 
 #######################################################################################################################
@@ -27,7 +29,7 @@ This script creates the following output for ALL objects in the sample:
 
 # Specify if you want to save the plots and the type of image to be saved
 save_figs = True
-img_format = '.jpg'
+img_format = '.eps'
 
 # Do you want to see the plots?
 show_plots = False
@@ -63,8 +65,8 @@ def get_Te_percentiles(percentiles_arr, Te_arr):
 def get_percentiles(samples, TO3, TO2):
     # Calculate the uncertainties based on the 16th, 50th and 84th percentiles
     percentiles0 = 'MCMC values and uncertainties according to 16th, 50th, and 84th percentiles:'
-    p_mcmc1 = map(lambda v: (v), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
-    p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+    p_mcmc1 = map(lambda v: (v), zip(*np.percentile(samples, [25, 50, 75], axis=0)))
+    p_mcmc2 = map(lambda v: (v[1], np.abs(v[2]-v[1]), np.abs(v[1]-v[0])), zip(*np.percentile(samples, [25, 50, 75], axis=0)))
     # find temperatures of these sets:
     TO3_perc = get_Te_percentiles(p_mcmc1, TO3)
     TO2_perc = get_Te_percentiles(p_mcmc1, TO2)
@@ -81,11 +83,11 @@ def get_percentiles(samples, TO3, TO2):
     print '\n'
     print percentiles0
     print 'He      O       C      N      Ne      S      Te_O3   Te_O2'
-    print '16th percentile:'
+    print '25th percentile:'
     print percentiles1
     print '50th percentile:'
     print percentiles2
-    print '80th percentile:'
+    print '75th percentile:'
     print percentiles3
     print '\n DIFFERENCES of percentiles with respect to 50th percentile: '
     print p_mcmc2
@@ -153,6 +155,49 @@ def get_zarr(x, y):
         zi = [xi, yi]
         z = np.vstack((z, zi))
     return x, y, z
+
+def fit_line(arrx, arry):
+    '''
+    This function fits a line to the given array.
+    arrx, arry = numpy arrays 
+    RETURNS:
+    - constants of the line
+    - fitted line
+    '''
+    order = 1
+    coefficients = np.polyfit(arrx, arry, order)
+    polynomial = np.poly1d(coefficients)
+    f_pol = polynomial(arrx)
+    return coefficients, f_pol
+
+# the true line
+def line_eq(theta, x):
+    m, b = theta
+    return m * x + b
+
+# likelihood function
+def lnlike(theta, xobs, yobs, yerrobs):
+    #print 'len(theta), theta', len(theta), theta
+    #print 'len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs', len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs
+    model = line_eq(theta, xobs)
+    #print 'type(yobs), type(model), type(yerrobs)', type(yobs), type(model), type(yerrobs)
+    chi2 = (yobs - model)**2 / yerrobs**2
+    chi2 = chi2.sum()
+    return - chi2/2.0   # we are returning the log of the likelihood function
+
+# define the priors
+def lnprior(theta):
+    m, b = theta
+    if -5.0 < m < 0.0 and 0.1 < b < 5.5:
+        return 0.0
+    return -np.inf
+
+# then the probability function will be
+def lnprob(theta, x, y, yerr):
+    lp = lnprior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike(theta, x, y, yerr)
 
 
 #### CODE
@@ -249,7 +294,7 @@ ylab = 'log (C/O)'
 plt.xlabel(xlab)
 plt.ylabel(ylab)
 x, y, z = get_zarr(allto2, allco)
-fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 18000.0), (-1.6, 1.7)])
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 17500.0), (-1.6, 1.7)])
 if save_figs:
     fn = object_name+'_tempO2VsCO.jpg'
     fig.savefig(os.path.abspath(fn))
@@ -301,7 +346,7 @@ plt.xlabel(xlab)
 plt.ylabel(ylab)
 plt.ylim(ymin, ymax)
 x, y, z = get_zarr(allto3, allco+allo)
-fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 18000.0), (ymin, ymax)])
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 15500.0), (ymin, ymax)])
 if save_figs:
     fn = object_name+'_tempsVsCH.jpg'
     fig.savefig(os.path.abspath(fn))
@@ -318,7 +363,7 @@ plt.xlabel(xlab)
 plt.ylabel(ylab)
 plt.ylim(ymin, ymax)
 x, y, z = get_zarr(allto2, allco+allo)
-fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 18000.0), (ymin, ymax)])
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7000.0, 15500.0), (ymin, ymax)])
 if save_figs:
     fn = object_name+'_tempO2VsCH.jpg'
     fig.savefig(os.path.abspath(fn))
@@ -383,6 +428,117 @@ if save_figs:
 if show_plots:
     plt.plot(x, y, 'k.')
     plt.show()
+
+fig = plt.figure(1, figsize=(12, 10))
+plt.title('N/C vs O/H')
+xlab= '12 + log (O/H)'
+ylab ='log (N/C)'
+plt.xlabel(xlab)
+plt.ylabel(ylab)
+ymin = -2.6
+ymax = 0.7
+plt.ylim(ymin, ymax)
+allnc = allno - allco
+x, y, z = get_zarr(allo, allnc)
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(7.45, 8.7), (ymin, ymax)])
+if save_figs:
+    fn = object_name+'_NCvsOH.jpg'
+    fig.savefig(os.path.abspath(fn))
+    print 'Figure ', fn, 'saved!' 
+if show_plots:
+    plt.plot(x, y, 'k.')
+    plt.show()
+
+fig = plt.figure(1, figsize=(12, 10))
+plt.title('N/C vs O/H')
+xlab= '12 + log (C/H)'
+ylab ='log (N/C)'
+plt.xlabel(xlab)
+plt.ylabel(ylab)
+ymin = -2.6
+ymax = 0.7
+plt.ylim(ymin, ymax)
+allnc = allno - allco
+allc = allco + allo
+x, y, z = get_zarr(allc, allnc)
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(6.0, 9.0), (ymin, ymax)])
+if save_figs:
+    fn = object_name+'_NCvsCH.jpg'
+    fig.savefig(os.path.abspath(fn))
+    print 'Figure ', fn, 'saved!' 
+# Adjust a linear fit to the plot
+coeffs, line_fit = fit_line(x, y)
+print 'Coefficients of initial guess to the plot of: ', fn
+m = coeffs[0]
+b = coeffs[1]
+print 'm = %0.3f     b = %0.3f' % (m, b)
+if show_plots:
+    plt.plot(x, y, 'k.')
+    plt.show()
+
+fig = plt.figure(1, figsize=(12, 10))
+plt.title('N/O vs C/N')
+xlab= 'log (N/O)'
+ylab ='log (C/N)'
+plt.xlabel(xlab)
+plt.ylabel(ylab)
+ymin = -0.60
+ymax = 2.60
+plt.ylim(ymin, ymax)
+allcn = allco - allno
+x, y, z = get_zarr(allno, allcn)
+fig = triangle.corner(z, labels=[xlab, ylab], extents=[(-1.7, -0.6), (ymin, ymax)])
+if save_figs:
+    fn = object_name+'_NOvsCN.jpg'
+    fig.savefig(os.path.abspath(fn))
+    print 'Figure ', fn, 'saved!' 
+if show_plots:
+    plt.plot(x, y, 'k.')
+    plt.show()
+# Adjust a linear fit to the plot
+coeffs, line_fit = fit_line(x, y)
+print 'Coefficients of initial guess to the plot of: ', fn
+m = coeffs[0]
+b = coeffs[1]
+print 'm = %0.3f     b = %0.3f' % (m, b)
+# Initialize the chain with a Gaussian ball around the maximum likelihood result, for which we use optimize
+ndim, nwalkers, nruns = 2, 100, 100
+yerr = []
+for yi in y:
+    ye = yi * 0.1
+    yerr.append(ye)
+yerr = np.array(yerr)
+randadd2point = lambda x: x+np.random.rand(1)*-1
+p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
+pos, prob, state = sampler.run_mcmc(p0, nruns)   # this allows for the first 50 steps to be "burn-in" type
+# best model
+wh = np.where( prob == prob.max() )[0][0]
+p = pos[ wh, : ]
+plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
+line1 ='values of the %i dimensions that best fit the data according to Chi^2 in %i runs are the following:' % (ndim, nruns)
+line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
+print line1
+print line2
+allm, allb = [], []
+subsample = np.array([]).reshape(0, 2)
+print 'pos :', pos
+for theta in pos:
+    if theta[0] < 0.0:
+        allm.append(theta[0])
+        allb.append(theta[1])
+        subsample = np.vstack((subsample, theta))
+avgm = sum(allm)/len(allm)
+avgb = sum(allb)/len(allb)
+print 'Average values:  m = %0.3f   b= %0.3f' % (avgm, avgb)
+samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
+fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
+fig.show()
+# Calculate the uncertainties based on the 16th, 50th and 84th percentiles
+m_mcmc, b_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(subsample, [25, 50, 75], axis=0)))
+print 'm_mcmc, b_mcmc:', m_mcmc, b_mcmc
+m_mcmc2, b_mcmc2 = map(lambda v: (v), zip(*np.percentile(subsample, [25, 50, 75], axis=0)))
+print 'm_mcmc2, b_mcmc2:', m_mcmc2, b_mcmc2
 
 
 nwalkers = 100
