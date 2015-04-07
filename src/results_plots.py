@@ -17,14 +17,12 @@ This scripts takes the found metallicities and produces:
  NOTE: The data for N/O and Ne/O was taken all from Lopez-Sanchez & Esteban 2010
 '''
 
-use_our_sample_ONLY = False
-save_images = False
 use_our_sample_ONLY = True
 save_images = False
 # Do you want to correct values?
-correct_values = True
+correct_values = False
 # Type of image to be saved?
-typeofimage = '.eps'
+typeofimage = '.jpg'
 # Show fitted line?
 show_fitted_line = True
 
@@ -247,11 +245,11 @@ for obj, i in zip(objects_list, indeces_list):
     elif (obj in objects_not_in_sample) or (obj in objects_ref):
         fmt='b^'
     plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
-plt.xlim(6.8, 8.9)
-yup = 1.02
+plt.xlim(6.8, 9.0)
+yup = 1.1
 ylo = -1.8
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(6.8, 9.0, 0.1))
+plt.xticks(numpy.arange(6.8, 9.1, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     subxcoord = -3
@@ -313,11 +311,11 @@ else:
         plt.errorbar(Clo[i], Clco[i], xerr=[errClou[i], errClod[i]], yerr=[errClcou[i], errClcod[i]], fmt=fmt, ecolor='k')
         #plt.errorbar(Clo[i], Clco[i], xerr=errClou[i], yerr=errClcou[i], fmt=fmt, ecolor='r')
     '''
-plt.xlim(6.8, 8.9)
+plt.xlim(6.8, 9.0)
 yup = 1.02
 ylo = -1.8
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(6.8, 9.0, 0.1))
+plt.xticks(numpy.arange(6.8, 9.1, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.2))
 for x, y, z in zip(Clo, Clco, objects_list):
     subxcoord = -1
@@ -467,10 +465,10 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     plt.errorbar(OH[i], NeO[i], xerr=OHerr[i], yerr=NeOerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.6, 9.0)
-yup = -0.1
-ylo = -1.2
+yup = 0.0
+ylo = -1.1
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(7.6, 9.0, 0.1))
+plt.xticks(numpy.arange(7.4, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.1))
 for x, y, z in zip(OH, NeO, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
@@ -741,15 +739,15 @@ for x, y, z in zip(NO, CN, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
     subxcoord = -2
-    subycoord = 5
+    subycoord = 4
     side = 'right'
-    if (z == 'sbs1319'):
-        subycoord = -14
-    if (z == 'pox4') or (z == 'sbs0926'):
+    if (z == 'sbs1319') or (z == 'pox4') :
+        subycoord = -12
+    if (z == 'sbs0926'):
         subxcoord = 4
-        subycoord = -14
+        subycoord = -12
         side = 'left'
-    if (z == 'Sun') or (z == 'arp252') or (z == 'sbs1054') or (z == '30Dor'):
+    if (z == 'Sun') or (z == 'arp252') or (z == 'iras08339') or (z == 'sbs1054') or (z == '30Dor'):
         subxcoord = 4
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
