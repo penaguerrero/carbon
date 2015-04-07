@@ -461,6 +461,7 @@ def write_RedCorfile(path_and_name_outfile, cols_in_file):
     RedCor_file = open(path_and_name_outfile, 'w+')
     print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
     for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW, perrEW):
+        #float(w), float(fl), str(ele), str(ion), str(forb), str(hforb), float(f), float(ef), float(epf), float(i), float(ei), float(epi), float(ew), float(eew), float(eewp)
         print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
     RedCor_file.close()
     print 'Text file with corrected intensities written in: ', path_and_name_outfile
@@ -988,9 +989,13 @@ class BasicOps:
         else:
             # Obtain the reddening corrected intensities based on the given law and c(Hb)
             RC = pn.RedCorr(law=redlaw, cHbeta=cHbeta)
+        Hbeta_idx = catalog_lines.index(4861)
         for w, nF, nI in zip(catalog_lines, norm_fluxes, norm_intensities):   
             I_dered = nI * RC.getCorrHb(w)
             Idered.append(I_dered)
+            # just for checking purposes
+            if w == 4861.0:
+                I_deredHbeta = self.intensities_corr_undelyingAbs[Hbeta_idx] * RC.getCorrHb(w)
             # Obtain the reddening corrected intensities WITHOUT the correction due to 
             # underlying absorption based on the given law and c(Hb)
             IdnUA = nF * RC.getCorrHb(w)
@@ -999,7 +1004,6 @@ class BasicOps:
             #print '   FluxCorUndAbs', nF, '  I_dered_norCoUndAbs=', IdnUA
         # Find observed Halpha/Hbeta ratio
         Halpha_idx = catalog_lines.index(6563)
-        Hbeta_idx = catalog_lines.index(4861)
         Halpha = norm_fluxes[Halpha_idx]
         Hbeta = norm_fluxes[Hbeta_idx]
         raw_ratio = Halpha/Hbeta
@@ -1009,9 +1013,9 @@ class BasicOps:
         print ''
         print 'C_Hbeta = %0.3f  -->  c_Hbeta = %0.3f' % (cHbeta/0.434, cHbeta) 
         print ' Intensities corrected for reddening and underlying absorption.'
-        print '            Using', redlaw, '                   Normalized fluxes before extinction correction'
-        print catalog_lines[Halpha_idx], '    ', I_Halpha, '                  ', Halpha
-        print catalog_lines[Hbeta_idx], '    ', I_Hbeta, '                          ', Hbeta
+        print '            Using', redlaw, '     Norm flux before extinction corr    Raw flux   RedCorr I'
+        print catalog_lines[Halpha_idx], '    ', I_Halpha, '   ', Halpha, '                    ', self.flux[Hbeta_idx], '  ', I_deredHbeta
+        print catalog_lines[Hbeta_idx], '    ', I_Hbeta, '           ', Hbeta
         print 'theoretical ratio Ha/Hb = %0.2f' % (I_theo_HaHb)
         #print '      observed Ha/Hb = %0.3f           raw Ha/Hb = %0.3f' % (I_obs_HaHb, raw_ratio)
         print '      observed Ha/Hb =', numpy.round(I_obs_HaHb, decimals=2), '           raw Ha/Hb =', numpy.round(raw_ratio, decimals=2)
@@ -1058,14 +1062,24 @@ class BasicOps:
             if self.ebv != 0.0:
                 rv = self.av / self.ebv
                 RC = pn.RedCorr(E_BV=self.ebv, R_V=rv, law=self.redlaw, cHbeta=self.cHbeta)
+                errIdered = tot_err_nF * numpy.abs(RC.getCorrHb(w))
+                perc_errIdered = perc_tot_err_nF + 0.25
+                errIdered = numpy.abs(nI) * (perc_errIdered/100.0)
+                errs_Idered.append(errIdered)
+                perc_errs_I_dered.append(perc_errIdered)
             else:
                 RC = pn.RedCorr(law=self.redlaw, cHbeta=self.cHbeta)
-            errIdered = tot_err_nF * numpy.abs(RC.getCorrHb(w))
-            errs_Idered.append(errIdered)
-            perc_errIdered = (errIdered * 100.) / numpy.abs(nI)
-            perc_errs_I_dered.append(perc_errIdered)
-            #print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', nI, ' err=', errIdered, ' err%=', perc_errIdered 
-        #print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
+                errIdered = tot_err_nF * numpy.abs(RC.getCorrHb(w))
+                errs_Idered.append(errIdered)
+                perc_errIdered = (errIdered * 100.) / numpy.abs(nI)
+                perc_errs_I_dered.append(perc_errIdered)
+            #errIdered = tot_err_nF * numpy.abs(RC.getCorrHb(w))
+            #errs_Idered.append(errIdered)
+            #perc_errIdered = (errIdered * 100.) / numpy.abs(nI)
+            #perc_errs_I_dered.append(perc_errIdered)
+            print w, ' NormFlux=', nF, ' err=',tot_err_nF, ' err%=', perc_tot_err_nF, '   I=', nI, ' err=', errIdered, ' err%=', perc_errIdered 
+            #raw_input()
+        ##print 'min(perc_errs_I_dered)', min(perc_errs_I_dered)
         return errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, errs_EW
     
     def do_ops(self):
@@ -1604,7 +1618,7 @@ class AdvancedOps(BasicOps):
         try:
             self.C3 = pn.Atom("C", "3")
             den_diag_C3 = 'L(1907) / L(1909)'
-            self.strongC3 = self.I_1907
+            self.strongC3 = self.I_1909
             self.denC3 = self.C3.getTemDen(self.I_1907/self.I_1909, tem=10000.0, to_eval=den_diag_C3) 
             print '   {:<8} {:<12} {:<10} {:<15} {:<15}'.format('C 3]','1907/1909', 'Medium', self.denC3[0], self.denC3[1])
             if self.writeouts:
@@ -2479,8 +2493,13 @@ class AdvancedOps(BasicOps):
         op = sorted_atoms.index('O2')
         opp = sorted_atoms.index('O3')
         Ofrac = totabs_ions_list[opp][0] / Otot
+        # now from 1909 to 5007 according to Kobulnicky & Skillman (1998) 
+        Cpp2Opp = 0.059 * numpy.exp(4.659/tc) * I_C3[0] / self.I_5007[0] 
+        # calculate errors
+        Cpp2Opp_err = numpy.sqrt( (I_C3[1]/I_C3[0])**2 + (self.I_5007[1]/self.I_5007[0])**2 + (tpluserr / (4.659 / tc**2 * numpy.exp(4.659/tc)) )**2)
         print '\n X(O++) = %0.2f' % Ofrac
-        print ' C++/O++ = %0.3f +- %0.03f' % (C2toO2, C2toO2_err)
+        print '              1909/1666        1909/5007'
+        print ' C++/O++ = %0.3f +- %0.03f   %0.3f +- %0.03f' % (C2toO2, C2toO2_err, Cpp2Opp, Cpp2Opp_err)
         # Calculate log O3/O2:
         Oratio = numpy.log10(totabs_ions_list[opp][0]/totabs_ions_list[op][0])
         errOratio = numpy.sqrt((totabs_ions_list[opp][1]/totabs_ions_list[opp][0])**2 + (totabs_ions_list[op][1]/totabs_ions_list[op][0])**2) / 2.303
@@ -2524,11 +2543,22 @@ class AdvancedOps(BasicOps):
         logele_gar = 12+numpy.log10(totC_gar)
         #logeleerr_gar = totC_garnett[1] / (2.303 * totC_garnett[0])
         logeleerr_gar = errtotC_gar / (2.303 * totC_gar)
+        #logeleerr_gar = numpy.sqrt( (Cpp2Opp_err/Cpp2Opp)**2 + (erricfC/icfC)**2 ) 
         percent_err = totC_garnett[1]*100 / totC_garnett[0]
         #logeleerr_gar = numpy.log10((100+percent_err)/(100-percent_err)) / 2.0
         print '  C++ = ', totabs_ions_list[cpp], '%err=', percent_err
         print ' total C = ', totC_garnett
         print ' 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
+        # To "play" with different uncertainites usefollowing lines, else press enter...
+        useCerr_definition = 'y'
+        print '   ***  Use ', totC_garnett, ' (', logeleerr_gar, ' dex) as C error?  '
+        useCerr = raw_input('    If YES press type "y", otherwise type the desired DEX to be used   ') 
+        if not (useCerr == useCerr_definition):
+            logeleerr_gar = float(useCerr)
+            percent_err = totC_garnett[1]*100 / totC_garnett[0]
+            print 'C++ = ', totabs_ions_list[cpp], '%err=', percent_err
+            print 'total C = ', totC_garnett
+            print '12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
         # now determine carbon abundance with my thesis method
         if data2use != None:
             if self.use_Chbeta:
@@ -2595,8 +2625,10 @@ class AdvancedOps(BasicOps):
         C_errp = Ctot[1]*100/Ctot[0]
         R = Ctot[0] / Otot
         print Ctot[0], '/', Otot, '=', R
-        Ratio = numpy.log10(R)
-        Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303)            
+        #Ratio = numpy.log10(R)
+        #Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303)  
+        Ratio = logele - logOtot
+        Ratioerr = numpy.sqrt( logeleerr**2 + logOtoterr**2 )          
         elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
         print ' C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         #raw_input(' ***  press enter to continue')
