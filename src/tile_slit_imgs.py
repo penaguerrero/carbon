@@ -18,7 +18,7 @@ Choose parameters to run script
 
 # Specify the type of image to be saved
 save_fig = True
-img_format = '.eps'
+img_format = '.jpg'
 
 
 #####################################################################################################################
@@ -70,7 +70,7 @@ list_of_imgs = glob(os.path.join(path_list[0], carbon_dir+'*_after.jpg'))
 # Create the actual tile or tiles
 img_number = 1
 fig = figure(1, figsize=(15, 15))
-fig.subplots_adjust(wspace=0.25, hspace=0.2)
+fig.subplots_adjust(wspace=0.1, hspace=0.15)
 # First plot images from object number 0 through 8
 for obj in objects_list:
     for data in list_of_imgs:
@@ -89,7 +89,7 @@ show()
 # Now plot images from object 9 through 17
 img_number = 1
 fig = figure(1, figsize=(15, 15))
-fig.subplots_adjust(wspace=0.25, hspace=0.2)
+fig.subplots_adjust(wspace=0.1, hspace=0.15)
 for i in range(npt, len(objects_list)):
     for data in list_of_imgs:
         if objects_list[i] in data:
