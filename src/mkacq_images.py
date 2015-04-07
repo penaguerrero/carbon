@@ -23,21 +23,24 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 ''' Choose parameters to run script'''
 object_number = 0
+faint = True
+
 # faint objects
-#vmin = 20
-#vmax = 50
-# clear objects
-vmin = 10
-vmax = 90
+if faint:
+    vmin = 20
+    vmax = 50
+else:
+    vmin = 10
+    vmax = 90
 
 # want to save images?  (type 'y' for yes or 'n' for no)
 save_plt = 'y'
 # useful cmap options: Blues, Greens, Greys, hot, Purples, binary, rainbow, for default type None
-cmap = None#'Greys'
+cmap = 'Greys'
 
 # do you want to change the format of the image?
 change_format = True
-new_filetype = 'eps'
+new_filetype = 'jpg'
 
 # Do you want to see the plots separate or together? (choose separate=True for creating the jpg images)
 separate = True
@@ -79,6 +82,7 @@ print 'PA_APER = ', PA_APER
 print 'ORIENT = ', ORIENT
 offset = 45.35   # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
 PA = ORIENT #- offset
+#ORIENT = ORIENT + 90.0
 print 'PA = ', PA
 
 
@@ -133,8 +137,8 @@ def add_slit_line(lolim, uplim, teta):
     #plt.plot(y, x, 'k-', lw=2)
     # draw center of slit
     #plt.plot(slit_x, slit_y, 'r--', lw=2)
-    plt.plot(slit_x, slit_left, 'w', lw=2)
-    plt.plot(slit_x, slit_right, 'w', lw=2)
+    plt.plot(slit_x, slit_left, 'k', lw=2)
+    plt.plot(slit_x, slit_right, 'k', lw=2)
     plt.xlim(lolim, uplim)
     plt.ylim(lolim, uplim)   
     '''
@@ -207,13 +211,15 @@ if separate:
         im2 = plt.imshow(img_recenter, vmin=vmin, vmax=vmax, origin='lower', cmap=cmap)
     #plt.title(object_name+'_after')
     #plt.title(object_name+'_PA'+repr(pangle))
-    color = 'w'
-    size = 'x-large'
-    plt.text(68, 10, full_name, size=size, color=color)
-    plt.text(68, 6, 'P.A. = '+repr(pangle), size=size, color=color)
+    # Add object name and slit position
+    #color = 'w'
+    #size = 'x-large'
+    #plt.text(68, 10, full_name, size=size, color=color)
+    #plt.text(68, 6, 'P.A. = '+repr(pangle), size=size, color=color)
     add_slit_line(lolim, uplim, PA)
-    cbar_ax = f2.add_axes([0.92, 0.11, 0.03, 0.776])
-    plt.colorbar(im2, cax=cbar_ax)#, orientation='vertical')
+    #cbar_ax = f2.add_axes([0.92, 0.11, 0.03, 0.776])
+    #plt.colorbar(im2, cax=cbar_ax)#, orientation='vertical')
+    plt.axis('off')
     if save_plt == 'y':
         plt.savefig(destination_after)
         print('Plot %s was saved!' % destination_after)
