@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 7
+object_number = 9
 
 # Is this a TEST run?
 TEST_run = False
@@ -34,20 +34,20 @@ case = 'B'
 # Write the text file with line info?
 create_txt_lineinfo = False
 # Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = False
+create_txt_temdenabunds = True
 
 
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
 #                            0     1     2     3      4       5      6      7     8
-use_given_lineinfo_list = [False, True, True, True, False, False, False, False, False, 
+use_given_lineinfo_list = [False, True, True, False, False, False, False, False, False, 
                            True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2               3              4             5               6            7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [6950.,7950.], [14000,15000], [9500.,11500.], [11500.,12200.], None,
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [6950.,7950.], [14000.,15000.], [9500.,11500.], [11500.,12200.], None,
                   [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
@@ -93,8 +93,8 @@ I_theo_HaHb = 2.86
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 2.85], [2.0, 2.3], [2.0, 2.8], [2.0, 0.75], [2.0, 3.1], [0.1, 0.001], [0.8, 0.07], [2.6, 0.96], [2.5, 2.35], 
-               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 1.15], [2.5, 1.8], [2.5, 2.7], [2.7, 3.86], [1.6, 1.7], [0.001, 0.0001]]
+combos_list = [[2.0, 2.85], [2.0, 2.3], [2.0, 2.8], [2.0, 0.75], [2.0, 3.1], [0.1, 0.001], [0.8, 0.7], [2.0, 0.95], [2.5, 2.35], 
+               [1.0, 1.15], [0.01, 0.01], [2.0, 2.], [0.8, 0.95], [2.0, 1.85], [2.5, 2.7], [2.7, 4.18], [1.6, 1.7], [0.001, 0.0001]]
 #                   9            10*          11         12          13          14          15            16          17 
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
@@ -112,8 +112,8 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-#                                    0                               1                 2                 3              4                5
-desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [1.6, or2*2.6, or3*1.5], [2.0, 5.0, 5.0], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+#                                    0                               1                 2                        3                  4                5
+desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1.9, or2*1.85, or3*1.5], [or1*2.1, or2*2.1, or3*2.1], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
                             [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
