@@ -35,6 +35,11 @@ parser.add_argument("-n",
                     dest="not_final",
                     default=False,
                     help='If the chain is not finished, use -n = not_final to read the correct chain file.')
+parser.add_argument("-full",
+                    action='store_true',
+                    dest="FULL_chain_file",
+                    default=False,
+                    help='Use -full to read FULL_chain_file.')
 parser.add_argument("-s",
                     action='store_true',
                     dest="use_subset",
@@ -361,12 +366,60 @@ def fit_line(arrx, arry):
     #print 'this is x and y of the fitted_line = ', fitted_line
     return coefficients, f_pol
 
+# the true line
+def line_eq(theta, x):
+    m, b = theta
+    return m * x + b
+
+# likelihood function
+def lnlike(theta, xobs, yobs, yerrobs):
+    #print 'len(theta), theta', len(theta), theta
+    #print 'len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs', len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs
+    model = line_eq(theta, xobs)
+    #print 'type(yobs), type(model), type(yerrobs)', type(yobs), type(model), type(yerrobs)
+    chi2 = (yobs - model)**2 / yerrobs**2
+    chi2 = chi2.sum()
+    return - chi2/2.0   # we are returning the log of the likelihood function
+
+# define the priors
+def lnprior(theta):
+    m, b = theta
+    mmod = lntophat(m, -5.5, 0.0) 
+    bmod = lntophat(b,-0.7, 10.0) 
+    if mmod != -np.inf and bmod != -np.inf:
+        return mmod + bmod
+    return -np.inf
+
+# then the probability function will be
+def lnprob(theta, x, y, yerr):
+    lp = lnprior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike(theta, x, y, yerr)
+
+def lntophat(x, a, b):
+    # b has to be grater than a
+    if a > b:
+        bb = a
+        aa = b
+    elif a == b:
+        print 'Boundaries are the same in lntophat function... change them please.'
+        exit()
+    else:
+        aa = a
+        bb = b
+    if (aa < x) and (x < bb):
+        return np.log(1/(bb-aa))
+    else:
+        return -np.inf
+
 
 #### CODE 
 
 # Set the the variables
 object_name = args.object_name
 not_final = args.not_final
+FULL_chain_file = args.FULL_chain_file
 use_subset = args.use_subset
 mk_plots = args.mk_plots
 contours = args.contours
@@ -382,6 +435,8 @@ true_abunds, true_temps = get_true_abunds(object_name)
 chain_file = os.path.abspath('mcmc_'+object_name+'_chain.dat')
 if not_final:
     chain_file = os.path.abspath('mcmc_'+object_name+'_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
+if FULL_chain_file:
+    chain_file = os.path.abspath('mcmc_'+object_name+'_FULL_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
 He, O, CO, NO, NeO, SO, TO3, TO2, prob = np.loadtxt(chain_file, skiprows=17, unpack=True)
 samples = np.array([]).reshape(0, len(true_abunds))
 for he, o, co, no, neo, so in zip(He, O, CO, NO, NeO, SO):
@@ -517,6 +572,62 @@ if mk_plots or contours:
     fig5.savefig(os.path.abspath(NC))
     #plt.show()
 
+    fig = plt.figure(1, figsize=(12, 10))
+    plt.title('N/O vs C/N')
+    xlab= 'log (N/O)'
+    ylab ='log (C/N)'
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    ymin = -0.60
+    ymax = 2.60
+    plt.ylim(ymin, ymax)
+    CN = CO - NO
+    x, y, z = get_zarr(NO, CN)
+    fig = triangle.corner(z, labels=[xlab, ylab], extents=[(-1.7, -0.6), (ymin, ymax)])
+    fn = object_name+'_NOvsCN.jpg'
+    fig.savefig(os.path.abspath(fn))
+    print 'Figure ', fn, 'saved!' 
+    # Adjust a linear fit to the plot
+    coeffs, line_fit = fit_line(x, y)
+    print 'Coefficients of initial guess to the plot of: ', fn
+    m = coeffs[0]
+    b = coeffs[1]
+    print 'm = %0.3f     b = %0.3f' % (m, b)
+    # Initialize the chain with a Gaussian ball around the maximum likelihood result, for which we use optimize
+    ndim, nwalkers, nruns = 2, 100, 100
+    yerr = []
+    for yi in y:
+        ye = yi * 0.1
+        yerr.append(ye)
+    yerr = np.array(yerr)
+    #randadd2point = lambda x: x+np.random.rand(1)
+    #p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
+    p0 = [[np.random.uniform(-9.5, 0.01), np.random.uniform(-2.0, 0.0)] for i in range(nwalkers)]
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
+    pos, prob, state = sampler.run_mcmc(p0, nruns)   # this allows for the first 50 steps to be "burn-in" type
+    # best model
+    wh = np.where( prob == prob.max() )[0][0]
+    p = pos[ wh, : ]
+    plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
+    line1 ='values of the %i dimensions that best fit the data according to Chi^2 in %i runs are the following:' % (ndim, nruns)
+    line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
+    print line1
+    print line2
+    allm, allb = [], []
+    subsample = np.array([]).reshape(0, 2)
+    #print 'pos :', pos
+    for theta in pos:
+        if theta[0] < 0.0:
+            allm.append(theta[0])
+            allb.append(theta[1])
+            subsample = np.vstack((subsample, theta))
+    avgm = sum(allm)/len(allm)
+    avgb = sum(allb)/len(allb)
+    print 'Average values:  m = %0.3f   b= %0.3f' % (avgm, avgb)
+    #linesamples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
+    #fig = triangle.corner(linesamples, labels=["$m$", "$b$"], truths=[m, b])
+    #fig.show()
+
     nwalkers = 100
     nruns = 100
     # plot of abundance ratios including the benchmark abundances
@@ -531,11 +642,15 @@ if mk_plots or contours:
                           extents=[(9.5, 11.7), (7.55, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.4)]
                           )
     pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
+    if FULL_chain_file:
+        pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_FULL_initb"+img_type
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
     fig = triangle.corner(samples, labels=labels)
     pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
+    if FULL_chain_file:
+        pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_FULL_initb"+img_type
     fig.savefig(os.path.abspath(pltwithoutbench))    
 
 
