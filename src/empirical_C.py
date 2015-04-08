@@ -2,6 +2,13 @@ import numpy as np
 import string
 import os
 
+'''
+This script calculates the differences between the carbon abundances determined from observations and Cloudy to those with the 
+relation provided in the C paper.
+'''
+
+out_file = '../results/Cdifferences.txt'
+
 #                  0          1           2         3         4        5           6             7         8
 objects_list = ['mrk960', 'sbs0218', 'mrk1087', 'ngc1741', 'mrk5', 'mrk1199', 'iras08208', 'iras08339', 'sbs0926',
                 'arp252', 'sbs0948', 'tol9',  'sbs1054', 'pox4', 'sbs1319', 'sbs1415', 'tol1457', 'iiizw107']
@@ -61,7 +68,9 @@ CldyHe, CldyO, CldyC, CldyN, CldyNe, CldyS, CldyTO3, CldyTO2 = get_abunds(Cldy_f
 
 approxC = 0.5 - 0.18 * (N - O) + N
 
-print '{:<15} {:>5} {:>7} {:>10} {:>7} {:>7}'.format('Object', 'Diff', 'C/H', 'Approx C', 'CldyC', 'Diff')
+tf = open(out_file, 'w+')
+print '{:<15} {:>3} {:>5} {:>10} {:>7} {:>10}'.format('Object', 'DiffObs', 'C/H', 'Approx C', 'CldyC', 'DiffCldy')
+print >> tf, '{:<15} {:>3} {:>5} {:>10} {:>7} {:>10}'.format('Object', 'DiffObs', 'C/H', 'Approx C', 'CldyC', 'DiffCldy')
 diffs = []
 difCldy = []
 for obj, c, apc, cldyc in zip(objects_list, C, approxC, CldyC):
@@ -70,6 +79,7 @@ for obj, c, apc, cldyc in zip(objects_list, C, approxC, CldyC):
     dc = apc - cldyc
     difCldy.append(np.abs(dc))
     print '{:<15} {:>5.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, d, c, apc, cldyc, dc)
+    print >> tf, '{:<15} {:>5.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}'.format(obj, d, c, apc, cldyc, dc)
 avg_diff = sum(diffs) / len(diffs)
 avg_diffCldy = sum(difCldy) / len(diffs)
 
@@ -77,3 +87,8 @@ print '\n                        Obs   Cloudy'
 print 'Max difference:       ', max(diffs), max(difCldy)
 print 'Min difference:       ', min(diffs), min(difCldy)
 print 'Average difference is:', np.round(avg_diff, decimals=4), np.round(avg_diffCldy, decimals=4)
+print >> tf,  '\n                        Obs   Cloudy'        
+print >> tf,  'Max difference:       ', max(diffs), max(difCldy)
+print >> tf,  'Min difference:       ', min(diffs), min(difCldy)
+print >> tf,  'Average difference is:', np.round(avg_diff, decimals=4), np.round(avg_diffCldy, decimals=4)
+tf.close()
