@@ -34,7 +34,7 @@ case = 'B'
 # Write the text file with line info?
 create_txt_lineinfo = False
 # Write the text file with temperatures, densities, and abundances?
-create_txt_temdenabunds = True
+create_txt_temdenabunds = False
 
 
 # Skip the finding of the line info and go directly to gather the spectra?
@@ -209,7 +209,7 @@ spectrum_region = ["_nuv", "_opt", "_nir"]
 
 # This is the error in the flux obtained by STIS, according to the Data Handbook the typical accuracies for 
 # spectroscopic l mode is about 2%, 5%, and 5% for NUV, opt, and NIR - tables 4.1 and 4.2
-err_stis_list = [0.015, 0.05, 0.05]
+err_stis_list = [0.02, 0.05, 0.05]
 
 def make_lineinfo_file(object_spectra, contum_spectra, Halpha_width, text_table, vacuum, faintObj, linesinfo_file_name, do_errs):
     object_lines_info = spectrum.find_lines_info(object_spectra, contum_spectra, Halpha_width, text_table, 
@@ -261,7 +261,7 @@ if use_given_lineinfo == False:
         vacuum = False
         # in case manual changes need to be done to the line fluxes change use_mod_lineinfo_files to True
         if create_txt_lineinfo == False:
-            print ' lineinfo file crated already...  using previous files...'
+            print ' lineinfo file created already...  using previous files...'
             lines_info = spectrum.readlines_from_lineinfo(lineinfo_text_file)
             object_lines_info = [lines_info[0], lines_info[1], lines_info[6], lines_info[7], lines_info[8], lines_info[9]]
         else:    
@@ -274,7 +274,7 @@ if use_given_lineinfo == False:
                 idx3729 = object_lines_info[0].index(3728.820)
                 idx3727 = object_lines_info[0].index(3727.000)
                 '''
-                # Debled 3727 assuming that tot = 3729+3726. From ionic we know that 3726 = 0.7*3729
+                # Deblend 3727 assuming that tot = 3729+3726. From ionic we know that 3726 = 0.7*3729
                 o1 = object_lines_info[3][idx3726]
                 tot = object_lines_info[3][idx3727]
                 print 'I(3727) = %0.3e   ew = %0.3f' % (tot, tot/object_lines_info[4][idx3727])
