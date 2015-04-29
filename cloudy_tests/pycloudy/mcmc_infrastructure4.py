@@ -195,7 +195,7 @@ def store_chain(object_name, pos_matrix, chain_file, FULL_chain_file, debug=Fals
         if to3 and to2 != 0:
             print >> f, "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
     f.close()
-    
+        
 '''def get_from_files(object_name, debug=False):
     TO2, TO3 = [], []
     He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2list = get_abstempschis(object_name, debug=debug)
@@ -204,7 +204,7 @@ def store_chain(object_name, pos_matrix, chain_file, FULL_chain_file, debug=Fals
         TO2 = np.append(TO2, to2)
         TO3 = np.append(TO3, to3)
     return TO3, TO2'''
-def get_from_files(object_name, pos_matrix, debug=False):
+def get_from_files(object_name, pos_matrix, debug=False, bptdata=None):
     TO2, TO3, probs = np.array([]), np.array([]), np.array([])
     He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2_files = get_abstempschis(object_name, debug=debug)
     all_runs = np.array([]).reshape(0,6)
@@ -221,6 +221,10 @@ def get_from_files(object_name, pos_matrix, debug=False):
         pos_matrix[i][5] = np.round(pos_matrix[i][5], decimals=decimals)
         #print pos_matrix[i]
     #print '\n'    
+    idx = 0
+    if bptdata is not None:
+        I4861, I5007, I6548, I6563, I6584 = np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
+        I4861files, I5007files, I6548files, I6563files, I6584files = bptdata
     for he, o, co, no, neo, so, to3, to2, chi in zip(He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2_files):
         he = np.round(he, decimals=decimals)
         o = np.round(o, decimals=decimals)
@@ -235,10 +239,58 @@ def get_from_files(object_name, pos_matrix, debug=False):
             TO2 = np.append(TO2, to2)
             TO3 = np.append(TO3, to3)
             probs = np.append(probs, chi)
+            if bptdata is not None:
+                 I4861 = np.append(I4861, I4861files[idx])
+                 I5007 = np.append(I5007, I5007files[idx])
+                 I6548 = np.append(I6548, I6548files[idx])
+                 I6563 = np.append(I6563, I6563files[idx])
+                 I6584 = np.append(I6584, I6584files[idx])
+        idx = idx + 1
     print 'Lengths of temperatures and likelihood arrays: ', len(TO3), len(TO2), len(probs)
     files_info = [He_files, O_files, CO_files, NO_files, NeO_files, SO_files, TO3_files, TO2_files, Chi2_files]
-    return files_info, TO3, TO2, probs
+    if bptdata is not None:
+        bpt_info = [I4861, I5007, I6548, I6563, I6584]
+        print 'Lengths of BPT arrays: ', len(I4861), len(I5007), len(I6548), len(I6563), len(I6584)
+        return files_info, TO3, TO2, probs, bpt_info
+    else:
+        return files_info, TO3, TO2, probs
 
+
+def get_bptdata(object_name, debug=False):
+    ''' This function gets all the BPT line intensities the text files. '''
+    if debug:
+        print 'Entering get_bptdata function...'
+        print 'obtaining information from all of the BPT text files for object: ', object_name
+    unique_names_list = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+    I4861files, I5007files, I6548files, I6563files, I6584files = [], [], [], [], []
+    for unique_filename in unique_names_list:
+        i4861, i5007, i6548, i6563, i6584 = np.loadtxt(str(unique_filename), skiprows=1, unpack=True)
+        I4861files.append(i4861)
+        I5007files.append(i5007)
+        I6548files.append(i6548)
+        I6563files.append(i6563)
+        I6584files.append(i6584)
+    if debug:
+        print 'lengths of I4861files, I5007files, I6548files, I6563files, I6584files: '
+        print len(I4861files), len(I5007files), len(I6548files), len(I6563files), len(I6584files)
+    return I4861files, I5007files, I6548files, I6563files, I6584files
+
+def store_bptlines(object_name, pos_matrix, bpt_file, debug=False):
+    ''' This function obtains and stores the BPT line information. '''
+    if debug:
+        print 'Entering store_bptlines function...'
+    # First gather all line intensities 
+    I4861files, I5007files, I6548files, I6563files, I6584files = get_bptdata(object_name, debug=debug)
+    # select only the line intensities that correspond to the accepted sets of abundances
+    bptdata = [I4861files, I5007files, I6548files, I6563files, I6584files]
+    _, _, _, _, bptlineifo = get_from_files(object_name, pos_matrix, debug=debug, bptdata=bptdata)
+    I4861, I5007, I6548, I6563, I6584 = bptlineifo
+    f = open(bpt_file, "a")
+    for i4861, i5007, i6548, i6563, i6584 in zip(I4861, I5007, I6548, I6563, I6584):
+        print >> f, "{:<8.2f} {:<8.2f} {:<8.2f} {:<8.2f} {:<8.2f}".format(i4861, i5007, i6548, i6563, i6584)
+    f.close()
+    
+    
 def create_HTConjob(jobname, positions, unique_names_list, object_name, manual_measurement, init_Cldy_conds_file, single_job=None, rint=None, debug=False):
     if debug:
         print 'Entering createHTConjob function...'
@@ -440,7 +492,7 @@ def get_new_lnChi2(theta, object_name, manual_measurement, init_Cldy_conds_file,
     return lnChi2, to3, to2
 
 
-def clean_directory(object_name, debug=False):
+def clean_directory(object_name, debug=False, bptclean=False):
     ''' This function makes sure that there is no overflow of files. It is used at the end of each run to clean both the
     pycloudy and logs directories.'''
     if debug:
@@ -460,7 +512,12 @@ def clean_directory(object_name, debug=False):
             os.system("rm "+f)
         else:
             os.system("mv "+f+" /user/pena/pycloudy_stuff/"+object_name+"/outfiles/")
-    
+    # Clean the BPT files if they exist
+    if bptclean:
+        unique_names_list_bpt = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+        for uniquebpt in unique_names_list_bpt:
+            os.remove(uniquebpt)
+
     
 def matrix_lastpos(He, O, CO, NO, NeO, SO, nwalkers):
     ''' This function creates the position matrix of the correct shape when using a previous chain. '''
@@ -529,6 +586,12 @@ def read_chain4starting_posmatrix(chainfile, object_name, nwalkers):
     return prev_run_time, pos_matrix, He, O, CO, NO, NeO, SO, TO3, TO2, Chi2
 
 
+def read_bptstarting_posmatrix(bpt_file, object_name):
+    ''' This function obtains the previous dereddened line intensities for the BPT diagram.'''
+    I5007, I4861, I6548, I6563, I6584 = np.loadtxt(bpt_file, skiprows=2, unpack=True)
+    return I5007, I4861, I6548, I6563, I6584
+
+
 # With the new probability function that allows to use HTCondor
 def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, object_name, manual_measurement, init_Cldy_conds_file, mod_temps, threads=1, recover=False, debug=False):
     ''' This is the function that controls the entire chain. 
@@ -558,6 +621,9 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
     # Name of the file to store the chain
     chain_file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name+'/'+model_name+'_chain0.dat'
     FULL_chain_file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name+'/'+model_name+'_FULL_chain0.dat'
+    
+    # Create the file with the BPT line intensities    
+    bpt_file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name+'/'+model_name+'_BPT.dat'
     
     # If there was a previous chain ran, start from there
     restart_from = 0
@@ -590,12 +656,27 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
         for he, o, co, no, neo, so, to3, to2, chi2 in zip(He, O, CO, NO, NeO, SO, TO3, TO2, Chi2):
             print >> f, "{:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<8.3f} {:<15} {:<15} {:<20.3f}".format(he, o, co, no, neo, so, to3, to2, chi2)
         f.close()
+        # Create a BPT file that corresponds to the same models as the ones in the selected models, the chain_file
+        I5007, I4861, I6548, I6563, I6584 = read_bptstarting_posmatrix(bpt_file, object_name)
+        f = open(bpt_file, "w")
+        # make sure there is space for the header information to be added at the end
+        print >> f, '# Dereddened line intensities relative to Hbeta, with Hbeta=100.00'
+        print >> f, "# {:<8} {:<8} {:<8} {:<8} {:<8}".format('I5007', 'I4861', 'I6548', 'I6563', 'I6584')
+        # Store the chain.... print truly ALL the previous steps 
+        for i1, i2, i3, i4, i5 in zip(I5007, I4861, I6548, I6563, I6584):
+            print >> f, "{:<8.2f} {:<8.2f} {:<8.2f} {:<8.2f} {:<8.2f}".format(i1, i2, i3, i4, i5)
+        f.close()
     else:
         f = open(chain_file, "w")
         f.close()
         # Now do the same for the FULL chain file
         f1 = open(FULL_chain_file, "w")
         f1.close()
+        # Do the same for the BPT file
+        f2 = open(bpt_file, "w")
+        print >> f2, '# Dereddened line intensities relative to Hbeta, with Hbeta=100.00'
+        print >> f2, "# {:<8} {:<8} {:<8} {:<8} {:<8}".format('I5007', 'I4861', 'I6548', 'I6563', 'I6584')
+        f2.close()        
         if debug:
             print 'Created initial position matrix... starting chain...'
         if len(mod_temps) == 0:   # so that it creates the file only once, at the beginning. 
@@ -620,6 +701,7 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
     # Record the initial positions
     #store_chain(object_name, chain_file, debug=debug)
     store_chain(object_name, pos_matrix, chain_file, FULL_chain_file, debug=debug)
+    store_bptlines(object_name, pos_matrix, bpt_file, debug=debug)
 
     # Initialization of emcee Ensemble Sampler object
     sampler = emcee.EnsembleSampler(nwalkers, ndim, new_lnprob, args=[object_name, manual_measurement, init_Cldy_conds_file, debug],
@@ -649,11 +731,12 @@ def run_chain_and_plot(model_name, dir, true_abunds, theta, nwalkers, nruns, obj
             print 'ok! Now storing the chain for step number: ', main_counter+1, '\n'
         #store_chain(object_name, chain_file, debug=debug)
         store_chain(object_name, pos_matrix, chain_file, FULL_chain_file, debug=debug)
+        store_bptlines(object_name, pos_matrix, bpt_file, debug=debug)
         
         # Clean...
         if debug:
             print 'Done! Proceed to clean current and logs directories...'
-        clean_directory(object_name, debug=debug)
+        clean_directory(object_name, debug=debug, bptclean=True)
         print 'Directories clean! '
             
         
