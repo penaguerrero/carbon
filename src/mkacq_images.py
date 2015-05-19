@@ -34,7 +34,7 @@ else:
     vmax = 90
 
 # want to save images?  (type 'y' for yes or 'n' for no)
-save_plt = 'y'
+save_plt = 'n'
 # useful cmap options: Blues, Greens, Greys, hot, Purples, binary, rainbow, for default type None
 cmap = 'Greys'
 
@@ -46,7 +46,7 @@ new_filetype = 'jpg'
 separate = True
 
 # Do you want to see the rotation angle of the slit in the 2d spectra?
-rotate = True
+rotate = False
 
 ############################################################################################################################################
 
