@@ -92,12 +92,12 @@ args = parser.parse_args()
 # name of the object
 #                  0            1           2          3         4        5         6         7         8
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
-               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
-#                 9           10         11         12         13       14        15         16         17
+               'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415', 'ngc5253']
+#                 9           10         11         12         13       14        15         16         17         18
 
 full_names_list = ['IIIZw 107', 'IRAS 08339+6517', 'MRK 1087', 'MRK 1199', 'MRK 5', 'MRK 960', 'NGC 1741', 'POX 4', 'SBS 0218+003',
                'SBS 0948+532', 'SBS 0926+606', 'SBS 1054+365', 'SBS 1319+579', 'TOL 1457-262', 'TOL 9', 'ARP 252', 'IRAS 08208+2816',
-               'SBS 1415+437']
+               'SBS 1415+437', 'NGC5253']
 
 #### FUNCTIONS
 
@@ -170,6 +170,21 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
                                    avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, int(avgTO3), int(avgTO2))
     avgabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                             avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
+    # calculate medians
+    medHe = np.median(He) 
+    medO = np.median(O)
+    medCO = np.median(CO+O)
+    medNO = np.median(NO+O)
+    medNeO = np.median(NeO+O)
+    medSO = np.median(SO+O)
+    medTO3 = np.median(TO3)
+    medTO2 = np.median(TO2)
+    medabunds0 = 'MEDIAN abundances: '
+    medabunds1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f   Te_O3 = %d   Te_O2 = %d' % (
+                                   medHe, medO, medCO-medO, medNO-medO, medNeO-medO, medSO-medO, int(medTO3), int(medTO2))
+    medabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
+                                                            medHe, medO, medCO, medNO, medNeO, medSO )
+    
     avg4861 = np.mean(I4861)
     avg5007 = np.mean(I5007)
     avg6548 = np.mean(I6548)
@@ -178,9 +193,13 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     avgIs0 = '* Average line intensities for: \n4861      5007      6548     6563     6584'
     avgIs1 = '%0.2f    %0.2f    %0.2f    %0.2f    %0.2f' % (avg4861, avg5007, avg6548, avg6563, avg6584)
     
+    # print averages and medians
     print '\n'+avgabunds0
     print avgabunds1
     print avgabunds2
+    print '\n'+medabunds0
+    print medabunds1
+    print medabunds2
     print avgIs0
     print avgIs1
     
@@ -230,6 +249,20 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
                                    avgHe, avgO, avgCO-avgO, avgNO-avgO, avgNeO-avgO, avgSO-avgO, int(avgTO3), int(avgTO2))
     subavgabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                                     avgHe, avgO, avgCO, avgNO, avgNeO, avgSO )
+    # calculate medians
+    medHe = np.median(He_nearby) 
+    medO = np.median(O_nearby)
+    medCO = np.median(CO_nearby)
+    medNO = np.median(NO_nearby)
+    medNeO = np.median(NeO_nearby)
+    medSO = np.median(SO_nearby)
+    medTO3 = np.median(TO3_nearby)
+    medTO2 = np.median(TO2_nearby)
+    medabunds0 = 'MEDIAN abundances: '
+    medabunds1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f   Te_O3 = %d   Te_O2 = %d' % (
+                                   medHe, medO, medCO, medNO, medNeO, medSO, int(medTO3), int(medTO2))
+    medabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
+                                                            medHe, medO, medCO+medO, medNO+medO, medNeO+medO, medSO+medO )
     # find temperatures of these sets:
     p_subavgabunds0 = 'MCMC values and uncertainties according to 25th, 50th, and 75th percentiles:'
     percentiles = [25, 50, 75]
@@ -260,6 +293,9 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print subavgabunds1 
     print subavgabunds2
     print p_subavgabunds0
+    print '\n'+medabunds0
+    print medabunds1
+    print medabunds2
     print 'He      O       C      N      Ne      S      Te_O3   Te_O2'
     print '25th percentile:'
     print p_subavgabunds2
@@ -675,6 +711,28 @@ if mk_plots or contours:
     fig5.savefig(os.path.abspath(NC))
     #plt.show()
 
+    fig = plt.figure(1, figsize=(12, 10))
+    plt.title('N/O vs C/N')
+    xlab= 'log (N/O)'
+    ylab ='log (C/N)'
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    ymin = -0.60
+    ymax = 2.60
+    plt.ylim(ymin, ymax)
+    CN = CO - NO
+    x, y, z = get_zarr(NO, CN)
+    fig = triangle.corner(z, labels=[xlab, ylab], extents=[(-1.7, -0.6), (ymin, ymax)])
+    fn = object_name+'_NOvsCN.jpg'
+    fig.savefig(os.path.abspath(fn))
+    print 'Figure ', fn, 'saved!' 
+    # Adjust a linear fit to the plot
+    coeffs, line_fit = fit_line(x, y)
+    print 'Coefficients of initial guess to the plot of: ', fn
+    m = coeffs[0]
+    b = coeffs[1]
+    print 'm = %0.3f     b = %0.3f' % (m, b)
+
     nwalkers = 100
     nruns = 100
     # plot of abundance ratios including the benchmark abundances
@@ -751,11 +809,11 @@ obsN22 = obs6584[idx]
 obsx = np.log10(obsN22/obsHa)
 obsy = np.log10(obsO3/100.0)
 print 'observed point: ', obsx, obsy
-plt.plot(obsx, obsy, 'g*', ms=10)
+plt.plot(obsx, obsy, 'g*', ms=20)
 plt.text(0.0, -1.3, full_names_list[idx], size='large')
-bptfig = object_name+'_BPTdiag.jpg'
-#fig.savefig(bptfig)
-#print 'Figure ', bptfig, ' saved!'
+bptfig = object_name+'_BPTdiag.eps'
+fig.savefig(bptfig)
+print 'Figure ', bptfig, ' saved!'
 plt.show()
  
 
