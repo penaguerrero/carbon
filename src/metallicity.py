@@ -2477,14 +2477,20 @@ class AdvancedOps(BasicOps):
         I_C3 = self.I_1909
         C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_C3[0]/I_1663[0])
         # error calculation
+        '''
         uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_C3[0]/I_1663[0])
         lolimC2toO2_temp = 0.089 * numpy.exp(-1.09/(tc-numpy.abs(tpluserr-tc))) * (I_C3[0]/I_1663[0])
         uplimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] + I_1663[1])/(I_C3[0] + I_C3[1]))
         lolimC2toO2_lines = 0.089 * numpy.exp(-1.09/tc) * ((I_1663[0] - I_1663[1])/(I_C3[0] - I_C3[1]))
         err_C2toO2_temp = numpy.sqrt((uplimC2toO2_temp - C2toO2)**2 + (C2toO2 - lolimC2toO2_temp)**2)
         err_C2toO2_lines = numpy.sqrt((uplimC2toO2_lines - C2toO2)**2 + (C2toO2 - lolimC2toO2_lines)**2)
-        #C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
+        C2toO2_err = numpy.sqrt(err_C2toO2_temp**2 + err_C2toO2_lines**2)
         C2toO2_err = (err_C2toO2_temp + err_C2toO2_lines) / 2.0
+        '''
+        constant = 0.089 * numpy.exp(-1.09/tc)
+        lineratioerr = (I_C3[0]/I_1663[0]) * numpy.sqrt((I_C3[1]/I_C3[0])**2 + (I_1663[1]/I_1663[0])**2)
+        C2toO2_err = constant * lineratioerr
+        
         #if C2toO2 < 0.0:
         #    C2toO2 = 0.0
         # Equation 3 for C^{++}/O^{++}
@@ -2496,7 +2502,8 @@ class AdvancedOps(BasicOps):
         # now from 1909 to 5007 according to Kobulnicky & Skillman (1998) 
         Cpp2Opp = 0.059 * numpy.exp(4.659/tc) * I_C3[0] / self.I_5007[0] 
         # calculate errors
-        Cpp2Opp_err = numpy.sqrt( (I_C3[1]/I_C3[0])**2 + (self.I_5007[1]/self.I_5007[0])**2 + (tpluserr / (4.659 / tc**2 * numpy.exp(4.659/tc)) )**2)
+        Cpp2Opp_err0 = (I_C3[0] / self.I_5007[0]) * numpy.sqrt( (I_C3[1]/I_C3[0])**2 + (self.I_5007[1]/self.I_5007[0])**2)
+        Cpp2Opp_err = Cpp2Opp_err0 * 0.059 * numpy.exp(4.659/tc)
         print '\n X(O++) = %0.2f' % Ofrac
         print '              1909/1666        1909/5007'
         print ' C++/O++ = %0.3f +- %0.03f   %0.3f +- %0.03f' % (C2toO2, C2toO2_err, Cpp2Opp, Cpp2Opp_err)
@@ -2528,8 +2535,8 @@ class AdvancedOps(BasicOps):
         print '\n The metallicity Z = %0.3f \n' % Z
         #raw_input(' ***  press enter to continue')
         # use this metallicity in figure 2 of Garnett ('95) to find X(C++)/X(O++)
-        if Ofrac >= 0.8:
-            XCXO = 0.9
+        if Ofrac <= 0.76:
+            XCXO = 0.95
             erricfC = 0.45
         else:
             XCXO = 1.0
@@ -2537,7 +2544,17 @@ class AdvancedOps(BasicOps):
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
         print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
         cpp = sorted_atoms.index('C3')
+        objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
+                       'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
+        obj_idx = objects_list.index(self.object_name)
+        icfC_list = [1.09, 1.05, 1.05, 1.05, 1.05, 1.25, 1.0, 1.18, 1.02, 
+                     1.11, 1.25, 1.25, 1.25, 1.11, 0.95, 1.02, 1.0, 1.0]
+        icfC = icfC_list[obj_idx]
         totC_gar = totabs_ions_list[cpp][0] * icfC
+        logCO = numpy.log10(C2toO2*icfC)
+        logCOerr = logCO * numpy.sqrt((C2toO2_err/C2toO2)**2 + (0.20/icfC)**2)
+        totC_gar1 = logCO + logOtot
+        totC_gar1_err = numpy.sqrt(logCOerr**2 + logOtoterr**2)
         errtotC_gar = totC_gar * numpy.sqrt((totabs_ions_list[cpp][1]/totabs_ions_list[cpp][0])**2 + (erricfC/icfC)**2)
         totC_garnett = [totC_gar, errtotC_gar]     
         logele_gar = 12+numpy.log10(totC_gar)
@@ -2546,9 +2563,10 @@ class AdvancedOps(BasicOps):
         #logeleerr_gar = numpy.sqrt( (Cpp2Opp_err/Cpp2Opp)**2 + (erricfC/icfC)**2 ) 
         percent_err = totC_garnett[1]*100 / totC_garnett[0]
         #logeleerr_gar = numpy.log10((100+percent_err)/(100-percent_err)) / 2.0
-        print '  C++ = ', totabs_ions_list[cpp], '%err=', percent_err
+        print '  C++ = ', C2toO2*totabs_ions_list[opp][0], totabs_ions_list[cpp], '%err=', percent_err
         print ' total C = ', totC_garnett
-        print ' 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
+        print ' traditional 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
+        print ' Garnett 95 12+log(C) = %0.2f +- %0.2f' % (totC_gar1, totC_gar1_err)
         # To "play" with different uncertainites usefollowing lines, else press enter...
         useCerr_definition = 'y'
         print '   ***  Use ', totC_garnett, ' (', logeleerr_gar, ' dex) as C error?  '
@@ -2624,14 +2642,40 @@ class AdvancedOps(BasicOps):
             logeleerr = logeleerr_gar
         C_errp = Ctot[1]*100/Ctot[0]
         R = Ctot[0] / Otot
-        print Ctot[0], '/', Otot, '=', R
+        #print Ctot[0], '/', Otot, '=', R
         #Ratio = numpy.log10(R)
         #Ratioerr = numpy.sqrt((Ctot[1]/Ctot[0])**2 + (Ototerr/Otot)**2) / (2.303)  
         Ratio = logele - logOtot
         Ratioerr = numpy.sqrt( logeleerr**2 + logOtoterr**2 )          
         elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
-        print ' C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        print ' traditional  C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
+        print ' Garnett 95   C/O = %0.2f +- %0.2f' % (logCO, logCOerr)
         #raw_input(' ***  press enter to continue')
+        recalculateerrs = True
+        if recalculateerrs:
+            # calculate new intensity of 1666
+            I1909 = self.I_1907[0]
+            err1909 = self.I_1907[1]
+            newC2O2 = (10**Ratio / icfC)
+            #constant is 0.089*numpy.exp(-1.09/tc)
+            new1666 = I1909 * constant/newC2O2 
+            #err1666 = 1.1
+            # calculate new errors
+            colineratio = I1909/new1666
+            #raw_input()
+            newC2toO2 = constant * colineratio  
+            notlogRatio = 10**Ratio
+            notlogRatioerr_up = 10**(Ratio+Ratioerr)
+            notlogRatioerr_dw = 10**(Ratio-Ratioerr)
+            notlogRatioerr = ((notlogRatioerr_up - notlogRatio) + (notlogRatio - notlogRatioerr_dw))/2.0
+            C2toO2err = newC2toO2 * numpy.sqrt((notlogRatioerr/notlogRatio)**2 + (0.2/icfC)**2)
+            colineratioerr = C2toO2err / constant
+            err1666 = new1666 * numpy.sqrt( (colineratioerr/colineratio)**2 - (err1909/I1909)**2 )
+            #err1909 = I1909 * numpy.sqrt( (colineratioerr*(new1666/I1909))**2 - (err1666/new1666)**2 )
+            print 'newC2O2 =', newC2O2, '  C2toO2err =', C2toO2err
+            print 'colineratio = ', colineratio, '  colineratioerr=', colineratioerr 
+            print '1666   %0.5f   %0.5f' % (new1666, err1666)
+            print '1909   %0.1f   %0.1f' % (I1909, err1909)
         
         CO_sun = -0.26 #+-0.15    taken from Asplund et al. 2009
         CO_sun_err = 0.15
