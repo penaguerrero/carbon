@@ -19,16 +19,19 @@ This scripts takes the found metallicities and produces:
 
 use_our_sample_ONLY = True
 save_images = False
+# Do you want to make the C/O vs O/H with points from literature with respect to solar: [C/O] vs [O/H]?
+solar = True
 # Do you want to correct values?
 correct_values = False
 # Type of image to be saved?
 typeofimage = '.jpg'
 # Show fitted line?
-show_fitted_line = True
+show_fitted_line = False
 
 ############################################################################################################################################
 
 img_name1 = 'COvsOH'
+img_name1a = 'COvsOH_literature'
 img_name1b = 'COvsOH_Cldy'
 img_name2 = 'NOvsOH'
 img_name3 = 'NeOvsOH'
@@ -103,6 +106,15 @@ def lnprob(theta, x, y, yerr):
     if not numpy.isfinite(lp):
         return -numpy.inf
     return lp + lnlike(theta, x, y, yerr)
+
+def approxC(N, O):
+    ''' This function uses equation of Carbon paper to determine C from N and O arrays.'''
+    return 0.5 - 0.18 * (N - O) + N   
+
+def convert2solar(X, Xsun):
+    ''' This function returns values in terms of solar values.'''
+    return X - Xsun
+      
 
 ############################################################################################################################################
 
@@ -247,21 +259,21 @@ for obj, i in zip(objects_list, indeces_list):
     plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')
 plt.xlim(6.8, 9.0)
 yup = 1.1
-ylo = -1.8
+ylo = -1.9
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(6.8, 9.1, 0.1))
-plt.yticks(numpy.arange(ylo, yup, 0.2))
+plt.yticks(numpy.arange(-1.8, yup, 0.2))
 for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     subxcoord = -3
     subycoord = 5
     side = 'right'
-    if (z == 'mrk960') or (z == 'mrk5') or (z == 'sbs1319') or (z == 'ngc1741') or (z == 'Sun'):
+    if (z == 'mrk960') or (z == 'mrk5') or (z == 'ngc1741') or (z == 'Sun'):
         subxcoord = -4
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'iras08339') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion') or (z == 'izw18'):
+    if (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion') or (z == 'izw18'):
         subxcoord = 5
         side = 'left'
-    if (z == 'ngc346'):
+    if (z == 'ngc346') or (z == 'sbs1319') or (z == 'iiizw107'):
         subxcoord = 4
         subycoord = -11
         side = 'left'
@@ -273,6 +285,141 @@ if save_images:
     img_name = img_name1 + typeofimage
     if use_our_sample_ONLY == False:
         img_name = img_name1 + otherrefs + typeofimage
+    destination = os.path.join(full_results_path+'/plots', img_name)
+    plt.savefig(destination)
+    print('Plot %s was saved!' % destination)
+plt.show()
+
+# Re-plot our sample PLUS the objects from literature
+fig1 = plt.figure(1, figsize=(12, 10))
+if solar:
+    yup, ylo = 1.0, -2.0
+    xmin, xmax = -3.0, 0.6
+    # plot guide lines
+    plt.vlines(0.0, ylo, yup, colors='k', linestyles='dashed')
+    plt.hlines(0.0, xmin, xmax, colors='k', linestyles='dashed')
+    plt.title('[C/O] vs [O/H]')
+    plt.xlabel('[O/H]')
+    plt.ylabel('[C/O]')
+    img_name = img_name1a + '_inSolar' + typeofimage
+else:
+    yup, ylo = 0.8, -1.8
+    xmin, xmax = 6.0, 8.8
+    plt.title('C/O vs O/H')
+    plt.xlabel('12+log(O/H)')
+    plt.ylabel('log(C/O)')
+    img_name = img_name1a + typeofimage
+    plt.xticks(numpy.arange(xmin, xmax, 0.2))
+    plt.yticks(numpy.arange(ylo, yup+0.01, 0.2))
+plt.ylim(ylo, yup)
+plt.xlim(xmin, xmax)
+# PROTOSOLAR values from Asplund et al. (2009)
+COsun = -0.26 #+-0.07 because C/H = 8.47+-0.05
+OHsun = 8.73 #+-0.05
+# OUR STIS OBSERVATIONS
+for obj, i in zip(objects_list, indeces_list):
+    if obj in objects_with_Te:
+        fmt='ko'
+    elif obj in objects_Te_literature:
+        fmt='ko'
+    elif (obj in objects_not_in_sample) or (obj in objects_ref):
+        fmt='b^'
+    #plt.errorbar(OH[i], CO[i], xerr=OHerr[i], yerr=COerr[i], fmt=fmt, ecolor='k')   # with errors
+    if solar:
+        COsol = convert2solar(CO[i], COsun)
+        OHsol = convert2solar(OH[i], OHsun)
+        plt.plot(OHsol, COsol, fmt, ms=7)   # without errors AND in terms of solar values
+    else:
+        plt.plot(OH[i], CO[i], fmt, ms=7)   # without errors
+# James et al. (2015)
+jam15 = '../results/James15.txt'
+jamOH, jamOHerr, jamNO, jamNOerr = numpy.loadtxt(jam15, skiprows=3, usecols=(2,3,4,5), unpack=True)
+jamN = jamNO + jamOH
+jamCH = approxC(jamN, jamOH)
+jamCO = jamCH - jamOH
+jamNerr = numpy.sqrt(jamNOerr**2 + jamOHerr**2)
+jamCOerr = numpy.sqrt(jamNerr**2 + jamOHerr**2)
+#plt.errorbar(jamOH, jamCO, xerr=jamOHerr, yerr=jamCOerr, fmt='g*')   # with errors
+if solar:
+    jamCOsol = convert2solar(jamCO, COsun)
+    jamOHsol = convert2solar(jamOH, OHsun)
+    plt.plot(jamOHsol, jamCOsol, 'g*', ms=10)   # in solar terms
+else:
+    plt.plot(jamOH, jamCO, 'g*', ms=10)   
+# Other literature points
+lit = '../results/literatureCandO.txt'
+litCH, litCHerr, litOH, litOHerr = numpy.loadtxt(lit, skiprows=8, usecols=(4,5,6,7), unpack=True)
+litCO = litCH - litOH
+litnames = ['IZw18', 'SBS0335-052', 'SBS1415+437', 'NGC5253-1', 'NGC5253-2', 'NGC4670', 'SDSSJ0035-0918', 'SDSSJ1111+1332', 
+           'Q0913+072', 'SDSSJ1016+4040', 'SDSSJ1558+4053', 'Q2206-199', 'SDSSJ0137-4224', 'SDSSJ2155+1358']
+for ln, lo, lc, lco in zip(litnames, litOH, litCH, litCO):
+    print '{:<20} {:<6} {:>6} {:>6}'.format(ln, lo, lc, lco)
+litCOerr = numpy.sqrt(litCHerr**2 + litOHerr**2)
+#plt.errorbar(litOH, litCO, xerr=litOHerr, yerr=litCOerr, fmt='rs')   # with errors
+for idx, _ in enumerate(litCO):
+    if idx <= 6:
+        fmt='r>'
+        litCO[idx] = litCH[idx]+0.5 - litOH[idx]
+    elif idx == 7 or idx == 8:
+        fmt='ys'
+    elif idx >= 9:
+        fmt='cd'
+    if solar:
+        litCOsol = convert2solar(litCO[idx], COsun)
+        litOHsol = convert2solar(litOH[idx], OHsun)
+        #print idx, fmt, litOHsol, litCOsol
+        plt.plot(litOHsol, litCOsol, fmt)   # in solar terms
+    else:
+        plt.plot(litOH[idx], litCO[idx], fmt)    
+# Pettini et al (2008)
+pet08 = '../results/Pettini08.txt'
+petOH, petNO = numpy.loadtxt(pet08, skiprows=5, usecols=(1,2), unpack=True)
+petNH = petNO + petOH
+petCH = approxC(petNH, petOH)
+petCO = petCH - petOH
+petnames = ['Q0000-2620', 'Q0100+1300', 'Q0112-306', 'Q0201+1120', 'J0307-4945', 'Q0347-3819', 'Q0407-4410', 'Q0407-4410',
+            'Q0528-2505',  'HS0741+4741', 'J0841+1256', 'J0841+1256', 'J0900+4215', 'Q0913+072', 'Q0930+2858', 'Q1108-077',
+            'Q1210+17', 'Q1232+0815',  'Q1331+170', 'Q1337+113', 'Q1409+095', 'J1435+5359', 'J1443+2724', 'SDSSJ1558-0031',
+            'SDSSJ1558+4053', 'GB1759+7539', 'Q2059-360', 'Q2206-199', 'Q2230+02', 'Q2231-002', 'HE2243-6031', 'Q2332-094',
+            'Q2342+342', 'Q2343+1232', 'Q2348-1444']
+print ''
+for pn, po, pc, pco in zip(petnames, petOH, petCH, petCO):
+    if pn in litnames:
+        print '{:<20} {:<6.2f} {:>6.2f} {:>6.2f}'.format(pn, po, pc, pco)
+if solar:
+    petCOsol = convert2solar(petCO, COsun)
+    petOHsol = convert2solar(petOH, OHsun)
+    plt.plot(petOHsol, petCOsol, 'mD')   # in solar terms
+else:
+    plt.plot(petOH, petCO, 'mD')  
+# Galactic stellar data from Akerman et al.(2004) and Gustafsson et al.(1999) - but the last only for solar values
+ake04 = '../results/Akerman04.txt'
+akeOH, akeOHsol, akeCH, akeCOsol = numpy.loadtxt(ake04, skiprows=2, usecols=(8,10,11,12), unpack=True)
+akeCO = akeCH - akeOH
+if solar:
+    gus99 = '../results/Gustafsson99.txt'
+    gusCHsol, gusOHsol = numpy.loadtxt(gus99, skiprows=3, usecols=(1,2), unpack=True)
+    gusCOsol = gusCHsol - gusOHsol
+    plt.plot(akeOHsol, akeCOsol, 'wo', ms=5)   # in solar terms
+    plt.plot(gusOHsol, gusCOsol, 'ws', ms=5)   # in solar terms
+else:
+    plt.plot(akeOH, akeCO, 'wo')  
+# Data from Nava et al. (2006)
+nav06 = '../results/Nava06.txt'
+navOH, navOHerr, navNO, navNOerr = numpy.loadtxt(nav06, skiprows=2, usecols=(0,1,2,3), unpack=True)
+navNH = navNO + navOH
+navCH = approxC(navNH, navOH)
+navCO = navCH - navOH
+#for navidx,navc in enumerate(navCO):
+#    print navidx, navCH[navidx], navc 
+if solar:
+    navCOsol = convert2solar(navCO, COsun)
+    navOHsol = convert2solar(navOH, OHsun)
+    plt.plot(navOHsol, navCOsol, 'r+')   # in solar terms
+else:
+    plt.plot(navOH, navCO, 'r+')  
+# Save plot
+if save_images:
     destination = os.path.join(full_results_path+'/plots', img_name)
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
@@ -312,11 +459,11 @@ else:
         #plt.errorbar(Clo[i], Clco[i], xerr=errClou[i], yerr=errClcou[i], fmt=fmt, ecolor='r')
     '''
 plt.xlim(6.8, 9.0)
-yup = 1.02
-ylo = -1.8
+yup = 1.1
+ylo = -1.9
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(6.8, 9.1, 0.1))
-plt.yticks(numpy.arange(ylo, yup, 0.2))
+plt.yticks(numpy.arange(-1.8, yup, 0.2))
 for x, y, z in zip(Clo, Clco, objects_list):
     subxcoord = -1
     subycoord = 5
@@ -350,7 +497,7 @@ plt.ylabel('log (C/O)')
 if save_images:
     img_name = img_name1b + typeofimage
     if use_our_sample_ONLY == False:
-        img_name = img_name1 + otherrefs + typeofimage
+        img_name = img_name1b + otherrefs + typeofimage
     destination = os.path.join(full_results_path+'/plots', img_name)
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
@@ -426,16 +573,16 @@ for x, y, z in zip(OH, NO, objects_list):
     subxcoord = -2
     subycoord = 5
     side = 'right'
-    if (z == 'mrk5'):
+    if (z == 'mrk5') or (z == 'mrk1087') or (z == 'arp252'):
         subxcoord = 7
         side = 'left'
-    if (z == 'Sun') or (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346'):
+    if (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346'):
         subxcoord = 4
         subycoord = 4
         side = 'left'
-    if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'sbs1054') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
+    if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'sbs1054') or (z == 'iras08208') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'mrk1087') or (z == 'sbs0948') or (z == 'Orion') or (z == 'izw18'):
+    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'sbs0948') or (z == 'Sun') or (z == 'Orion') or (z == 'izw18'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
@@ -465,8 +612,8 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     plt.errorbar(OH[i], NeO[i], xerr=OHerr[i], yerr=NeOerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.6, 9.0)
-yup = 0.0
-ylo = -1.1
+yup = -0.1
+ylo = -1.2
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.4, 9.0, 0.1))
 plt.yticks(numpy.arange(ylo, yup, 0.1))
@@ -478,11 +625,11 @@ for x, y, z in zip(OH, NeO, objects_list):
     side = 'right'
     if (z == 'mrk5') or (z == 'ngc346'):
         subycoord = -11
-    if (z == 'tol9'):
+    if (z == 'tol9') or (z == 'sbs1319'):
         subxcoord = 5
         subycoord = -11
         side = 'left'
-    if (z == 'sbs1319') or (z == 'iiizw107') or (z == 'iras08208') or (z == 'pox4') or (z == 'arp252') or (z == 'iras08339'):
+    if (z == 'iras08208') or (z == 'pox4') or (z == 'arp252') or (z == 'iras08339'):
         subxcoord = 4
         subycoord = 4
         side = 'left'
@@ -515,7 +662,7 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     plt.errorbar(OH[i], CN[i], xerr=OHerr[i], yerr=CNerr[i], fmt=fmt, ecolor='k')
 plt.xlim(6.8, 9.0)
-yup = 2.6
+yup = 2.2
 ylo = -0.7
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(6.9, 9.0, 0.1))
@@ -525,13 +672,13 @@ for x, y, z in zip(OH, CN, objects_list):
     subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'ngc1741') or (z == 'sbs0948') or (z == 'ngc346'):
+    if (z == 'sbs0948') or (z == 'ngc346'):
         subycoord = -10
     if (z == 'mrk960') or (z == 'pox4') or (z == 'sbs1319') or (z == 'iras08339') or (z == '30Dor'):
         subxcoord = 5
         subycoord = -12
         side = 'left'
-    if (z == 'iiizw107') or (z == 'mrk5') or (z == 'sbs0948') or (z == 'arp252') or (z == 'tol9') or (z == 'izw18'):
+    if (z == 'sbs0948') or (z == 'arp252') or (z == 'tol9') or (z == 'izw18'):
         subxcoord = 5
         subycoord = 4
         side = 'left'
@@ -539,7 +686,7 @@ for x, y, z in zip(OH, CN, objects_list):
         subxcoord = 4
         subycoord = -14
         side = 'left'
-    if (z == 'sbs0926'):
+    if (z == 'sbs0926') or (z == 'iiizw107'):
         subycoord = -12
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('C/N vs O/H')
@@ -633,28 +780,32 @@ plt.xticks(numpy.arange(5.6, 9.5, 0.2))
 plt.yticks(numpy.arange(ylo, yup+0.2, 0.2))
 for x, y, z in zip(CH, NC, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
-    #print z, x, y
-    subxcoord = -2
+    subxcoord = -5
     subycoord = 5
     side = 'right'
-    if (z == 'mrk1199') or (z == 'Orion'):
+    #print z, x, y
+    if (z == 'sbs1319'):
+        subxcoord = -42
+        subycoord = 0
+    if (z == 'sbs0926'):
+        subxcoord = -42
+        subycoord = -5
+    if (z == 'sbs1054'):
+        subxcoord = -5
+        subycoord = -12
+    if (z == 'mrk1199'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
     if (z == 'iras08339'):
         subxcoord = 4
         side = 'left'
-    if (z == 'sbs0948') or (z == 'ngc1741'):
-        subycoord = -14        
-    if (z == 'sbs1319'):
-        subxcoord = -45
-        subycoord = 0
-    if (z == 'sbs0926'):
-        subxcoord = -45
-        subycoord = -5
-    if (z == 'sbs1054'):
-        subxcoord = -45
-        subycoord = -10
+    if (z == 'ngc1741') or (z == 'tol9') or (z == 'Orion'):
+        subycoord = -14 
+    if  (z == 'sbs0948'):
+        subxcoord = 5
+        subycoord = 5
+        side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('N/C vs C/H')
 plt.xlabel('12 + log (C/H)')
@@ -733,21 +884,21 @@ plt.xlim(-2.1, 0.0)
 yup = 2.60
 ylo = -0.8
 plt.ylim(ylo, yup)
-plt.xticks(numpy.arange(-2.1, 0.1, 0.1))
+plt.xticks(numpy.arange(-2.1, 0.1, 0.2))
 plt.yticks(numpy.arange(ylo, yup+0.2, 0.2))
 for x, y, z in zip(NO, CN, objects_list):
     # Annotate the points 5 _points_ above and to the left of the vertex
     #print z, x, y
     subxcoord = -2
-    subycoord = 4
+    subycoord = 5
     side = 'right'
-    if (z == 'sbs1319') or (z == 'pox4') :
+    if (z == 'sbs1319') or (z == 'pox4') or (z == 'Sun'):
         subycoord = -12
-    if (z == 'sbs0926'):
+    if (z == 'sbs0926') or (z == 'iiizw107') or (z == '30Dor') or (z == 'sbs1415') or (z == 'iras08339'):
         subxcoord = 4
         subycoord = -12
         side = 'left'
-    if (z == 'Sun') or (z == 'arp252') or (z == 'iras08339') or (z == 'sbs1054') or (z == '30Dor'):
+    if (z == 'arp252') or (z == 'sbs1054'):
         subxcoord = 4
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
@@ -800,5 +951,6 @@ print 'm_mcmc, b_mcmc:', m_mcmc, b_mcmc
 m_mcmc2, b_mcmc2 = map(lambda v: (v), zip(*numpy.percentile(subsample, [25, 50, 75], axis=0)))
 print 'm_mcmc2, b_mcmc2:', m_mcmc2, b_mcmc2
 plt.show()
+
 
 print ' Code finished!'
