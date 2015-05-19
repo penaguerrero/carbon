@@ -261,7 +261,8 @@ def get_bptdata(object_name, debug=False):
     if debug:
         print 'Entering get_bptdata function...'
         print 'obtaining information from all of the BPT text files for object: ', object_name
-    unique_names_list = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+    #unique_names_list = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+    unique_names_list = glob('/user/pena/pycloudy_stuff/'+object_name+'/bpt_'+object_name+'*.txt')
     I4861files, I5007files, I6548files, I6563files, I6584files = [], [], [], [], []
     for unique_filename in unique_names_list:
         i4861, i5007, i6548, i6563, i6584 = np.loadtxt(str(unique_filename), skiprows=1, unpack=True)
@@ -347,7 +348,8 @@ def get_abstempschis(object_name, debug=False):
     if debug:
         print 'Entering get_abstempschis function...'
         print 'obtaining information from all of the Chi2 text files for object: ', object_name
-    unique_names_list = glob(os.path.abspath('Chi2_'+object_name+'*.txt'))
+    #unique_names_list = glob(os.path.abspath('Chi2_'+object_name+'*.txt'))
+    unique_names_list = glob('/user/pena/pycloudy_stuff/'+object_name+'/Chi2_'+object_name+'*.txt')
     He_files = []
     O_files = []
     CO_files = []
@@ -474,7 +476,8 @@ def get_new_lnChi2(theta, object_name, manual_measurement, init_Cldy_conds_file,
     create_HTConjob(jobname, next_pos, unique_name, object_name, manual_measurement, init_Cldy_conds_file, 
                     single_job=True, rint=str_randint, debug=debug)
     send_condor_job(jobname, object_name, str_randint, debug=debug)
-    path4file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name
+    #path4file = '/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/'+object_name
+    path4file = '/user/pena/pycloudy_stuff/'+object_name
     Chifiles_list = glob(path4file+'/Chi2_'+object_name+'*.txt')
     Chifile = 'Chi2_'+object_name+'_'+str(unique_name[0])+'.txt'
     full_path_Chifile = os.path.join(path4file, Chifile)
@@ -497,14 +500,16 @@ def clean_directory(object_name, debug=False, bptclean=False):
     pycloudy and logs directories.'''
     if debug:
         print 'Entering clean_directory function...'
-    unique_names_list = glob(os.path.abspath('Chi2_'+object_name+'*.txt'))
+    #unique_names_list = glob(os.path.abspath('Chi2_'+object_name+'*.txt'))
+    unique_names_list = glob('/user/pena/pycloudy_stuff/'+object_name+'/Chi2_'+object_name+'*.txt')
     for unique_filename in unique_names_list:
         os.remove(unique_filename)
     os.system('rm -f test_walker*'+object_name+'*.job')
     os.system('rm -f logs/*'+object_name+'*.out')
     os.system('rm -f logs/*'+object_name+'*.log')
     # If the Cloudy out file is empty erase it, else move it to the out files directory.
-    files_path = "/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/"+object_name
+    #files_path = "/home/pena/Documents/AptanaStudio3/carbon/cloudy_tests/pycloudy/"+object_name
+    files_path = "/user/pena/pycloudy_stuff/"+object_name
     files_list = glob(files_path+"/mcmc_"+object_name+"*.out")
     for f in files_list:
         empty_file = os.stat(f).st_size == 0
@@ -514,7 +519,8 @@ def clean_directory(object_name, debug=False, bptclean=False):
             os.system("mv "+f+" /user/pena/pycloudy_stuff/"+object_name+"/outfiles/")
     # Clean the BPT files if they exist
     if bptclean:
-        unique_names_list_bpt = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+        #unique_names_list_bpt = glob(os.path.abspath('bpt_'+object_name+'*.txt'))
+        unique_names_list = glob('/user/pena/pycloudy_stuff/'+object_name+'/bpt_'+object_name+'*.txt')
         for uniquebpt in unique_names_list_bpt:
             os.remove(uniquebpt)
 
