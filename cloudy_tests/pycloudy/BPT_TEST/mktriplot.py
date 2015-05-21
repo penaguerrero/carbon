@@ -136,7 +136,7 @@ def get_Te_percentiles(percentiles_arr, Te_arr, samples2use):
     Te_pencentiles.append(Tep80)
     return Te_pencentiles
 
-def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, true_temps, bpt_data):
+def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, true_temps, bpt_data=None):
     trueabs0 = '** Values of the BENCHMARK abundances: '
     trueabs1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f' % (true_abunds[0], true_abunds[1], true_abunds[2], 
                                                                                                     true_abunds[3], true_abunds[4], true_abunds[5])
@@ -150,10 +150,6 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print trueabs2
     print '\n'+temps0
     print temps1
-
-    # BPT data for all accepted models
-    linesample = mklinesample(bpt_data)
-    I4861, I5007, I6548, I6563, I6584 = bpt_data
 
     # best model from average
     #print He, '\n', O, '\n', CO, '\n', NO, '\n', NeO, '\n', SO
@@ -185,13 +181,18 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     medabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
                                                             medHe, medO, medCO, medNO, medNeO, medSO )
     
-    avg4861 = np.mean(I4861)
-    avg5007 = np.mean(I5007)
-    avg6548 = np.mean(I6548)
-    avg6563 = np.mean(I6563)
-    avg6584 = np.mean(I6584)
-    avgIs0 = '* Average line intensities for: \n4861      5007      6548     6563     6584'
-    avgIs1 = '%0.2f    %0.2f    %0.2f    %0.2f    %0.2f' % (avg4861, avg5007, avg6548, avg6563, avg6584)
+    # BPT data for all accepted models
+    if bpt_data is not None:
+        linesample = mklinesample(bpt_data)
+        I4861, I5007, I6548, I6563, I6584 = bpt_data
+
+        avg4861 = np.mean(I4861)
+        avg5007 = np.mean(I5007)
+        avg6548 = np.mean(I6548)
+        avg6563 = np.mean(I6563)
+        avg6584 = np.mean(I6584)
+        avgIs0 = '* Average line intensities for: \n4861      5007      6548     6563     6584'
+        avgIs1 = '%0.2f    %0.2f    %0.2f    %0.2f    %0.2f' % (avg4861, avg5007, avg6548, avg6563, avg6584)
     
     # print averages and medians
     print '\n'+avgabunds0
@@ -200,9 +201,9 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print '\n'+medabunds0
     print medabunds1
     print medabunds2
-    print avgIs0
-    print avgIs1
-    
+    if bpt_data is not None:
+        print avgIs0
+        print avgIs1
     # now find averages of those models with temperatures within +-2500 of the benchmark values 
     # AND of the corresponding line intensities for the BPT diagrams
     subsamples = np.array([]).reshape(0, len(true_abunds))
@@ -228,11 +229,12 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
             TO3_nearby.append(t3)
             TO2_nearby.append(t2)
             prob_nearby.append(p)
-            I4861_nearby.append(I4861[idx])
-            I5007_nearby.append(I5007[idx])
-            I6548_nearby.append(I6548[idx])
-            I6563_nearby.append(I6563[idx])
-            I6584_nearby.append(I6584[idx])
+            if bpt_data is not None:
+                I4861_nearby.append(I4861[idx])
+                I5007_nearby.append(I5007[idx])
+                I6548_nearby.append(I6548[idx])
+                I6563_nearby.append(I6563[idx])
+                I6584_nearby.append(I6584[idx])
         idx = idx + 1
     avgHe = sum(He_nearby)/len(He_nearby) 
     avgO = sum(O_nearby)/len(He_nearby) 
@@ -307,37 +309,40 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print p_subavgabunds1a
     
     # BPT lines
-    avg4861 = sum(I4861_nearby)/len(I4861_nearby)
-    avg5007 = sum(I5007_nearby)/len(I5007_nearby)
-    avg6548 = sum(I6548_nearby)/len(I6548_nearby)
-    avg6563 = sum(I6563_nearby)/len(I6563_nearby)
-    avg6584 = sum(I6584_nearby)/len(I6584_nearby)
-    avgIs = [avg4861, avg5007, avg6548, avg6563, avg6584]
-    bpt_data_nearby = [I4861_nearby, I5007_nearby, I6548_nearby, I6563_nearby, I6584_nearby]
-    linesubsample = mklinesample(bpt_data_nearby)
-    percs4861 = np.percentile(np.array(I4861_nearby), percentiles) 
-    percs5007 = np.percentile(np.array(I5007_nearby), percentiles) 
-    percs6548 = np.percentile(np.array(I6548_nearby), percentiles) 
-    percs6563 = np.percentile(np.array(I6563_nearby), percentiles) 
-    percs6584 = np.percentile(np.array(I6584_nearby), percentiles) 
-    print '* Average line intensities for: \n4861      5007      6548     6563     6584'
-    print '%0.2f    %0.2f    %0.2f    %0.2f    %0.2f' % (avg4861, avg5007, avg6548, avg6563, avg6584)
-    print '4861 25th, 50th, and 75th percentiles:'
-    print '%0.2f  %0.2f  %0.2f' % (percs4861[0],percs4861[1],percs4861[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
-                                         np.abs(percs4861[0]-avgIs[0]), np.abs(percs4861[1]-avgIs[0]), np.abs(percs4861[2]-avgIs[0]))
-    print '5007  25th, 50th, and 75th percentiles:'
-    print '%0.2f  %0.2f  %0.2f' % (percs5007[0], percs5007[1], percs5007[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
-                                         np.abs(percs5007[0]-avgIs[1]), np.abs(percs5007[1]-avgIs[1]), np.abs(percs5007[2]-avgIs[1]))
-    print '6548  25th, 50th, and 75th percentiles:'
-    print '%0.2f  %0.2f  %0.2f' % (percs6548[0], percs6548[1], percs6548[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
-                                         np.abs(percs6548[0]-avgIs[2]), np.abs(percs6548[1]-avgIs[2]), np.abs(percs6548[2]-avgIs[2]))
-    print '6563  25th, 50th, and 75th percentiles:'
-    print '%0.2f  %0.2f  %0.2f' % (percs6563[0], percs6563[1], percs6563[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
-                                         np.abs(percs6563[0]-avgIs[3]), np.abs(percs6563[1]-avgIs[3]), np.abs(percs6563[2]-avgIs[3]))
-    print '6584  25th, 50th, and 75th percentiles:'
-    print '%0.2f  %0.2f  %0.2f' % (percs6584[0], percs6584[1], percs6584[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
-                                         np.abs(percs6584[0]-avgIs[4]), np.abs(percs6584[1]-avgIs[4]), np.abs(percs6584[2]-avgIs[4]))
-    
+    if bpt_data is not None:
+        avg4861 = sum(I4861_nearby)/len(I4861_nearby)
+        avg5007 = sum(I5007_nearby)/len(I5007_nearby)
+        avg6548 = sum(I6548_nearby)/len(I6548_nearby)
+        avg6563 = sum(I6563_nearby)/len(I6563_nearby)
+        avg6584 = sum(I6584_nearby)/len(I6584_nearby)
+        avgIs = [avg4861, avg5007, avg6548, avg6563, avg6584]
+        bpt_data_nearby = [I4861_nearby, I5007_nearby, I6548_nearby, I6563_nearby, I6584_nearby]
+        linesubsample = mklinesample(bpt_data_nearby)
+        percs4861 = np.percentile(np.array(I4861_nearby), percentiles) 
+        percs5007 = np.percentile(np.array(I5007_nearby), percentiles) 
+        percs6548 = np.percentile(np.array(I6548_nearby), percentiles) 
+        percs6563 = np.percentile(np.array(I6563_nearby), percentiles) 
+        percs6584 = np.percentile(np.array(I6584_nearby), percentiles) 
+        print '* Average line intensities for: \n4861      5007      6548     6563     6584'
+        print '%0.2f    %0.2f    %0.2f    %0.2f    %0.2f' % (avg4861, avg5007, avg6548, avg6563, avg6584)
+        print '4861 25th, 50th, and 75th percentiles:'
+        print '%0.2f  %0.2f  %0.2f' % (percs4861[0],percs4861[1],percs4861[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
+                                             np.abs(percs4861[0]-avgIs[0]), np.abs(percs4861[1]-avgIs[0]), np.abs(percs4861[2]-avgIs[0]))
+        print '5007  25th, 50th, and 75th percentiles:'
+        print '%0.2f  %0.2f  %0.2f' % (percs5007[0], percs5007[1], percs5007[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
+                                             np.abs(percs5007[0]-avgIs[1]), np.abs(percs5007[1]-avgIs[1]), np.abs(percs5007[2]-avgIs[1]))
+        print '6548  25th, 50th, and 75th percentiles:'
+        print '%0.2f  %0.2f  %0.2f' % (percs6548[0], percs6548[1], percs6548[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
+                                             np.abs(percs6548[0]-avgIs[2]), np.abs(percs6548[1]-avgIs[2]), np.abs(percs6548[2]-avgIs[2]))
+        print '6563  25th, 50th, and 75th percentiles:'
+        print '%0.2f  %0.2f  %0.2f' % (percs6563[0], percs6563[1], percs6563[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
+                                             np.abs(percs6563[0]-avgIs[3]), np.abs(percs6563[1]-avgIs[3]), np.abs(percs6563[2]-avgIs[3]))
+        print '6584  25th, 50th, and 75th percentiles:'
+        print '%0.2f  %0.2f  %0.2f' % (percs6584[0], percs6584[1], percs6584[2]), '  and with respect to average: %0.2f  %0.2f %0.2f' % (
+                                             np.abs(percs6584[0]-avgIs[4]), np.abs(percs6584[1]-avgIs[4]), np.abs(percs6584[2]-avgIs[4]))
+    else:
+        bpt_data_nearby = None
+        
     # Chi^2 minimization within subsets
     whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
     psub = subsamples[ whsub, : ]
@@ -524,7 +529,7 @@ gen_tracks =  ''
 if not_final:
     chain_file = os.path.abspath('mcmc_'+object_name+'_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
 if FULL_chain_file:
-    chain_file = os.path.abspath('mcmc_'+object_name+'FULL_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
+    chain_file = os.path.abspath('mcmc_'+object_name+'_FULL_chain0.dat')   # this is equivalent to cSFRg40hZsolarUV
 if g0h:
     chain_file = os.path.abspath('mcmc_'+object_name+'_cSFRg00hZsolarUV_chain0.dat')
     gen_tracks = '_cSFRg00hZsolarUV'
@@ -589,8 +594,9 @@ print 'The SUBsamples* shape is: ', np.shape(subsamples)
 print '* SUBsamples is the set of models without repeated abundance and temperature sets.'
 
 # get the BPT data
-bpt_data = get_bptdata(object_name, gen_tracks)
-
+bpt_data = None
+if 'FULL' not in chain_file:
+    bpt_data = get_bptdata(object_name, gen_tracks)
     
 # PLOTS
 if mk_plots or contours:
@@ -764,57 +770,58 @@ if use_subset:
     NeO = subsamples[:, 4]
     SO = subsamples[:, 5]
     stat_info, bpt_data_nearby = get_bestmodel(He, O, CO, NO, NeO, SO, subTO3, subTO2, subprob, subsamples, 
-                                                      true_abunds, true_temps, bpt_data)
+                                                      true_abunds, true_temps, bpt_data=bpt_data)
 else:
-    stat_info, bpt_data_nearby = get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, true_temps, bpt_data)
+    stat_info, bpt_data_nearby = get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, true_temps, bpt_data=bpt_data)
 
 # Now make the BPT diagrams
-I4861, I5007, I6548, I6563, I6584 = bpt_data
-I4861_nearby, I5007_nearby, I6548_nearby, I6563_nearby, I6584_nearby = bpt_data_nearby
-print 'len(I4861), len(I4861_nearby)', len(I4861), len(I4861_nearby)
-fig = plt.figure(1, figsize=(12, 10))
-#plt.title('BPT diagram')
-xlab = r'log ([NII]6584/H$\alpha$)'
-ylab = r'log ([OIII]5007/H$\beta$)'
-plt.xlabel(xlab)
-plt.ylabel(ylab)
-x0 = np.log10(I6584/I6563)
-y0 = np.log10(I5007/100.0)
-print 'log ([NII]6584/Ha): ', x0
-print 'log ([OIII]5007/Hb): ', y0
-# SDSS outlines, columns are:
-# log([NII]/Halpha), median of log([OIII]/Halpha) in each bin of log([NII]/Halpha), and 3*sigma deviation around the median, 
-# where sigma is the standard deviation of log([OIII]/Halpha) values in each bin of log([NII]/Halpha) in following file:
-bpt_contours = 'bpt_contours.txt'
-logNHa, medOHaminus3sig, medOHa, medOHaplus3sig = np.loadtxt(bpt_contours, skiprows=1, unpack=True)
-plt.xlim(-2.2, 0.5)
-plt.ylim(-1.5, 1.5)
-plt.plot(x0, y0, 'ko')
-plt.plot(logNHa, medOHa, 'b')
-plt.plot(logNHa, medOHaminus3sig, 'b--')
-plt.plot(logNHa, medOHaplus3sig, 'b--')
-# overplot models with T_benchmark+-2500 
-x = np.log10(np.array(I6584_nearby)/np.array(I6563_nearby))
-y = np.log10(np.array(I5007_nearby)/100.0)
-plt.plot(x, y, 'ro')
-# Insert name of object in the plot
-idx = objects_list.index(object_name)
-# Find the corresponding observed points
-samp_bpt_txt = 'sampleBPTlines.txt'
-obs4861, obs5007, obs6548, obs6563, obs6584 = np.loadtxt(samp_bpt_txt, skiprows=1, usecols=(1,3,5,7,9), unpack=True)
-obsO3 = obs5007[idx]
-obsN21 = obs6548[idx]
-obsHa = obs6563[idx]
-obsN22 = obs6584[idx]
-obsx = np.log10(obsN22/obsHa)
-obsy = np.log10(obsO3/100.0)
-print 'observed point: ', obsx, obsy
-plt.plot(obsx, obsy, 'g*', ms=20)
-plt.text(0.0, -1.3, full_names_list[idx], size='large')
-bptfig = object_name+'_BPTdiag.eps'
-fig.savefig(bptfig)
-print 'Figure ', bptfig, ' saved!'
-plt.show()
+if bpt_data is not None:
+    I4861, I5007, I6548, I6563, I6584 = bpt_data
+    I4861_nearby, I5007_nearby, I6548_nearby, I6563_nearby, I6584_nearby = bpt_data_nearby
+    print 'len(I4861), len(I4861_nearby)', len(I4861), len(I4861_nearby)
+    fig = plt.figure(1, figsize=(12, 10))
+    #plt.title('BPT diagram')
+    xlab = r'log ([NII]6584/H$\alpha$)'
+    ylab = r'log ([OIII]5007/H$\beta$)'
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    x0 = np.log10(I6584/I6563)
+    y0 = np.log10(I5007/100.0)
+    print 'log ([NII]6584/Ha): ', x0
+    print 'log ([OIII]5007/Hb): ', y0
+    # SDSS outlines, columns are:
+    # log([NII]/Halpha), median of log([OIII]/Halpha) in each bin of log([NII]/Halpha), and 3*sigma deviation around the median, 
+    # where sigma is the standard deviation of log([OIII]/Halpha) values in each bin of log([NII]/Halpha) in following file:
+    bpt_contours = 'bpt_contours.txt'
+    logNHa, medOHaminus3sig, medOHa, medOHaplus3sig = np.loadtxt(bpt_contours, skiprows=1, unpack=True)
+    plt.xlim(-2.2, 0.5)
+    plt.ylim(-1.5, 1.5)
+    plt.plot(x0, y0, 'ko')
+    plt.plot(logNHa, medOHa, 'b')
+    plt.plot(logNHa, medOHaminus3sig, 'b--')
+    plt.plot(logNHa, medOHaplus3sig, 'b--')
+    # overplot models with T_benchmark+-2500 
+    x = np.log10(np.array(I6584_nearby)/np.array(I6563_nearby))
+    y = np.log10(np.array(I5007_nearby)/100.0)
+    plt.plot(x, y, 'ro')
+    # Insert name of object in the plot
+    idx = objects_list.index(object_name)
+    # Find the corresponding observed points
+    samp_bpt_txt = 'sampleBPTlines.txt'
+    obs4861, obs5007, obs6548, obs6563, obs6584 = np.loadtxt(samp_bpt_txt, skiprows=1, usecols=(1,3,5,7,9), unpack=True)
+    obsO3 = obs5007[idx]
+    obsN21 = obs6548[idx]
+    obsHa = obs6563[idx]
+    obsN22 = obs6584[idx]
+    obsx = np.log10(obsN22/obsHa)
+    obsy = np.log10(obsO3/100.0)
+    print 'observed point: ', obsx, obsy
+    plt.plot(obsx, obsy, 'g*', ms=20)
+    plt.text(0.0, -1.3, full_names_list[idx], size='large')
+    bptfig = object_name+'_BPTdiag.eps'
+    fig.savefig(bptfig)
+    print 'Figure ', bptfig, ' saved!'
+    plt.show()
  
 
 if wt_file:
