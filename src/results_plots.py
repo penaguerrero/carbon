@@ -111,10 +111,16 @@ def approxC(N, O):
     ''' This function uses equation of Carbon paper to determine C from N and O arrays.'''
     return 0.5 - 0.18 * (N - O) + N   
 
+def err_approxC(N, Nerr, O, Oerr):
+    ''' This function uses equation of Carbon paper to determine the error in C from N and O arrays.'''
+    e1 = numpy.sqrt(0.18 * Nerr**2 + 0.18 * Oerr**2)
+    err = numpy.sqrt( e1**2 + Nerr**2 )
+    return err
+
 def convert2solar(X, Xsun):
     ''' This function returns values in terms of solar values.'''
     return X - Xsun
-      
+
 
 ############################################################################################################################################
 
@@ -314,8 +320,10 @@ else:
 plt.ylim(ylo, yup)
 plt.xlim(xmin, xmax)
 # PROTOSOLAR values from Asplund et al. (2009)
-COsun = -0.26 #+-0.07 because C/H = 8.47+-0.05
-OHsun = 8.73 #+-0.05
+COsun = -0.26 # because C/H = 8.47+-0.05
+COsunerr = 0.07
+OHsun = 8.73 
+OHsunerr = 0.05
 # OUR STIS OBSERVATIONS
 for obj, i in zip(objects_list, indeces_list):
     if obj in objects_with_Te:
@@ -329,6 +337,10 @@ for obj, i in zip(objects_list, indeces_list):
         COsol = convert2solar(CO[i], COsun)
         OHsol = convert2solar(OH[i], OHsun)
         plt.plot(OHsol, COsol, fmt, ms=7)   # without errors AND in terms of solar values
+        if obj=='izw18':
+            OHsolerr = numpy.sqrt(OHerr[i]**2 + OHsunerr**2)
+            COsolerr = numpy.sqrt(COerr[i]**2 + COsunerr**2)
+            plt.errorbar(OHsol, COsol, xerr=OHsolerr, yerr=COsolerr, fmt=fmt, ecolor='k')   # with errors
     else:
         plt.plot(OH[i], CO[i], fmt, ms=7)   # without errors
 # James et al. (2015)
@@ -369,6 +381,10 @@ for idx, _ in enumerate(litCO):
         litOHsol = convert2solar(litOH[idx], OHsun)
         #print idx, fmt, litOHsol, litCOsol
         plt.plot(litOHsol, litCOsol, fmt)   # in solar terms
+        if idx==0:
+            OHsolerr = numpy.sqrt(litOHerr[idx]**2 + OHsunerr**2)
+            COsolerr = numpy.sqrt(litCOerr[idx]**2 + COsunerr**2)
+            plt.errorbar(litOHsol, litCOsol, xerr=OHsolerr, yerr=COsolerr, fmt=fmt, ecolor='k')   # with errors
     else:
         plt.plot(litOH[idx], litCO[idx], fmt)    
 # Pettini et al (2008)
@@ -408,14 +424,22 @@ else:
 nav06 = '../results/Nava06.txt'
 navOH, navOHerr, navNO, navNOerr = numpy.loadtxt(nav06, skiprows=2, usecols=(0,1,2,3), unpack=True)
 navNH = navNO + navOH
+navNHerr = numpy.sqrt(navNOerr**2 + navOHerr**2)
 navCH = approxC(navNH, navOH)
+navCHerr = err_approxC(navNH, navNHerr, navOH, navOHerr)
 navCO = navCH - navOH
+navCOerr = numpy.sqrt(navCHerr**2 + navOHerr**2)
 #for navidx,navc in enumerate(navCO):
 #    print navidx, navCH[navidx], navc 
 if solar:
     navCOsol = convert2solar(navCO, COsun)
     navOHsol = convert2solar(navOH, OHsun)
     plt.plot(navOHsol, navCOsol, 'r+')   # in solar terms
+    for idx, _ in enumerate(navOH):
+        if idx==0 or idx ==1:
+            OHsolerr = numpy.sqrt(navOHerr[idx]**2 + OHsunerr**2)
+            COsolerr = numpy.sqrt(navCOerr[idx]**2 + COsunerr**2)
+            plt.errorbar(navOHsol[idx], navCOsol[idx], xerr=OHsolerr, yerr=COsolerr, fmt='r+', ecolor='k')   # with errors
 else:
     plt.plot(navOH, navCO, 'r+')  
 # Save plot
