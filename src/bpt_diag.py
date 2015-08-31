@@ -27,7 +27,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Were the line measurements done manually? 
 #                            0     1     2     3      4       5      6      7     8
-manual_measurement_list = [False, True, True, False, False, False, False, False, False, 
+manual_measurement_list = [False, True, False, False, False, False, False, False, False, 
                            True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
 
