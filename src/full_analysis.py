@@ -15,7 +15,7 @@ from science import spectrum
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 3
+object_number = 2
 
 # Is this a TEST run?
 TEST_run = False
@@ -40,26 +40,26 @@ create_txt_temdenabunds = False
 # Skip the finding of the line info and go directly to gather the spectra?
 # this line tells which set of line info did I take
 #                            0     1     2     3      4       5      6      7     8
-use_given_lineinfo_list = [False, True, True, False, False, False, False, False, False, 
-                           True, False, True, False, False, True, False, True, False]
+use_given_lineinfo_list = [False, True, False, False, False, False, False, False, False, 
+                           True, False, False, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2               3              4             5               6            7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [10900.,12900.], [6950.,7950.], [14000.,15000.], [9500.,11500.], [11500.,12200.], None,
+forceTeO3_list = [[10900.,15000.], [8700.,9700.], [7100.,1000.], [6950.,7950.], [14000.,15000.], [9500.,11500.], [11500.,12200.], None,
                   [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
 #                        0               1                2               3        4           5                6          7           8           
-forceTeO2_list = [[10500.,11500.], [9100.,10100.], [10500.,12500.], [7400.,8400], None, [9600.,10900.], [12000.,12400.], None, [12200.,12750.],
+forceTeO2_list = [[10500.,11500.], [9100.,10100.], [8000.,1000.], [7400.,8400], None, [9600.,10900.], [12000.,12400.], None, [12200.,12750.],
                   None, [12200.,12800.], None, [12400.,12800.], None, [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
 #                   9         10          11         12          13        14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
 
 #                   0           1             2              3        4         5             6           7           8           
-forceNe_list = [[200,900], [100., 650.], [115., 3000.], [100, 2100], None, [100., 3000.], [100,300], [250.,80.], [140., 80],
+forceNe_list = [[200,900], [100., 650.], [220., 3000.], [100, 2100], None, [100., 3000.], [100,300], [250.,80.], [140., 80],
                 [250.,80],  [100,200.], None, None, None, [180.,60.], [300,100], 100., [100, 200.]]
 #                   9          10        11    12    13       14         15      16         17 
 forceNe = forceNe_list[object_number]
@@ -85,7 +85,7 @@ deblend6563 = False
 
 # Used values of Halpha_width in order to properly correct for reddening
 #                     0    1    2    3    4    5    6    7   8     9   10   11   12   13   14   15   16   17
-Halpha_width_list = [40., 28., 28., 25., 33., 28., 30., 40., 35., 27., 27., 30., 43., 30., 30., 40., 50., 35.]
+Halpha_width_list = [40., 28., 26., 25., 27., 28., 30., 40., 35., 27., 27., 30., 43., 30., 30., 40., 50., 35.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Set theoretical Halpha/Hbeta ratio
@@ -112,8 +112,8 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-#                                    0                               1                 2                        3                  4                5
-desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1.9, or2*1.85, or3*1.5], [or1*2.1, or2*2.1, or3*2.1], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
+#                                    0                         1         2:or1*1.9, or2*1.85, or3*1.5           3                  4                5
+desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1.2, or2*1.51, or3*1.2], [or1*2.1, or2*2.1, or3*2.1], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
                             [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
@@ -387,11 +387,11 @@ else:
 
 # Do reddening correction 
 # Choose the one we intend to use 
-#redlaw= 'S 79 H 83'   ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
-redlaw = 'CCM 89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
-#redlaw = 'oD 94'      ## O'Donnell 1994, ApJ, 422, 1580
-#redlaw = 'LMC G 03'   ## Gordon et al. (2003, ApJ, 594,279)
-#redlaw = 'B 07'       ## Blagrave et al 2007, ApJ, 655, 299
+#redlaw= 'S79H83'   ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
+redlaw = 'CCM89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
+#redlaw = 'oD94'      ## O'Donnell 1994, ApJ, 422, 1580
+#redlaw = 'LMCG03'   ## Gordon et al. (2003, ApJ, 594,279)
+#redlaw = 'B07'       ## Blagrave et al 2007, ApJ, 655, 299
 cHbeta = 0.434*C_Hbeta
 # Names of the text files with the results with errors
 if use_Chbeta:
