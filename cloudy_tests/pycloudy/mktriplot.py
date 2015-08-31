@@ -21,6 +21,8 @@ This script creates the following output:
             - plot or contours of temperature of [O III] vs C/H 
             - triangle plot after the MCMC chain has been ran
             - write all statistics with chain into a text file
+
+Run from terminal as:  >> python mktriplot.py sbs1415 -n -c
 '''
 
 #######################################################################################################################
