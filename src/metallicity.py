@@ -2653,9 +2653,10 @@ class AdvancedOps(BasicOps):
         #raw_input(' ***  press enter to continue')
         recalculateerrs = True
         if recalculateerrs:
+            print '\n-> considering 1909 to be correct: '
             # calculate new intensity of 1666
             I1909 = self.I_1907[0]
-            err1909 = self.I_1907[1]
+            err1909 = I1909*0.3#self.I_1907[1]
             newC2O2 = (10**Ratio / icfC)
             #constant is 0.089*numpy.exp(-1.09/tc)
             new1666 = I1909 * constant/newC2O2 
@@ -2676,17 +2677,42 @@ class AdvancedOps(BasicOps):
             print 'colineratio = ', colineratio, '  colineratioerr=', colineratioerr 
             print '1666   %0.5f   %0.5f' % (new1666, err1666)
             print '1909   %0.1f   %0.1f' % (I1909, err1909)
+            print '-> considering 1606 to be correct: '
+            # calculate new intensity of 1666
+            I1663 = I_1663[0]
+            err1663 = I_1663[1]
+            newC2O2 = (10**Ratio / icfC)
+            #constant is 0.089*numpy.exp(-1.09/tc)
+            new1909 = I1663 * newC2O2/constant 
+            #err1666 = 1.1
+            # calculate new errors
+            colineratio = new1909/I1663
+            #raw_input()
+            newC2toO2 = constant * colineratio  
+            notlogRatio = 10**Ratio
+            notlogRatioerr_up = 10**(Ratio+Ratioerr)
+            notlogRatioerr_dw = 10**(Ratio-Ratioerr)
+            notlogRatioerr = ((notlogRatioerr_up - notlogRatio) + (notlogRatio - notlogRatioerr_dw))/2.0
+            C2toO2err = newC2toO2 * numpy.sqrt((notlogRatioerr/notlogRatio)**2 + (0.2/icfC)**2)
+            colineratioerr = C2toO2err / constant
+            err1909 = new1909 * numpy.sqrt( (colineratioerr/colineratio)**2 - (err1663/I1663)**2 )
+            #err1909 = I1909 * numpy.sqrt( (colineratioerr*(new1666/I1909))**2 - (err1666/new1666)**2 )
+            print 'newC2O2 =', newC2O2, '  C2toO2err =', C2toO2err
+            print 'colineratio = ', colineratio, '  colineratioerr=', colineratioerr 
+            print '1666   %0.5f   %0.5f' % (I1663, err1663)
+            print '1909   %0.1f   %0.1f' % (new1909, err1909)
         
         CO_sun = -0.26 #+-0.15    taken from Asplund et al. 2009
         CO_sun_err = 0.15
         CO_wr_sun = Ratio - CO_sun
         CO_wr_sun_err = numpy.sqrt(Ratioerr**2 + CO_sun_err**2)
-        print ' [C/O]  =  log(C/O) - log(C/O)_sun  =  %0.2f +- %0.2f \n' % (CO_wr_sun, CO_wr_sun_err)
+        print '\n [C/O]  =  log(C/O) - log(C/O)_sun  =  %0.2f +- %0.2f \n' % (CO_wr_sun, CO_wr_sun_err)
 
         te_used = te_low#te_high
         tc = te_used[0]/10000.0         # central temp
         tpluserr = te_used[1]/10000.0   # central temp plus error
         I_1752 = self.I_1752
+        I_1663 = [new1666, err1666]
         N2toO2 = 0.212 * numpy.exp(-0.43/tc) * (I_1752[0]/I_1663[0])
         # error calculation
         uplimN2toO2_temp =  0.212 * numpy.exp(-0.43/tpluserr) * (I_1752[0]/I_1663[0])
