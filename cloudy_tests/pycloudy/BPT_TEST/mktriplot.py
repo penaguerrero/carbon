@@ -23,6 +23,8 @@ This script creates the following output:
             - triangle plot after the MCMC chain has been ran
             - write all statistics with chain into a text file
             - BPT diagram 
+
+Run from terminal as:  >> python mktriplot.py sbs1415 -g4h
 '''
 
 #######################################################################################################################
@@ -780,7 +782,6 @@ if bpt_data is not None:
     I4861_nearby, I5007_nearby, I6548_nearby, I6563_nearby, I6584_nearby = bpt_data_nearby
     print 'len(I4861), len(I4861_nearby)', len(I4861), len(I4861_nearby)
     fig = plt.figure(1, figsize=(12, 10))
-    #plt.title('BPT diagram')
     xlab = r'log ([NII]6584/H$\alpha$)'
     ylab = r'log ([OIII]5007/H$\beta$)'
     plt.xlabel(xlab)
@@ -817,7 +818,8 @@ if bpt_data is not None:
     obsy = np.log10(obsO3/100.0)
     print 'observed point: ', obsx, obsy
     plt.plot(obsx, obsy, 'g*', ms=20)
-    plt.text(0.0, -1.3, full_names_list[idx], size='large')
+    plt.title('MCMC Modeled Line Ratios for  '+full_names_list[idx])
+    #plt.text(0.0, -1.3, full_names_list[idx], size='large')
     bptfig = object_name+'_BPTdiag.eps'
     fig.savefig(bptfig)
     print 'Figure ', bptfig, ' saved!'
