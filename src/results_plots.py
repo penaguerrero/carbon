@@ -37,8 +37,8 @@ img_name2 = 'NOvsOH'
 img_name3 = 'NeOvsOH'
 img_name4 = 'CNvsOH'
 img_name5 = 'C+2N+2vsOH'
-img_name6 = 'NCvsCH'
-img_name7 = 'NOvsCN'
+img_name6 = 'NCvsCH_v2'
+img_name7 = 'NOvsCN_v2'
 otherrefs = '_plusOtherRefs'
 
 
@@ -109,7 +109,9 @@ def lnprob(theta, x, y, yerr):
 
 def approxC(N, O):
     ''' This function uses equation of Carbon paper to determine C from N and O arrays.'''
-    return 0.5 - 0.18 * (N - O) + N   
+    #return 0.5 - 0.18 * (N - O) + N   # previous
+    #return 0.35 - 0.30 * (N - O) + N   # MCMC
+    return 0.30 - 0.18 * (N - O) + N   # MCMC without Sun, IZw18, Orion, and 30 Dor
 
 def err_approxC(N, Nerr, O, Oerr):
     ''' This function uses equation of Carbon paper to determine the error in C from N and O arrays.'''
@@ -273,7 +275,7 @@ for x, xe, y, ye, z in zip(OH, OHerr, CO, COerr, objects_list):
     subxcoord = -3
     subycoord = 5
     side = 'right'
-    if (z == 'mrk960') or (z == 'mrk5') or (z == 'ngc1741') or (z == 'Sun'):
+    if (z == 'mrk960') or (z == 'sbs0926') or (z == 'mrk5') or (z == 'ngc1741') or (z == 'Sun'):
         subxcoord = -4
         subycoord = -12
     if (z == 'sbs0218') or (z == 'sbs0948') or (z == 'iras08208') or (z == 'arp252') or (z == 'pox4') or (z == 'ngc456') or (z == 'ngc6822') or (z == 'Orion') or (z == 'izw18'):
@@ -298,6 +300,7 @@ plt.show()
 
 # Re-plot our sample PLUS the objects from literature
 fig1 = plt.figure(1, figsize=(12, 10))
+ax1 = fig1.add_subplot(111)
 if solar:
     yup, ylo = 1.0, -2.0
     xmin, xmax = -3.0, 0.6
@@ -408,18 +411,6 @@ if solar:
     plt.plot(petOHsol, petCOsol, 'mD')   # in solar terms
 else:
     plt.plot(petOH, petCO, 'mD')  
-# Galactic stellar data from Akerman et al.(2004) and Gustafsson et al.(1999) - but the last only for solar values
-ake04 = '../results/Akerman04.txt'
-akeOH, akeOHsol, akeCH, akeCOsol = numpy.loadtxt(ake04, skiprows=2, usecols=(8,10,11,12), unpack=True)
-akeCO = akeCH - akeOH
-if solar:
-    gus99 = '../results/Gustafsson99.txt'
-    gusCHsol, gusOHsol = numpy.loadtxt(gus99, skiprows=3, usecols=(1,2), unpack=True)
-    gusCOsol = gusCHsol - gusOHsol
-    plt.plot(akeOHsol, akeCOsol, 'wo', ms=5)   # in solar terms
-    plt.plot(gusOHsol, gusCOsol, 'ws', ms=5)   # in solar terms
-else:
-    plt.plot(akeOH, akeCO, 'wo')  
 # Data from Nava et al. (2006)
 nav06 = '../results/Nava06.txt'
 navOH, navOHerr, navNO, navNOerr = numpy.loadtxt(nav06, skiprows=2, usecols=(0,1,2,3), unpack=True)
@@ -442,6 +433,34 @@ if solar:
             plt.errorbar(navOHsol[idx], navCOsol[idx], xerr=OHsolerr, yerr=COsolerr, fmt='r+', ecolor='k')   # with errors
 else:
     plt.plot(navOH, navCO, 'r+')  
+# Galactic stellar data from Akerman et al.(2004) and Gustafsson et al.(1999) - but the last only for solar values
+ake04 = '../results/Akerman04.txt'
+akeOH, akeOHsol, akeCH, akeCOsol = numpy.loadtxt(ake04, skiprows=2, usecols=(8,10,11,12), unpack=True)
+akeCO = akeCH - akeOH
+if solar:
+    gus99 = '../results/Gustafsson99.txt'
+    gusCHsol, gusOHsol, gusage = numpy.loadtxt(gus99, skiprows=3, usecols=(1,2,3), unpack=True)
+    gusCOsol = gusCHsol - gusOHsol
+    plt.plot(akeOHsol, akeCOsol, 'wo', ms=5)   # in solar terms
+    ax1.plot(gusOHsol, gusCOsol, 'ws', ms=5)   # in solar terms
+    # Find correlation between metallicity and log age
+    #coeffs = numpy.polyfit(gusOHsol, gusage, 1.0)
+    #logAge_poly = numpy.poly1d(coeffs)
+    #agefit = logAge_poly(gusOHsol)
+    #ax2 = ax1.twiny()
+    # get the age for xmin and xmax metallicities
+    #ax2.set_xlim( logAge_poly(xmin), logAge_poly(xmax) )
+    #ax2.set_xlabel("log (age of disk stars) [Gyr]")
+    # Find correlation between C/O and log age
+    #coeffs = numpy.polyfit(gusCOsol, gusage, 1.0)
+    #COlogAge_poly = numpy.poly1d(coeffs)
+    #agefit = COlogAge_poly(gusCOsol)
+    #ax2 = ax1.twinx()
+    # get the age for xmin and xmax C/O values
+    #ax2.set_ylim( COlogAge_poly(xmin), COlogAge_poly(xmax) )
+    #ax2.set_ylabel("log (age of disk stars) [Gyr]")
+else:
+    plt.plot(akeOH, akeCO, 'wo')  
 # Save plot
 if save_images:
     destination = os.path.join(full_results_path+'/plots', img_name)
@@ -500,14 +519,14 @@ for x, y, z in zip(Clo, Clco, objects_list):
         subxcoord = 25
     if (z == 'sbs0218'):
         subycoord = -13
-    if (z == 'mrk5') or (z == 'sbs1319') or (z == 'sbs1054'):
+    if (z == 'mrk5') or (z == 'sbs1319') or (z == 'sbs1054') or (z == 'mrk1087'):
         subxcoord = 5
         subycoord = -2
         side = 'left'
     if (z == 'iras08339') or (z == 'Sun'):
         subycoord = -13
         side = 'left'
-    if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'iras08208') or (z == 'arp252') or (z == 'Orion'):
+    if (z == 'iiizw107') or (z == 'ngc1741') or (z == 'ngc456') or (z == 'iras08208') or (z == 'Orion'):
         subxcoord = 3
         side = 'left'
     if (z == 'ngc346'):
@@ -515,7 +534,7 @@ for x, y, z in zip(Clo, Clco, objects_list):
         subycoord = -11
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
-plt.title('C/O vs O/H from Cloudy')
+plt.title('MCMC modeled C/O vs O/H')
 plt.xlabel('12 + log (O/H)')
 plt.ylabel('log (C/O)')
 if save_images:
@@ -597,18 +616,22 @@ for x, y, z in zip(OH, NO, objects_list):
     subxcoord = -2
     subycoord = 5
     side = 'right'
-    if (z == 'mrk5') or (z == 'mrk1087') or (z == 'arp252'):
+    if (z == 'mrk5') or (z == 'mrk1087'):
         subxcoord = 7
         side = 'left'
     if (z == 'ngc6822') or (z == 'ngc456') or (z == 'ngc346'):
         subxcoord = 4
         subycoord = 4
         side = 'left'
-    if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'sbs1054') or (z == 'iras08208') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
+    if (z == 'sbs0926') or (z == 'sbs0218') or (z == 'iras08208') or (z == 'pox4') or (z == 'tol1457') or (z == 'mrk1199') or (z == '30Dor'):
         subycoord = -12
-    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'sbs0948') or (z == 'Sun') or (z == 'Orion') or (z == 'izw18'):
+    if (z == 'iiizw107') or (z == 'sbs1319') or (z == 'sbs0948') or (z == 'Sun') or (z == 'Orion') or (z == 'izw18') or (z == 'arp252'):
         subxcoord = 4
         subycoord = -14
+        side = 'left'
+    if (z == 'sbs1054'):
+        subxcoord = 33
+        subycoord = -1
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
 plt.title('N/O vs O/H')
@@ -636,7 +659,7 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     plt.errorbar(OH[i], NeO[i], xerr=OHerr[i], yerr=NeOerr[i], fmt=fmt, ecolor='k')
 plt.xlim(7.6, 9.0)
-yup = -0.1
+yup = 0.1
 ylo = -1.2
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(7.4, 9.0, 0.1))
@@ -653,11 +676,11 @@ for x, y, z in zip(OH, NeO, objects_list):
         subxcoord = 5
         subycoord = -11
         side = 'left'
-    if (z == 'iras08208') or (z == 'pox4') or (z == 'arp252') or (z == 'iras08339'):
+    if (z == 'iras08208') or (z == 'pox4') or (z == 'arp252') or (z == 'iras08339') or (z == 'sbs1054'):
         subxcoord = 4
         subycoord = 4
         side = 'left'
-    if (z == 'sbs1054') or (z == 'ngc6822') or (z == 'sbs0948'):
+    if (z == 'ngc6822') or (z == 'sbs0948'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
@@ -686,7 +709,7 @@ for obj, i in zip(objects_list, indeces_list):
         fmt='b^'
     plt.errorbar(OH[i], CN[i], xerr=OHerr[i], yerr=CNerr[i], fmt=fmt, ecolor='k')
 plt.xlim(6.8, 9.0)
-yup = 2.2
+yup = 1.6
 ylo = -0.7
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(6.9, 9.0, 0.1))
@@ -702,7 +725,7 @@ for x, y, z in zip(OH, CN, objects_list):
         subxcoord = 5
         subycoord = -12
         side = 'left'
-    if (z == 'sbs0948') or (z == 'arp252') or (z == 'tol9') or (z == 'izw18'):
+    if (z == 'sbs0948') or (z == 'arp252') or (z == 'tol9') or (z == 'izw18') or (z == 'mrk1087'):
         subxcoord = 5
         subycoord = 4
         side = 'left'
@@ -777,11 +800,13 @@ plt.show()
 # N/C vs C/H
 # Calculate errors for N/C and C/H
 CH = CO+OH
+CH2fit = CH[:-4]
 errCH = numpy.sqrt( COerr**2 + OHerr**2 )
 NC = (NO+OH) - (CO+OH)
+NC2fit = NC[:-4]
 errNC = numpy.sqrt( NOerr**2 + COerr**2 + 2*OHerr**2)
 # Adjust a linear fit to the plot
-coeffs, line_fit = fit_line(CH, NC)
+coeffs, line_fit = fit_line(CH2fit, NC2fit)
 print 'Coefficients of initial guess to the plot of: N/C vs C/H'
 m = coeffs[0]
 b = coeffs[1]
@@ -817,11 +842,11 @@ for x, y, z in zip(CH, NC, objects_list):
     if (z == 'sbs1054'):
         subxcoord = -5
         subycoord = -12
-    if (z == 'mrk1199'):
+    if (z == 'mrk1087'):
         subxcoord = 4
         subycoord = -14
         side = 'left'
-    if (z == 'iras08339'):
+    if (z == 'iras08339') or (z == 'mrk1199'):
         subxcoord = 4
         side = 'left'
     if (z == 'ngc1741') or (z == 'tol9') or (z == 'Orion'):
@@ -834,6 +859,11 @@ for x, y, z in zip(CH, NC, objects_list):
 plt.title('N/C vs C/H')
 plt.xlabel('12 + log (C/H)')
 plt.ylabel('log (N/C)')
+# Show line presented in paper:
+mp = -0.36#+-0.08  #-0.34
+bp = 2.20#+-0.40  #1.92
+yp = mp*CH + bp
+plt.plot(CH, yp, 'g', lw=2)
 if save_images:
     img_name = img_name6 + typeofimage
     if use_our_sample_ONLY == False:
@@ -842,11 +872,11 @@ if save_images:
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
 if show_fitted_line:
-    plt.plot(CH, line_fit)   # plot fitted line
+    plt.plot(CH2fit, line_fit)   # plot fitted line
 # Initialize the chain with a Gaussian ball around the maximum likelihood result, for which we use optimize
-x = CH
-y = NC
-yerr = CNerr
+x = CH2fit
+y = NC2fit
+yerr = CNerr[:-4]
 ndim, nwalkers, nruns = 2, 100, 300
 randadd2point = lambda x: x+numpy.random.rand(1)*-1
 p0 = numpy.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
@@ -885,7 +915,10 @@ plt.show()
 
 # N/O vs C/N
 # Adjust a linear fit to the plot
+NO2fit = NO[:-4]
+CN2fit = CN[:-4]
 coeffs, line_fit = fit_line(NO, CN)
+#coeffs, line_fit = fit_line(NO2fit, CN2fit)
 #print 'Linear fit: y = mx + b'
 #print line_fit
 print 'Coefficients of initial guess to the plot of: N/O vs C/N'
@@ -904,8 +937,21 @@ for obj, i in zip(objects_list, indeces_list):
     plt.errorbar(NO[i], CN[i], xerr=NOerr[i], yerr=CNerr[i], fmt=fmt, ecolor='k')
 if show_fitted_line:
     plt.plot(NO, line_fit)   # plot fitted line
+    #plt.plot(NO2fit, line_fit)   # plot fitted line
+# Show line previously presented in paper:
+mp = -0.18
+bp = 0.50
+yp = mp*NO + bp
+#plt.plot(NO, yp, 'm')
+
+bp2 = 0.30#+0.15-0.12   #0.35 
+mp2 = -0.18#+0.09-0.11  #-0.30
+yp2 = mp2*NO + bp2
+plt.plot(NO, yp2, 'g', lw=2)
+
+# Set limits
 plt.xlim(-2.1, 0.0)
-yup = 2.60
+yup = 1.6
 ylo = -0.8
 plt.ylim(ylo, yup)
 plt.xticks(numpy.arange(-2.1, 0.1, 0.2))
@@ -916,13 +962,13 @@ for x, y, z in zip(NO, CN, objects_list):
     subxcoord = -2
     subycoord = 5
     side = 'right'
-    if (z == 'sbs1319') or (z == 'pox4') or (z == 'Sun'):
-        subycoord = -12
-    if (z == 'sbs0926') or (z == 'iiizw107') or (z == '30Dor') or (z == 'sbs1415') or (z == 'iras08339'):
+    if (z == 'sbs1319') or (z == 'pox4') or (z == 'sbs0948') or (z == 'Sun'):
+        subycoord = -9
+    if (z == 'sbs0926') or (z == 'iiizw107') or (z == '30Dor') or (z == 'sbs1415') or (z == 'iras08339') or (z == 'mrk1199'):
         subxcoord = 4
         subycoord = -12
         side = 'left'
-    if (z == 'arp252') or (z == 'sbs1054'):
+    if (z == 'arp252'):
         subxcoord = 4
         side = 'left'
     plt.annotate('{}'.format(z), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
@@ -937,10 +983,10 @@ if save_images:
     plt.savefig(destination)
     print('Plot %s was saved!' % destination)
 # Initialize the chain with a Gaussian ball around the maximum likelihood result, for which we use optimize
+x = NO2fit
+y = CN2fit 
+yerr = CNerr[:-4]
 ndim, nwalkers, nruns = 2, 100, 500
-x = NO
-y = CN 
-yerr = CNerr
 randadd2point = lambda x: x+numpy.random.rand(1)
 p0 = numpy.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[x, y, yerr])
@@ -950,8 +996,6 @@ wh = numpy.where( prob == prob.max() )[0][0]
 p = pos[ wh, : ]
 #theta = [avgm, avgb]
 #theta = [m, b]
-if show_fitted_line:
-    plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
 line1 ='values of the %i dimensions that best fit the data according to Chi^2 in %i runs are the following:' % (ndim, nruns)
 line2 = 'm = %0.3f   b = %0.3f' % (p[0], p[1])
 print line1
@@ -966,6 +1010,21 @@ for theta in pos:
 avgm = sum(allm)/len(allm)
 avgb = sum(allb)/len(allb)
 print 'Average values:  m = %0.3f   b= %0.3f' % (avgm, avgb)
+if show_fitted_line:
+    plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
+    avgp = [avgm, avgb]
+    plt.plot( x, line_eq( avgp, x ), "c", lw=5, alpha=0.4 )
+for p in pos:
+    if p[0] < 0.0:
+        y = line_eq(p, x)
+        extrap_xmin = numpy.interp(NO[-2], x, y)
+        #x = numpy.append(x, NO[-2])
+        #y = numpy.append(y, extrap_xmin)
+        plt.plot( x, y, "r", alpha=0.1 )
+#img_name = img_name7 + typeofimage
+#destination = os.path.join(full_results_path+'/plots', img_name)
+#plt.savefig(destination)
+#print('Plot %s was saved!' % destination)
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
 fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
 fig.show()
