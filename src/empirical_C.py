@@ -15,7 +15,7 @@ objects_list = ['mrk960', 'sbs0218', 'mrk1087', 'ngc1741', 'mrk5', 'mrk1199', 'i
 #                  9         10        11        12        13       14         15         16         17
 
 #                            0     1     2     3      4       5      6      7     8
-use_given_lineinfo_list = [False, False, True, False, False, False, True, True, False,
+use_given_lineinfo_list = [False, False, False, False, False, False, True, True, False,
                            False, True, True, True, False, False, False, False, False]
 #                            9     10     11     12    13     14     15    16    17
 
@@ -66,7 +66,9 @@ Cldy_best_abunds = 'carbon/results/Cloudy_best_abunds.txt'
 Cldy_file_path = os.path.join(file_path_list[0], Cldy_best_abunds)
 CldyHe, CldyO, CldyC, CldyN, CldyNe, CldyS, CldyTO3, CldyTO2 = get_abunds(Cldy_file_path, objects_list)
 
-approxC = 0.5 - 0.18 * (N - O) + N
+#approxC = 0.5 - 0.18 * (N - O) + N   # previous
+#approxC = 0.35 - 0.3 * (N - O) + N   # MCMC - paper
+approxC = 0.30 - 0.18 * (N - O) + N   # MCMC without Sun, IZw18, Orion, and 30 Dor
 
 tf = open(out_file, 'w+')
 print '{:<15} {:>3} {:>5} {:>10} {:>7} {:>10}'.format('Object', 'DiffObs', 'C/H', 'Approx C', 'CldyC', 'DiffCldy')
