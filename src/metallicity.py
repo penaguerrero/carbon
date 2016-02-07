@@ -431,16 +431,6 @@ def find_emission_lines(rounded_catalog_wavelength, element, ion, forbidden,
             how_forbidden_emission_lines, positive_normfluxes, pos_calc_cont, positive_norm_intensities, EW_emission_lines)
 
 """
-def find_flambdas(cHbeta, ebv, intensity, Idered):
-    # This function calculates the correction relative to Hbeta according to the extinction law used 
-    # from the equation (1-flambda)*cHbeta=0.4Ebv*Xlambda, where Xlambda is obtained from the reddening law:
-    # Xlambda = Rv*Alambda/Av
-    flambdas = []
-    for i, Id in zip(intensity, Idered):
-        flam = 1.0 - 1/cHbeta * numpy.log10(Id/i)
-        flambdas.append(flam)
-    return flambdas
-"""
 def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
     # Finding the f_lambda values
     all_flambdas = []
@@ -466,6 +456,7 @@ def find_flambdas(cHbeta, catalog_wavelength, I_dered_noCorUndAbs, normfluxes):
         else:
             flambdas.append(f)
     return flambdas
+"""
 
 def write_RedCorfile(path_and_name_outfile, cols_in_file):
     # Columns to be written in the text file: 
@@ -474,6 +465,9 @@ def write_RedCorfile(path_and_name_outfile, cols_in_file):
     print >> RedCor_file, '#{:<12} {:>8} {:>8} {:<5} {:>6} {:>6} {:>10} {:>9} {:>6} {:>14} {:>8} {:>5} {:>11} {:>8} {:>5}'.format('Wavelength', 'flambda', 'Element', 'Ion', 'Forbidden', 'How much', 'Flux', 'FluxErr', '%err', 'Intensity', 'IntyErr', '%err', 'EW', 'EWerr', '%err')
     for w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp in zip(catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, EW, err_EW, perrEW):
         #float(w), float(fl), str(ele), str(ion), str(forb), str(hforb), float(f), float(ef), float(epf), float(i), float(ei), float(epi), float(ew), float(eew), float(eewp)
+        #print (type(w), type(fl), type(ele), type(ion), type(forb), type(hforb), type(f), type(ef), type(epf), type(i), type(ei), type(epi), type(ew), type(eew), type(eewp))
+        if isinstance(eewp, str):
+            eewp = 0.0
         print >> RedCor_file, '{:<10.2f} {:>9.3f} {:>8} {:<6} {:>6} {:>8} {:>14.3f} {:>8.3f} {:>6.1f} {:>13.3f} {:>8.3f} {:>6.1f} {:>12.2f} {:>6.2f} {:>6.1f}'.format(w, fl, ele, ion, forb, hforb, f, ef, epf, i, ei, epi, ew, eew, eewp)
     RedCor_file.close()
     print 'Text file with corrected intensities written in: ', path_and_name_outfile
@@ -943,12 +937,13 @@ class BasicOps:
             corr_undelyingAbs_EWs.append(e)
         ### Remove UNDERLYING ABSORPTION for optical lines to get Intensities
         corr_intensities = []
-        for EWabsLine,cont,flx in zip(corr_undelyingAbs_EWs, continuum, flux):
+        for w, EWabsLine,cont,flx in zip(catalog_wavelength, corr_undelyingAbs_EWs, continuum, flux):
             I = EWabsLine * EWabsHbeta * cont + flx
             corr_intensities.append(I)
+            #print w, I
         self.intensities_corr_undelyingAbs = corr_intensities
         if return_Is:
-            return corr_intensities
+            return flux, corr_intensities
     
     def Halpha2Hbeta_dered(self, av=None, ebv=None, cHbeta=None, fluxes=None, intensities=None):
         ''' Function to dered and obtain the Halpha/Hbeta ratio nicely printed along with the redden values (for comparison). '''
@@ -1007,6 +1002,8 @@ class BasicOps:
         Hbeta_idx = catalog_lines.index(4861)
         #Halpha_idx = catalog_lines.index(6563)
         #RC.setCorr(norm_fluxes[Halpha_idx]/2.86, 6563., 4861.)
+        #Hgamma_idx = catalog_lines.index(4340)
+        #RC.setCorr(norm_fluxes[Hgamma_idx]/0.47, 4340., 4861.)
         for w, nF, nI in zip(catalog_lines, norm_fluxes, norm_intensities):   
             I_dered = nI * RC.getCorrHb(w)
             Idered.append(I_dered)
@@ -1014,7 +1011,7 @@ class BasicOps:
             flam = numpy.log10(RC.getCorrHb(w))/cHbeta
             flambdas.append(flam)
             #print "Flmandas: "
-            #print w, flam, nF, I_dered
+            print w, flam, RC.getCorrHb(w), nF, I_dered
             # just for checking purposes
             if w == 4861.0:
                 I_deredHbeta = self.intensities_corr_undelyingAbs[Hbeta_idx] * RC.getCorrHb(w)
@@ -1022,8 +1019,17 @@ class BasicOps:
             # underlying absorption based on the given law and c(Hb)
             IdnUA = nF * RC.getCorrHb(w)
             I_dered_noCorUndAbs.append(IdnUA)
-            #print w, 'norm_Flux=', nI, '  dered_factor=',RC.getCorrHb(w) , ' dered_I=', I_dered
+            #print w, 'flambda=', flam, '  norm_Flux=', nI, '  dered_factor=',RC.getCorrHb(w) , ' dered_I=', I_dered
             #print '   FluxCorUndAbs', nF, '  I_dered_norCoUndAbs=', IdnUA
+        """
+        # Normalize
+        for i, w in enumerate(catalog_lines):
+            norm_fluxes[i] = norm_fluxes[i]/norm_fluxes[Hbeta_idx] * 100.0
+            norm_intensities[i] = norm_intensities[i]/norm_intensities[Hbeta_idx] * 100.0
+            I_dered_noCorUndAbs[i] = I_dered_noCorUndAbs[i]/I_dered_noCorUndAbs[Hbeta_idx] * 100.0
+            print w, flambdas[i], norm_fluxes[i], I_dered_noCorUndAbs[i], norm_intensities[i]#, norm_fluxes[Hbeta_idx]
+        """
+        raw_input()
         # Find observed Halpha/Hbeta ratio
         Halpha_idx = catalog_lines.index(6563)
         Hbeta_idx = catalog_lines.index(4861)
@@ -1156,8 +1162,10 @@ class BasicOps:
         return errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, errs_EW
     
     def do_ops(self):
-        self.underlyingAbsCorr()
-        normfluxes, Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(self.av, self.ebv)
+        #flux, corr_intensities = self.underlyingAbsCorr(return_Is=True)
+        self.underlyingAbsCorr(return_Is=False)
+        #normfluxes, Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(self.av, self.ebv, fluxes=flux, intensities=corr_intensities)
+        normfluxes, Idered, I_dered_norCorUndAbs = self.Halpha2Hbeta_dered(self.av, self.ebv, fluxes=None, intensities=None)
         if self.errs_list != None:
             errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, errs_EW = self.get_uncertainties()
             #flambdas = find_flambdas(self.cHbeta, self.catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
@@ -1168,14 +1176,14 @@ class BasicOps:
                 perrEW.append(erp)  
             cols_2write_in_file = [self.catalog_wavelength, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, normfluxes, errs_normfluxes, perc_errs_normfluxes, Idered, errs_Idered, perc_errs_I_dered, self.EW, errs_EW, perrEW]
             write_RedCorfile(self.path_and_name_RedCoroutfile, cols_2write_in_file)
-            return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered
+            return normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, flambdas
         else:
             return normfluxes, Idered, I_dered_norCorUndAbs
 
     
 class AdvancedOps(BasicOps):    
     def __init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs, #variables from parent class
-                 case, use_Chbeta, normfluxes, Idered, I_dered_norCorUndAbs, theoCE, He_value, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
+                 case, use_Chbeta, normfluxes, flambdas, Idered, I_dered_norCorUndAbs, theoCE, He_value, writeouts=False, verbose=False, tfile2ndRedCor=None):  #variables from child class
         # Initialize the inherited class
         BasicOps.__init__(self, results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file1, do_errs)
         # Inputs:
@@ -1190,6 +1198,7 @@ class AdvancedOps(BasicOps):
         # Variables defined in the class
         self.lines_pyneb_matches = []
         self.normfluxes = normfluxes
+        self.flambdas = flambdas
         self.Idered = Idered
         self.I_dered_norCorUndAbs = I_dered_norCorUndAbs
         # Define the string added to the name of the text files to be written according to the reddening process used
@@ -1416,8 +1425,8 @@ class AdvancedOps(BasicOps):
             elif line.wave == 2928:
                 I_2928 = line.corrIntens  
             # Sulphur
-            #elif line.wave == 4068:         # S 2
-            #    I_4068 = line.corrIntens    # not using it because it is the weakest of the auroral lines
+            elif line.wave == 4069:         # S 2
+                I_4069 = line.corrIntens    # not using it because it is the weakest of the auroral lines
             elif line.wave == 4076:
                 I_4076 = line.corrIntens  
             elif line.wave == 6716:
@@ -1612,12 +1621,25 @@ class AdvancedOps(BasicOps):
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 3]','6312/9531', 'High', Te[0], Te[1], Terr)
         except Exception as e:
             (NameError,),e
+        
         try:
             self.S2 = pn.Atom("S", "2")
-            tem_diag_S2 = '(L(6716)+L(6731)) / L(4076)'    # Not using 4068 because is too weak
+            tem_diag_S2 = '(L(6716)+L(6731)) / (L(4069)+L(4076))' 
             self.strongS2 = (I_6716 + I_6731)
-            self.temS2 = self.S2.getTemDen(self.strongS2/I_4076, den=100.0, to_eval=tem_diag_S2) 
-            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 2]','(6716+6731)/4076', 'Low', self.temS2[0], self.temS2[1])
+            self.temS2 = self.S2.getTemDen(self.strongS2/(I_4069+I_4076), den=100.0, to_eval=tem_diag_S2) 
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 2]','(6716+31)/(4069+76)', 'Low', self.temS2[0], self.temS2[1])
+            if self.writeouts:
+                Te = self.temS2
+                Terr = numpy.abs(Te[0] - Te[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 2]','(6716+6731)/4076', 'Low', Te[0], Te[1], Terr)
+        except Exception as e:
+            (NameError,),e
+        
+        try:
+            self.S2 = pn.Atom("S", "2")
+            tem_diag_S2 = 'L(6731) / L(4076)'
+            self.temS2 = self.S2.getTemDen(I_6731/I_4076, den=200.0, to_eval=tem_diag_S2) 
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 2]','6731/4076', 'Low', self.temS2[0], self.temS2[1])
             if self.writeouts:
                 Te = self.temS2
                 Terr = numpy.abs(Te[0] - Te[1])
@@ -2709,12 +2731,19 @@ class AdvancedOps(BasicOps):
         print '         12+log(Ctot_thesis) = %0.2f +- %0.2f' % (logele_thes, logeleerr_thes)
         
         # But only print the correct value: if CHbeta take the one from my thesis, else use the ebv one
+        """
         if data2use != None:
             Ctot = Ctot_thesis
             logele = logele_thes
             logeleerr = logeleerr_thes
         else:
-            Ctot = totC_garnett
+        """
+        Ctot = totC_garnett
+        optionCabund = raw_input("Want to use traditional (type 't') or Garnett (type 'g') abundance?")
+        if optionCabund == 'g':
+            logele = totC_gar1
+            logeleerr = totC_gar1_err
+        else:
             logele = logele_gar
             logeleerr = logeleerr_gar
         C_errp = Ctot[1]*100/Ctot[0]
@@ -2982,11 +3011,12 @@ class AdvancedOps(BasicOps):
         percent_Iuncert = self.percerrinten
         absolute_Iuncert = []
         S2N = []
-        for I, perIu in zip(intensities, percent_Iuncert):
+        for w, I, perIu in zip(catalog_lines, intensities, percent_Iuncert):
             errI = I * (perIu/100.0)
             absolute_Iuncert.append(errI)
-            sn = I / errI
-            S2N.append(sn)
+            #print (w, I, errI)
+            #sn = I / errI
+            #S2N.append(sn)
 
         print catalog_lines[Halpha_idx],' = ', intensities[Halpha_idx], '   ', catalog_lines[Hbeta_idx],' = ', intensities[Hbeta_idx]
         print ' ***    I_theo_HaHb =', I_theo_HaHb, '   I_obs_HaHb_initial =', I_obs_HaHb_initial#, '   I_obs_HaHb =', I_obs_HaHb
@@ -3431,7 +3461,10 @@ class AdvancedOps(BasicOps):
         if self.use_Chbeta:
             print '    Performing second iteration of extinction correction ... \n'
             CHbeta, cols_2write_in_file = self.redcor2(theoCE, verbose=False, em_lines=False)
-            #cols_2write_in_file = [catalog_lines, flambdas, self.element, self.ion, self.forbidden, self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, self.errew, self.percerrew]
+            #cols_2write_in_file = [catalog_lines, flambdas, self.element, self.ion, self.forbidden, 
+            #                       self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, 
+            #                       norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, 
+            #                       self.errew, self.percerrew]
             write_RedCorfile(self.tfile2ndRedCor, cols_2write_in_file)
             # cols_2write_in_file contains the following columns:
             # catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, norm_fluxes, errflux, percerrflx, 
