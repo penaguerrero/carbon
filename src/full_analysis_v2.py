@@ -23,7 +23,7 @@ either 6563/4861=2.86 or 4340/4861=0.47
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 17
+object_number = 0
 
 # Is this a TEST run?
 TEST_run = False
@@ -60,13 +60,13 @@ use_given_lineinfo = use_given_lineinfo_list[object_number]
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2               3              4             5               6            7        
 forceTeO3_list = [[10900.,15000.], [8700.,9700.], [7100.,1000.], [6950.,7950.], [14000.,15000.], [9500.,11500.], [11500.,12200.], None,
-                  [13200.,13800], None, [13600,14300.], None, [13400.,13800.], None, [7600.,8600.], [8700.,9600.], None, [15500.,16200.]]
+                  [13200.,13800], None, [13700,14300.], None, [13200.,14200.], None, [7600.,8600.], [8450.,9500.], None, [15500.,16200.]]
 #                       8          9          10         11         12          13        14             15         16         17
 forceTeO3 = forceTeO3_list[object_number]
 
 #                        0               1                2               3        4           5                6          7           8           
 forceTeO2_list = [[10500.,11500.], [9100.,10100.], [8000.,1000.], [7400.,8400], None, [9600.,10900.], [12000.,12400.], None, [12200.,12750.],
-                  None, [12200.,12800.], None, [12400.,12800.], None, [8300.,9000.], [9100.,9900.], None, [13850.,14250.]]
+                  None, None, None, None, None, [8300.,9000.], [8900.,9900.], None, [13850.,14250.]]
 #                   9         10          11         12          13        14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
 
@@ -97,7 +97,7 @@ deblend6563 = False
 
 # Used values of Halpha_width in order to properly correct for reddening
 #                     0    1    2    3    4    5    6    7   8     9   10   11   12   13   14   15   16   17
-Halpha_width_list = [40., 28., 26., 25., 27., 28., 30., 40., 35., 27., 27., 30., 43., 30., 30., 40., 50., 35.]
+Halpha_width_list = [40., 28., 26., 25., 27., 28., 30., 40., 35., 27., 27., 30., 43., 28., 30., 40., 50., 35.]
 Halpha_width = Halpha_width_list[object_number]
 
 # Set theoretical ratios
@@ -105,10 +105,12 @@ I_theo_HaHb = 2.86   # Halpha/Hbeta
 #I_theoHgHb = 0.47   # Hgamma/Hbeta
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
-#                   0            1           2            3            4          5*            6             7            8           
-combos_list = [[2.0, 2.86], [2.0, 2.29], [0.01, 0.01], [2.0, 0.49], [2.0, 2.68], [0.1, 0.001], [0.8, 0.72], [2.0, 0.95], [2.0, 0.84], 
-               [2.0, 0.83], [0.01, 0.01], [2.0, 0.01], [0.8, 0.93], [2.0, 1.85], [2.0, 1.38], [2.7, 4.17], [2.0, 1.3], [0.001, 0.0001]]
-#                   9            10*          11         12          13          14          15            16          17 
+#                   02.86            1           2            3        42.68          5*           
+combos_list = [[2.0, 0.64], [2.0, 2.29], [0.01, 0.01], [2.0, 0.49], [1.0, 0.20], [0.1, 0.001], 
+#                   60.72       7            8        90.5, 0.3            10*          11
+               [0.8, 0.61], [2.0, 0.95], [2.0, 0.7], [0.5, 0.57], [0.07, 0.1], [0.8, 0.01], 
+#                    12          13          140.63      15 0.54          16          17 
+               [0.001, 0.8], [0.001, 0.001], [7.5, 0.58], [2.0, 0.35], [2.0, 1.3], [0.001, 0.0001]]
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
@@ -128,15 +130,15 @@ or3 = originals[2]
 #                                    0                         1         2:or1*1.9, or2*1.85, or3*1.5           3                  4                5
 desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1.2, or2*1.51, or3*1.2], [or1*2.1, or2*2.1, or3*2.1], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
-                            [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [1.6, 3.0, 5.0], [1.6, 3.0, 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
+                            [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [or1, or2, or3], [1.6, or2*2., 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
 #                                   12             13                14               15               16               17                            
-                            [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, 9.8], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
+                            [1.6, 5.0, 5.0], [1.6, 4.5, 5.0], [1.6, 3.0, 5.0], [1.7, 5.6, or3], [1.6, 3.1, 5.1], [1.6, 8.3, 11.0]]
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # corresponding redshifts from observations
 #             0        1        2        3         4         5        6        7         8
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
-          0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.032989, 0.04678, 0.002031]
+          0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.03207, 0.04678, 0.002031]
 #             9       10        11       12        13       14       15       16       17
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
 # tol9=14 is found to have a much different z than that of phase2.... previous value = 0.01195
@@ -340,11 +342,14 @@ print 'This is the E(B-V) = ', ebv
 
 # Do reddening correction 
 # Choose the one we intend to use 
-#redlaw= 'S79H83'   ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
-redlaw = 'CCM89'     ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
-#redlaw = 'oD94'      ## O'Donnell 1994, ApJ, 422, 1580
-#redlaw = 'LMCG03'   ## Gordon et al. (2003, ApJ, 594,279)
-#redlaw = 'B07'       ## Blagrave et al 2007, ApJ, 655, 299
+#redlaw= 'S79 H83'     ## Seaton (1979: MNRAS 187, 73)  and  Howarth (1983, MNRAS 203, 301) Galactic law
+#redlaw = 'CCM89'      ## Cardelli, Clayton & Mathis 1989, ApJ 345, 245
+#redlaw = 'CCM89 Bal07'## Cardelli, Clayton & Mathis 1989, ApJ 345, 245, modified by Balgrave et al 2007, 
+#                         ApJ, 655, 299 for wavlength range 1250<lambda<3030.
+redlaw = 'F99'        ## Fitzpatrick 1999 PASP, 11, 63
+#redlaw = 'oD94'       ## O'Donnell 1994, ApJ, 422, 1580
+#redlaw = 'LMCG03'     ## Gordon et al. (2003, ApJ, 594,279)
+#redlaw = 'B07'        ## Blagrave et al 2007, ApJ, 655, 299
 cHbeta = 0.434*C_Hbeta
 # Names of the text files with the results with errors
 if use_Chbeta:
@@ -367,7 +372,7 @@ print '     Reddening corrected intensities wrote on file:', RedCor_file
 opt_Hlines = True
 kk = metallicity.BasicOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, 
                           RedCor_file, do_errs=flxEW_errs, opt_Hlines=opt_Hlines)
-normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered = kk.do_ops()
+normfluxes, Idered, I_dered_norCorUndAbs, errs_normfluxes, perc_errs_normfluxes, errs_Idered, perc_errs_I_dered, flambdas = kk.do_ops()
 #flambdas = metallicity.find_flambdas(cHbeta, catalog_wavelength, I_dered_norCorUndAbs, normfluxes)
 if use_Chbeta:
     idx4861 = catalog_wavelength.index(4861.33)
@@ -405,7 +410,7 @@ He_value_list = [0.087096, 0.081283, 0.0903325, 0.06166, 0.081283, 0.093325, 0.0
 He_value = He_value_list[object_number]
 #
 advops = metallicity.AdvancedOps(results4object_path, redlaw, cols_in_file, I_theo_HaHb, EWabsHbeta, cHbeta, av, ebv, RedCor_file, do_errs,
-                                 case, use_Chbeta, normfluxes, Idered, I_dered_norCorUndAbs, theoCE, He_value, writeouts, verbose, tfile2ndRedCor)
+                                 case, use_Chbeta, normfluxes, flambdas, Idered, I_dered_norCorUndAbs, theoCE, He_value, writeouts, verbose, tfile2ndRedCor)
 
 lines_pyneb_matches = advops.perform_advanced_ops(forceTeH=forceTeO3, forceTeL=forceTeO2, forceNe=forceNe, theoCE=theoCE)
 
