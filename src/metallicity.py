@@ -1029,7 +1029,7 @@ class BasicOps:
             I_dered_noCorUndAbs[i] = I_dered_noCorUndAbs[i]/I_dered_noCorUndAbs[Hbeta_idx] * 100.0
             print w, flambdas[i], norm_fluxes[i], I_dered_noCorUndAbs[i], norm_intensities[i]#, norm_fluxes[Hbeta_idx]
         """
-        raw_input()
+        #raw_input()
         # Find observed Halpha/Hbeta ratio
         Halpha_idx = catalog_lines.index(6563)
         Hbeta_idx = catalog_lines.index(4861)
@@ -1524,6 +1524,32 @@ class AdvancedOps(BasicOps):
         except Exception as e:
             (NameError,),e
         try:
+            self.O3 = pn.Atom("O", "3")
+            self.tem_diag_O3 = 'L(4959) / L(4363)'
+            self.strongO3 = self.I_4959
+            self.TO3 = self.O3.getTemDen(self.strongO3/I_4363, den=100., to_eval=self.tem_diag_O3)
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 3]','4959/4363', 'Medium', self.TO3[0], self.TO3[1])
+            if self.writeouts:
+                Terr = numpy.abs(self.TO3[0] - self.TO3[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[O 3]','5007/4363', 'Medium', self.TO3[0], self.TO3[1], Terr)
+            #self.O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
+        except Exception as e:
+            (NameError,),e
+        try:
+            self.O3 = pn.Atom("O", "3")
+            self.tem_diag_O3 = '(L(4959)+L(5007)) / L(4363)'
+            #print 'ratio of O3 = ', (I_4959+I_5007)/I_4363
+            #self.tem_diag_O3 = 'L(5007) / L(4363)'
+            self.strongO3 = self.I_5007
+            self.TO3 = self.O3.getTemDen((self.I_4959+self.strongO3)/I_4363, den=100., to_eval=self.tem_diag_O3)
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[O 3]','4959+5007/4363', 'Medium', self.TO3[0], self.TO3[1])
+            if self.writeouts:
+                Terr = numpy.abs(self.TO3[0] - self.TO3[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[O 3]','5007/4363', 'Medium', self.TO3[0], self.TO3[1], Terr)
+            #self.O3.plotGrotrian(tem=1e4, den=1e2, thresh_int=1e-3, unit = 'eV')
+        except Exception as e:
+            (NameError,),e
+        try:
             self.N2 = pn.Atom("N", "2")
             tem_diag_N2 = 'L(6548) / L(5755)'    #'(L(6548)+L(6584)) / L(5755)'
             self.strongN2 = I_6548             #(I_6548 + I_6584)
@@ -1608,15 +1634,26 @@ class AdvancedOps(BasicOps):
         self.TS3 = [0.0, 0.0]
         try:
             self.S3 = pn.Atom("S", "3")
+            S3ratio = I_6312 / I_9069 
+            self.TS3 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9069)
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 3]','6312/9069', 'High', self.TS3[0], self.TS3[1])
+            if self.writeouts:
+                Te = self.TS3
+                Terr = numpy.abs(Te[0] - Te[1])
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 3]','6312/9069', 'High', Te[0], Te[1], Terr)
+        except Exception as e:
+            (NameError,),e
+        try:
+            self.S3 = pn.Atom("S", "3")
             S3ratio = I_6312 / I_9531 
             self.strongS3 = I_9531
             #S3ratio = I_6312 / I_9069   # with other strong line
             #self.strongS3 = I_9069
             #print 'ratio of S3 = ', S3ratio
-            self.TS3 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
-            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 3]','6312/9531', 'High', self.TS3[0], self.TS3[1])
+            self.TS3_2 = self.S3.getTemDen(S3ratio, den=100., wave1=6312, wave2=9531)
+            print '   {:<8} {:<25} {:<10} {:<15} {:<15}'.format('[S 3]','6312/9531', 'High', self.TS3_2[0], self.TS3_2[1])
             if self.writeouts:
-                Te = self.TS3
+                Te = self.TS3_2
                 Terr = numpy.abs(Te[0] - Te[1])
                 print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 3]','6312/9531', 'High', Te[0], Te[1], Terr)
         except Exception as e:
@@ -1857,6 +1894,7 @@ class AdvancedOps(BasicOps):
             
         ### Density measurement from [Fe III] lines -- taken from Peimbert, Pena-Guerrero, Peimbert (2012, ApJ, 753, 39)
         self.TO2gar = [0.0, 0.0]
+        self.TO2S3gar = [0.0, 0.0]
         if self.TO3[0] != 0.0:
             if not math.isnan(self.TO3[0]):
                 # Iron
@@ -1900,9 +1938,15 @@ class AdvancedOps(BasicOps):
                 # 2) using equation of Garnett, D. R. 1992, AJ, 103, 1330
                 self.TO2gar = 0.7 * self.TO3 + 3000.
                 TO2gar_err = numpy.abs(self.TO2gar[0] - self.TO2gar[1])
-                print 'Theoretically obtained temperature of O2 from Garnet 1992 = ', self.TO2gar
+                print 'Theoretically obtained temperature of O2 from Garnett 1992 = ', self.TO2gar
                 if self.writeouts:
                     print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2gar[0], self.TO2gar[1], TO2gar_err)
+                self.TO2S3gar[0] = 0.7 * self.TS3[0] + 3000.
+                self.TO2S3gar[1] = 0.7 * self.TS3[1] + 3000.
+                TO2S3gar_err = numpy.abs(self.TO2S3gar[0] - self.TO2S3gar[1])
+                print 'Theoretically obtained temperature of O2 derived from S3 according to Garnet 1992 = ', self.TO2S3gar
+                if self.writeouts:
+                    print >> outf, '{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('Te[O 2]','Garnett 1992', 'Low', self.TO2S3gar[0], self.TO2S3gar[1], TO2S3gar_err)
         # Make sure that the temperatures and densities file closes properly
         if self.writeouts:
             outf.close()
@@ -2201,10 +2245,10 @@ class AdvancedOps(BasicOps):
         #logOtoterr = numpy.log10(numpy.abs(100+O_errp) / numpy.abs(100-O_errp))/2.0
         logOtoterr = Ototerr / (2.303 * Otot)        # equivalent method to above
         print '    O_tot = %0.2f +- %0.2f ' % (logOtot, logOtoterr)
-        print '     O^3+/H+ = ', self.atom_abun['O3'][0], ' +- ', self.atom_abun['O3'][1], '= %0.0f percent' % (O3per)
-        print '     O^3+/H+ = %0.2f  +- %0.2f' % (logO3, errlogO3)
-        print '     O^2+/H+ = ', self.atom_abun['O2'][0], ' +- ', self.atom_abun['O2'][1], '= %0.0f percent' % (O2per)
-        print '     O^2+/H+ = %0.2f  +- %0.2f' % (logO2, errlogO2)
+        print '     O++/H+ = ', self.atom_abun['O3'][0], ' +- ', self.atom_abun['O3'][1], '= %0.0f percent' % (O3per)
+        print '     O++/H+ = %0.2f  +- %0.2f' % (logO3, errlogO3)
+        print '     O+/H+ = ', self.atom_abun['O2'][0], ' +- ', self.atom_abun['O2'][1], '= %0.0f percent' % (O2per)
+        print '     O+/H+ = %0.2f  +- %0.2f' % (logO2, errlogO2)
         #print '    absOtot = ', Otot, '+-', Ototerr, ', which is', O_errp,'% of error'
         print '    absOtot = %0.3e +- %0.3e (~%0.0f percent)' % (Otot, Ototerr, O_errp)
         print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
@@ -2575,6 +2619,7 @@ class AdvancedOps(BasicOps):
         #I_C3 = self.strongC3
         I_C3 = self.I_1909
         C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_C3[0]/I_1663[0])
+
         # error calculation
         '''
         uplimC2toO2_temp = 0.089 * numpy.exp(-1.09/tpluserr) * (I_C3[0]/I_1663[0])
@@ -2642,6 +2687,7 @@ class AdvancedOps(BasicOps):
             erricfC = 0.20
         icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
         print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
+        print ' I_1909 = ', I_C3, '   I_1666 =', I_1663
         cpp = sorted_atoms.index('C3')
         objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                        'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
@@ -2762,7 +2808,9 @@ class AdvancedOps(BasicOps):
             print '\n-> considering 1909 to be correct: '
             # calculate new intensity of 1666
             I1909 = self.I_1907[0]
-            err1909 = I1909*0.3#self.I_1907[1]
+            err1909 = self.I_1907[1]
+            if self.I_1907[1]/self.I_1907[0] < 0.16: 
+                err1909 = I1909*0.3
             newC2O2 = (10**Ratio / icfC)
             #constant is 0.089*numpy.exp(-1.09/tc)
             new1666 = I1909 * constant/newC2O2 
@@ -2786,7 +2834,7 @@ class AdvancedOps(BasicOps):
             print '-> considering 1606 to be correct: '
             # calculate new intensity of 1666
             I1663 = I_1663[0]
-            err1663 = I_1663[1]
+            err1663 = I_1663[0]*0.59#I_1663[1]
             newC2O2 = (10**Ratio / icfC)
             #constant is 0.089*numpy.exp(-1.09/tc)
             new1909 = I1663 * newC2O2/constant 
@@ -3465,7 +3513,7 @@ class AdvancedOps(BasicOps):
             #                       self.how_forbidden, norm_fluxes, self.errflux, self.percerrflx, 
             #                       norm_Idered, absolute_Iuncert, percent_Iuncert, self.ew, 
             #                       self.errew, self.percerrew]
-            write_RedCorfile(self.tfile2ndRedCor, cols_2write_in_file)
+            #write_RedCorfile(self.tfile2ndRedCor, cols_2write_in_file)
             # cols_2write_in_file contains the following columns:
             # catalog_wavelength, flambdas, element, ion, forbidden, how_forbidden, norm_fluxes, errflux, percerrflx, 
             # norm_Idered, percent_Iuncert, absolute_Iuncert, EW, err_EW, perrEW

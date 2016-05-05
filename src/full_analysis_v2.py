@@ -23,7 +23,7 @@ either 6563/4861=2.86 or 4340/4861=0.47
 objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
                'sbs0948', 'sbs0926', 'sbs1054', 'sbs1319', 'tol1457', 'tol9', 'arp252', 'iras08208', 'sbs1415']
 #                 9           10         11         12         13       14        15         16         17
-object_number = 0
+object_number = 13
 
 # Is this a TEST run?
 TEST_run = False
@@ -53,27 +53,27 @@ create_txt_temdenabunds = False
 # this line tells which set of line info did I take
 #                            0     1     2     3      4       5      6      7     8
 use_given_lineinfo_list = [False, True, False, False, False, False, False, False, False, 
-                           True, False, False, False, False, True, False, True, False]
+                           True, False, False, False, False, True, False, False, False]
 #                            9     10     11     12    13     14     15    16    17
 use_given_lineinfo = use_given_lineinfo_list[object_number]
 
 # In case of wanting to use a specific temperature and/or density (accepts values with errors as lists)
 #                       0                1               2               3              4             5               6            7        
-forceTeO3_list = [[10900.,15000.], [8700.,9700.], [7100.,1000.], [6950.,7950.], [14000.,15000.], [9500.,11500.], [11500.,12200.], None,
-                  [13200.,13800], None, [13700,14300.], None, [13200.,14200.], None, [7600.,8600.], [8450.,9500.], None, [15500.,16200.]]
-#                       8          9          10         11         12          13        14             15         16         17
+forceTeO3_list = [[10900.,11900.], [8400.,9600.], [7350.,1000.], [6850.,7950.], [12500.,13800.], [11500.,12500.], [9600.,1000.], [12500.,13500.],
+                  [12600.,13600], None, [13700,14300.], None, [13200.,14200.], None, [7600.,8600.], [8450.,9500.], [9700., 10500.], [15500.,16600.]]
+#                       8          9          10         11         12          13        14             15               16           17
 forceTeO3 = forceTeO3_list[object_number]
 
-#                        0               1                2               3        4           5                6          7           8           
-forceTeO2_list = [[10500.,11500.], [9100.,10100.], [8000.,1000.], [7400.,8400], None, [9600.,10900.], [12000.,12400.], None, [12200.,12750.],
+#                        0          1     2     3     4     5     6     7     8           
+forceTeO2_list = [[10500.,11500.], None, None, None, None, None, None, None, None,
                   None, None, None, None, None, [8300.,9000.], [8900.,9900.], None, [13850.,14250.]]
 #                   9         10          11         12          13        14             15         16        17 
 forceTeO2 = forceTeO2_list[object_number]
 
 #                   0           1             2              3        4         5             6           7           8           
-forceNe_list = [[200,900], [100., 650.], [220., 3000.], [100, 2100], None, [100., 3000.], [100,300], [250.,80.], [140., 80],
-                [250.,80],  [100,200.], None, None, None, [180.,60.], [300,100], 100., [100, 200.]]
-#                   9          10        11    12    13       14         15      16         17 
+forceNe_list = [[200,900], [100., 650.], [120., 3000.], [100, 2100], [375, 1000], [100., 3000.], [100,300], [400.,180.], [140., 80],
+                [250.,80],  [100,200.], None, None, [400., 1000], [180.,60.], [300,100], 100., [100, 200.]]
+#                   9          10        11    12           13       14         15      16         17 
 forceNe = forceNe_list[object_number]
 
 # use this option if object is VERY faint and want to use thinner widths for emission lines
@@ -84,8 +84,8 @@ faintObj_list = [False, False, True, False, True, True, False, True, True,
 faintObj = faintObj_list[object_number]
 
 # use this option if wanting to rebin or not
-#                       0      1      2     3      4      5     6     7     8
-perform_rebin_list = [True, False, True, True, False, True, True, True, False, 
+#                       0      1     2     3     4      5     6     7     8
+perform_rebin_list = [True, False, True, True, False, True, True, True, True, 
                       False, False, True, True, True, True, True, True, True]
 #                      9      10    11    12     13    14    15     16     17
 perform_rebin = perform_rebin_list[object_number]
@@ -106,11 +106,11 @@ I_theo_HaHb = 2.86   # Halpha/Hbeta
 
 # Found values of EWabsHbeta and C_Hbeta in case the E(B-V) and Rv values are not known
 #                   02.86            1           2            3        42.68          5*           
-combos_list = [[2.0, 0.64], [2.0, 2.29], [0.01, 0.01], [2.0, 0.49], [1.0, 0.20], [0.1, 0.001], 
-#                   60.72       7            8        90.5, 0.3            10*          11
-               [0.8, 0.61], [2.0, 0.95], [2.0, 0.7], [0.5, 0.57], [0.07, 0.1], [0.8, 0.01], 
+combos_list = [[2.0, 0.64], [2.0, 0.22], [2.0, 0.14], [2.5, 0.35], [1.0, 0.19], [0.5, 0.03], 
+#                   6             7            8        90.5, 0.3      10*          11
+               [2.0, 0.1], [2.0, 0.22], [2.0, 0.38], [0.5, 0.57], [0.07, 0.1], [0.8, 0.01], 
 #                    12          13          140.63      15 0.54          16          17 
-               [0.001, 0.8], [0.001, 0.001], [7.5, 0.58], [2.0, 0.35], [2.0, 1.3], [0.001, 0.0001]]
+               [0.001, 0.8], [0.001, 0.001], [7.5, 0.58], [2.0, 0.35], [3.4, 0.13], [0.001, 0.0001]]
 combo = combos_list[object_number]
 # Set initial value of EWabsHbeta (this is a guessed value taken from HII regions)
 # for HII region type objects typical values are 2.0-4.0 
@@ -127,7 +127,7 @@ originals = [1.58, 2.73, 4.92]
 or1 = originals[0]
 or2 = originals[1]
 or3 = originals[2]
-#                                    0                         1         2:or1*1.9, or2*1.85, or3*1.5           3                  4                5
+#                                    0                         1         2:or1*1.9, or2*1.85, or3*1.5           3                           4                5
 desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1.2, or2*1.51, or3*1.2], [or1*2.1, or2*2.1, or3*2.1], [2.0, 3.0, 5.0], [1.7, 5.6, 9.8], 
                             #        6              7                 8                9               10               11
                             [or1*2.0, or2*2.0, or3*2.0], [1.8, 4.0, 6.0], [or1, or2, or3], [1.6, or2*2., 5.0], [1.6, 3.5, 5.6], [1.6, 3.9, 5.0],
@@ -136,7 +136,7 @@ desired_disp_listoflists = [[or1*2.0, or2*2.0, or3*2.0], [1.6, 6.5, 5.0], [or1*1
 desired_disp_list = desired_disp_listoflists[object_number]
 
 # corresponding redshifts from observations
-#             0        1        2        3         4         5        6        7         8
+#             0        1        2        3         4     50.021371     6        7         8
 z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
           0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.03207, 0.04678, 0.002031]
 #             9       10        11       12        13       14       15       16       17

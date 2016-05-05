@@ -14,6 +14,7 @@ save_plot = False
 img_type = 'jpg'
 show_LopSan_data = False
 sampleBPTtxt = False
+C_Hbeta = True
 
 ####################################################################################################################################
 
@@ -30,6 +31,11 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 manual_measurement_list = [False, True, False, False, False, False, False, False, False, 
                            True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
+if C_Hbeta:
+#                                 0     1     2     3      4       5      6      7     8
+    manual_measurement_list = [False, True, False, False, False, False, False, False, False, 
+                               True, False, False, False, False, True, False, False, False]
+#                                9     10     11     12    13     14     15    16    17
 
 full_names_list = ['IIIZw 107', 'IRAS 08339+6517', 'MRK 1087', 'MRK 1199', 'MRK 5', 'MRK 960', 'NGC 1741', 'POX 4', 'SBS 0218+003',
                'SBS 0948+532', 'SBS 0926+606', 'SBS 1054+365', 'SBS 1319+579', 'TOL 1457-262', 'TOL 9', 'ARP 252', 'IRAS 08208+2816',
@@ -59,6 +65,11 @@ def get_measured_lines(object_name, manual_measurement):
         file2use = '_measuredLI_RedCor_Ebv.txt'   # my manual line measurements
     else:
         file2use = '_RedCor_Ebv.txt'   # my code's line measurements
+    if C_Hbeta:
+        if manual_measurement:
+            file2use = '_CaseB_measuredLI_2ndRedCor_CHbeta.txt'   # my manual line measurements
+        else:
+            file2use = '_CaseB_2ndRedCor_CHbeta.txt'   # my code's line measurements
     measured_lines_file = 'carbon/results/'+object_name+'/'+object_name+file2use
     measured_lines_file_path_list = string.split(os.getcwd(), sep='carbon')
     measured_lines_file_path = os.path.join(measured_lines_file_path_list[0], measured_lines_file)
@@ -181,6 +192,19 @@ for x0i, y0i, z in zip(x0, y0, objects_list):
         side = 'left'
     if (z == 'tol1457') or (z == 'mrk5') or (z == 'ngc1741') or (z == 'arp252') or (z == 'iiizw107'):
         subycoord = -12
+    if C_Hbeta:
+        subxcoord = -3
+        subycoord = 5
+        side = 'right'
+        if (z == 'mrk960') or (z == 'iras08339') or (z == 'arp252') or (z == 'iras08208'):
+            subxcoord = 5
+            side = 'left'
+        if (z == 'tol1457') or (z == 'sbs0948') or (z == 'tol9'):
+            subycoord = -12
+        if (z == 'sbs0926') or (z == 'iras08339'):
+            subxcoord = 5
+            subycoord = -12
+            side = 'left'
     plt.annotate('{}'.format(z), xy=(x0i,y0i), xytext=(subxcoord, subycoord), ha=side, textcoords='offset points')
     # ONLY Lopez-Sanchez data
     if show_LopSan_data:
@@ -191,7 +215,10 @@ for x0i, y0i, z in zip(x0, y0, objects_list):
     i = i+1
 
 if save_plot:
-    bptfig = '../cloudy_tests/pycloudy/BPT_TEST/sample_BPT.'+img_type
+    if C_Hbeta:
+        bptfig = '../cloudy_tests/pycloudy/BPT_TEST/sample_BPT_CHbeta.'+img_type    
+    else:
+        bptfig = '../cloudy_tests/pycloudy/BPT_TEST/sample_BPT.'+img_type
     fig.savefig(bptfig)
     print 'Figure ', bptfig, ' saved!'
     

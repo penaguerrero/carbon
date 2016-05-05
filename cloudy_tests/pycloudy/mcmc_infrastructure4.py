@@ -102,6 +102,10 @@ def find_Itheo_in_Iobs(IDobs, Iobs, Iobserr, IDmod, Imod):
     return new_Iobs, new_Iobserr, new_Imod
 
 
+def err2oxygen(Oerr, Xerr):
+    ratio_err = (Oerr**Oerr + Xerr*Xerr)**0.5 
+    return ratio_err
+
 def lnpriors(theta, debug=False):
     ''' 
     This function encodes any previous knowledge that we have about the parameters: results from other experiments, 
@@ -113,13 +117,18 @@ def lnpriors(theta, debug=False):
         print 'Entering lnpriors function...'
     He, O, CoverO, NoverO, NeoverO, SoverO = theta
     # Set the abundances set to that of the observed values. Since the boundary conditions are already built-in Cloudy,
-    # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements:
-    he = lntophat(He, 9.5, 12.0) 
-    o = lntophat(O, 7.5, 8.7) 
+    # we will allow them to vary in a wide range. The abundances dictionary is expected to have 6 elements
+    # errors: He,  O,    N,    Ne,  S, let C vary freely
+    errs = [0.03, 0.05, 0.06, 0.06, 0.12] 
+    N_err = err2oxygen(errs[1], errs[2])
+    Ne_err = err2oxygen(errs[1], errs[3])
+    S_err = err2oxygen(errs[1], errs[4])
+    he = lntophat(He, He-errs[0], He+errs[0])#9.5, 12.0) 
+    o = lntophat(O, O-errs[1], O+errs[1]) 
     c = lntophat(CoverO, -1.6, 1.7)
-    n = lntophat(NoverO, -1.7, -0.4) 
-    ne = lntophat(NeoverO, -1.0, 0.01) 
-    s = lntophat(SoverO, -2.3, -1.4) 
+    n = lntophat(NoverO, NoverO-N_err, NoverO+N_err)#-1.7, -0.4) 
+    ne = lntophat(NeoverO, NeoverO-Ne_err, NeoverO+Ne_err)#3-1.0, 0.01) 
+    s = lntophat(SoverO, SoverO-S_err, SoverO+S_err)#-2.3, -1.4) 
     if debug:
         print 'theta = ', theta
         print 'top hat results:', he , c , n , o , ne , s

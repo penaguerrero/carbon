@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 import matplotlib.mlab as mlab
 import string
 import emcee
-import triangle
+import corner
 import argparse
 import itertools
 from collections import OrderedDict
@@ -22,7 +22,7 @@ This script creates the following output:
             - triangle plot after the MCMC chain has been ran
             - write all statistics with chain into a text file
 
-Run from terminal as:  >> python mktriplot.py sbs1415 -n -c
+Run from terminal as:  >> python mktriplot.py sbs1415 -n -c -CHb
 '''
 
 #######################################################################################################################
@@ -62,6 +62,11 @@ parser.add_argument("-f",
                     dest="wt_file",
                     default=False,
                     help='Write file with calculated statistics.')
+parser.add_argument("-CHb",
+                    action='store_true',
+                    dest="C_Hbeta",
+                    default=False,
+                    help='Used CHbeta [True] or E(B-V) [False].')
 args = parser.parse_args()
 
 # name of the object
@@ -72,11 +77,13 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 #### FUNCTIONS
 
-def get_true_abunds(object_name):
+def get_true_abunds(object_name, C_Hbeta):
     object_number = objects_list.index(object_name)
     print object_name, 'is object number ', object_number, ' in the sample list.'
     #fname = os.path.abspath('../../results/Final_meas_abunds.txt')
     Final_meas_abunds = 'carbon/results/Final_meas_abunds.txt'
+    if C_Hbeta:
+        Final_meas_abunds = 'carbon/results/Final_meas_abunds_CHbeta.txt'
     Final_meas_abunds_path_list = string.split(os.getcwd(), sep='carbon')
     fname = os.path.join(Final_meas_abunds_path_list[0], Final_meas_abunds)
     print '-->  looking to read ', fname, '...'
@@ -90,6 +97,8 @@ def get_true_abunds(object_name):
     for i in range(2, len(abunds)):
         true_abunds.append(abunds[i]-abunds[1])
     #print 'these are the benchmark abundances: \n', true_abunds
+    #print '  and benchmark temperatures: \n', true_temps
+    #raw_input()
     return true_abunds, true_temps
 
 def get_Te_percentiles(percentiles_arr, Te_arr, samples2use):
@@ -141,6 +150,23 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     print '\n'+avgabunds0
     print avgabunds1
     print avgabunds2
+    
+    medHe = np.median(He) 
+    medO = np.median(O)
+    medCO = np.median(CO+O)
+    medNO = np.median(NO+O)
+    medNeO = np.median(NeO+O)
+    medSO = np.median(SO+O)
+    medTO3 = np.median(TO3)
+    medTO2 = np.median(TO2)
+    medabunds0 = 'Median abundances: '
+    medabunds1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f   Te_O3 = %d   Te_O2 = %d' % (
+                                   medHe, medO, medCO-medO, medNO-medO, medNeO-medO, medSO-medO, int(medTO3), int(medTO2))
+    medabunds2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f ' % (
+                                                            medHe, medO, medCO, medNO, medNeO, medSO )
+    print '\n'+medabunds0
+    print medabunds1
+    print medabunds2
     
     # now find averages of those models with temperatures within +-1500 of the benchmark values
     subsamples = np.array([]).reshape(0, len(true_abunds))
@@ -224,22 +250,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     psub = subsamples[ whsub, : ]
     TO3whsub = TO3_nearby[whsub]
     TO2whsub = TO2_nearby[whsub]
-    subchi0 = 'Values that best fit the data  from Chi^2 minimization within then '+str(nearby)+'K temperature tolerance are the following:'
-    subchi1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f  Te_O3 = %d   Te_O2 = %d' % (
-                                        psub[0], psub[1], psub[2],  psub[3], psub[4], psub[5], int(TO3whsub), int(TO2whsub) )
-    subchi2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f' % (psub[0], psub[1], 
-                      psub[2]+true_abunds[1], psub[3]+true_abunds[1], psub[4]+true_abunds[1], psub[5]+true_abunds[1] )
-    print '\n'
-    print subchi0
-    print subchi1
-    print subchi2
-    
-    # Chi^2 minimization within subsets
-    whsub = np.where( prob_nearby == max(prob_nearby) )[0][0]
-    psub = subsamples[ whsub, : ]
-    TO3whsub = TO3_nearby[whsub]
-    TO2whsub = TO2_nearby[whsub]
-    subchi0 = 'Values that best fit the data  from Chi^2 minimization within then '+str(nearby)+'K temperature tolerance are the following:'
+    subchi0 = 'Values of subset that best fit the data  from Chi^2 minimization within then '+str(nearby)+'K temperature tolerance are the following:'
     subchi1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f  Te_O3 = %d   Te_O2 = %d' % (
                                         psub[0], psub[1], psub[2],  psub[3], psub[4], psub[5], int(TO3whsub), int(TO2whsub) )
     subchi2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f' % (psub[0], psub[1], 
@@ -257,7 +268,7 @@ def get_bestmodel(He, O, CO, NO, NeO, SO, TO3, TO2, prob, samples, true_abunds, 
     TO2wh = TO2[wh]
     #nruns = 100
     #line1 = 'Values of the %i dimensions that best fit the data in %i runs with %i walkers, are the following:' % (ndim, nruns, nwalkers)
-    minch0 = 'Values that best fit the data from Chi^2 minimization are the following:'
+    minch0 = 'Values whole set that best fit the data from Chi^2 minimization are the following:'
     minch1 = 'He = %0.2f   O = %0.2f   C/O = %0.2f   N/O = %0.2f   Ne/O = %0.2f   S/O = %0.2f  Te_O3 = %d   Te_O2 = %d' % (
                                                                p[0], p[1], p[2], p[3], p[4], p[5], int(TO3wh), int(TO2wh) )
     minch2 = 'He = %0.2f   O = %0.2f     C = %0.2f      N = %0.2f      Ne = %0.2f      S = %0.2f' % (p[0], p[1], p[2]+true_abunds[1], 
@@ -426,12 +437,13 @@ use_subset = args.use_subset
 mk_plots = args.mk_plots
 contours = args.contours
 wt_file = args.wt_file
+C_Hbeta = args.C_Hbeta
 
 # Format of images to save
 img_type = '.jpg'
 
 # Obtain the benchmark or "true" abundances
-true_abunds, true_temps = get_true_abunds(object_name)
+true_abunds, true_temps = get_true_abunds(object_name, C_Hbeta)
 
 # Load the chain and create the samples
 chain_file = os.path.abspath('mcmc_'+object_name+'_chain.dat')
@@ -480,7 +492,7 @@ if mk_plots or contours:
         x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
         print 'These are the quantiles for Te_OIII vs C/O'
-        fig1 = triangle.corner(z, labels=[xlab, ylab], quantiles=quantiles)
+        fig1 = corner.corner(z, labels=[xlab, ylab], quantiles=quantiles)
     COTemp = object_name+'_tempsVsCO'+img_type
     fig1.savefig(os.path.abspath(COTemp))
     #plt.show()
@@ -499,7 +511,7 @@ if mk_plots or contours:
     elif contours:
         x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
-        fig2 = triangle.corner(z, labels=[xlab, ylab])
+        fig2 = corner.corner(z, labels=[xlab, ylab])
     COHO = object_name+'_COvsOH'+img_type
     fig2.savefig(os.path.abspath(COHO))
     #plt.show()
@@ -529,8 +541,8 @@ if mk_plots or contours:
         plt.plot(x, y, 'k.')
         plt.plot(x, line_fit, 'b:')
         print 'These are the quantiles for C/H to O/H'
-        fig3 = triangle.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
-                               extents=[(7.5, 9.0), (ymin, ymax)])
+        fig3 = corner.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
+                               range=[(7.5, 9.0), (ymin, ymax)])
     CHHO = object_name+'_CHvsOH'+img_type
     fig3.savefig(os.path.abspath(CHHO))
     #plt.show()
@@ -549,7 +561,7 @@ if mk_plots or contours:
     elif contours:
         x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
-        fig4 = triangle.corner(z, labels=[xlab, ylab], extents=[(8000.0, 18000.0), (ymin, ymax)])
+        fig4 = corner.corner(z, labels=[xlab, ylab], range=[(8000.0, 18000.0), (ymin, ymax)])
     CTemp = object_name+'_tempsVsCH'+img_type
     fig4.savefig(os.path.abspath(CTemp))
     #plt.show()
@@ -568,8 +580,8 @@ if mk_plots or contours:
     elif contours:
         x, y, z = get_zarr(x, y)
         plt.plot(x, y, 'k.')
-        fig5 = triangle.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
-                               extents=[(6.0, 8.8), (-2.6, 0.7)])
+        fig5 = corner.corner(z, labels=[xlab, ylab], #quantiles=quantiles, 
+                               range=[(6.0, 8.8), (-2.6, 0.7)])
     NC = object_name+'_NCvsCH'+img_type
     fig5.savefig(os.path.abspath(NC))
     #plt.show()
@@ -585,7 +597,7 @@ if mk_plots or contours:
     plt.ylim(ymin, ymax)
     CN = CO - NO
     x, y, z = get_zarr(NO, CN)
-    fig = triangle.corner(z, labels=[xlab, ylab], extents=[(-1.7, -0.6), (ymin, ymax)])
+    fig = corner.corner(z, labels=[xlab, ylab], range=[(-1.7, -0.6), (ymin, ymax)])
     fn = object_name+'_NOvsCN.jpg'
     fig.savefig(os.path.abspath(fn))
     print 'Figure ', fn, 'saved!' 
@@ -627,7 +639,7 @@ if mk_plots or contours:
     avgb = sum(allb)/len(allb)
     print 'Average values:  m = %0.3f   b= %0.3f' % (avgm, avgb)
     #linesamples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
-    #fig = triangle.corner(linesamples, labels=["$m$", "$b$"], truths=[m, b])
+    #fig = corner.corner(linesamples, labels=["$m$", "$b$"], truths=[m, b])
     #fig.show()
 
     nwalkers = 100
@@ -635,13 +647,13 @@ if mk_plots or contours:
     # plot of abundance ratios including the benchmark abundances
     print 'These are the quantiles for triangle plot: '
     labels = ["$He$", "$O$", "$C/O$", "$N/O$", "$Ne/O$", "$S/O$"]
-    fig = triangle.corner(samples, 
+    fig = corner.corner(samples, 
                           labels=labels, 
                           truths=[true_abunds[0], true_abunds[1], true_abunds[2], true_abunds[3],
                                   true_abunds[4], true_abunds[5]],
                           #quantiles=quantiles,
                           # Limits:    He           O            C/O          N/O           Ne/O         S/O
-                          extents=[(9.5, 11.7), (7.55, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.4)]
+                          range=[(9.5, 11.7), (7.55, 8.6), (-1.6, 1.6), (-1.7, -0.4), (-1.0, 0.01), (-2.3, -1.4)]
                           )
     pltbench = 'mcmc_'+object_name+"_ratios_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     if FULL_chain_file:
@@ -649,7 +661,7 @@ if mk_plots or contours:
     fig.savefig(os.path.abspath(pltbench))
         
     # plot of the ratios without the benchmark abundances
-    fig = triangle.corner(samples, labels=labels)
+    fig = corner.corner(samples, labels=labels)
     pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_initb"+img_type
     if FULL_chain_file:
         pltwithoutbench = 'mcmc_'+object_name+"_ratios2_"+repr(nwalkers)+"w"+repr(nruns)+"r"+"_FULL_initb"+img_type

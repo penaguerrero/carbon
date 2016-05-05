@@ -10,6 +10,10 @@ This script creates the LaTeX tables of the intensities with errors for the pape
 
 # choose the set of object to make each table: 1= from obj 0-5, 2= from obj 6 to 11, 3= from obj 12 to 17
 obj_set = 3
+# do you want to use line measurements from analysis with E(B-V) or with CHbeta?
+CHbeta = True
+
+#########################################
 
 txt_out = '../results/IntensitiesTable'
 
@@ -21,8 +25,13 @@ objects_list = ['mrk960', 'sbs0218', 'mrk1087', 'ngc1741', 'mrk5', 'mrk1199', 'i
 #                            0     1     2     3      4       5      6      7     8
 use_given_lineinfo_list = [False, False, True, False, False, False, True, True, False,
                            False, True, True, True, False, False, False, False, False]
-#                            9     10     11     12    13     14     15    16    17
-
+#                            9     10    11    12     13     14     15    16    17
+if CHbeta:
+    #                            0     1     2     3      4       5      6      7     8
+    use_given_lineinfo_list = [False, False, False, False, False, False, False, True, False,
+                               False, True, True, False, False, False, False, False, False]
+    #                            9     10     11     12    13     14     15    16    17
+    
 if obj_set == 1:
     objects_list = objects_list[0:6]
     use_given_lineinfo_list = use_given_lineinfo_list[0:6]

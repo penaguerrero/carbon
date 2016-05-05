@@ -14,7 +14,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 0
+object_number = 1
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
 specs = [2]
 # set commented parameters, choose options 0 through 3
@@ -35,17 +35,18 @@ splot_text = True
 # Do you want to see the plots of the fitted continuum?
 plot = True
 '''
-# Do you want to use Vacuum wavelengths?
-vacuum = False
-# Do you want to consider the first and last 150 A? If yes, set to False
-nullfirst150 = True
-lastangstroms2omit = None
+divide_by_continuum = False   # Change to true if you want to divide by the continuum instead of subtract
+vacuum = False               # Do you want to use Vacuum wavelengths?
+nullfirst150 = True          # Do you want to consider the first and last 150 A? If yes, set to False
+lastangstroms2omit = None    # How many Angstroms to omit at the end? Number or None
+firstangstroms2omit = None#300.0  # How many A to omit at the beginning? Number or None
+wins2omit = None#[[4567.0, 5161.0], [6338., 6840.]] # these must be z-corrected
 if specs == [2]:   # make sure it is always true for the NIR spectrum
-    lastangstroms2omit = 1000.0
+    lastangstroms2omit = 500.0
 
 # lists to make faster the text files for splot:
 #          text_table       normalize correct_redshift rebin   splot_text          plot
-create_text_files = True
+create_text_files = False
 reg     = [create_text_files, False,     False,      False,   create_text_files,    True]
 norm    = [create_text_files, True,      True,       False,   create_text_files,    True]
 normreb = [create_text_files, True,      True,        True,   create_text_files,    True]
@@ -72,14 +73,14 @@ for s in specs:
                    [3,3,3],[2,3,3], [3,3,3], [2,3,3], [2,2,2], [3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
     sigmas_away = sigmas_lsit[object_number][s]
     # in case I want to use a specific order for the polynomial, else it will be determined by the algorithm
-    order_list = [[9,5,9], [8,3,5], [2,7,3], [7,2,3], [3,1,1], [5,5,5], 
-                  [7,3,3], [7,1,1], [3,1,1], [7,2,1], [7,1,1], [7,1,1], 
-                  [5,1,1], [3,1,1], [9,3,1], [9,9,7], [7,1,1], [7,1,1]]
+    order_list = [[9,5,9], [8,3,5], [2,7,3], [7,2,3], [3,3,1], [5,5,5], 
+                  [7,3,3], [7,8,1], [3,2,9], [7,2,1], [7,1,1], [7,1,1], 
+                  [5,1,1], [3,1,1], [9,3,1], [9,9,7], [7,7,3], [7,5,1]]
     order = order_list[object_number][s]
     # What is the width of the window to use to find local continuum?
-    window_list = [[150,90,80], [70,400,800], [100,80,500], [80,130,280], [150,250,50], [100,300,200], 
-                   [70,350,350], [80,600,550], [100,250,250], [80,95,150], [50,350,350], [80,250,300], 
-                   [70,550,550], [300,300,300], [50,250,250], [100,380,200], [50,350,500], [40,550,550]]
+    window_list = [[150,90,80], [70,400,800], [100,80,500], [80,130,280], [150,250,100], [100,300,200], 
+                   [70,350,350], [80,60,550], [100,250,650], [80,95,150], [50,350,350], [80,250,300], 
+                   [70,550,550], [300,300,300], [50,250,250], [100,380,200], [50,250,500], [40,550,550]]
     window = window_list[object_number][s]
 
 object_name = objects_list[object_number]
@@ -117,11 +118,12 @@ for s in specs:
     if (object_name=='mrk5') and (s==1):
         altern = '../results/mrk5/mrk5_optspec.txt'
         altern_file = True
-    if (object_name=='mrk960') and (s==1):
-        altern = '../results/mrk960/mrk960_optspec_corr.txt'
-        altern_file = True
+    #if (object_name=='mrk960') and (s==1):
+    #    altern = '../results/mrk960/mrk960_optspec_corr.txt'
+    #    altern_file = True
     if (object_name=='sbs0218') and (s==1):
-        altern = '../results/sbs0218/sbs0218_opt_corr.txt'
+        #altern = '../results/sbs0218/sbs0218_opt_corr.txt'
+        altern = '../results/sbs0218/sbs0218_optspec_corr.txt'
         altern_file = True
     if (object_name=='sbs0948') and (s==1):
         altern = '../results/sbs0948/sbs0948_optspec_corr.txt'
@@ -157,10 +159,22 @@ if altern_file:
 # Terminations used for the lines text files
 spectrum_region = ["_nuv", "_opt", "_nir"]
 
-z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.02346, 0.013631, 0.01201, 0.05842,
+z_list = [0.01985, 0.019581, 0.02813, 0.01354, 0.002695, 0.021371, 0.013631, 0.01201, 0.05842,
           0.046240, 0.013642, 0.002010, 0.0073, 0.01763, 0.01199, 0.032989, 0.04678, 0.002031]
 # original phase 2 z for iras08339 0.019113, mrk960 0.021371, ngc1741 0.013631, tol1457 0.01763, tol9 0.010641
-
+if wins2omit is not None:
+    zshift_wins2omit = []
+    if choose_conditions4textfiles == 0:
+        for item in wins2omit:
+            w0 = item[0] * (1.0+z_list[object_number])
+            w1 = item[1] * (1.0+z_list[object_number])
+            w_pair = [w0, w1]
+            zshift_wins2omit.append(w_pair)
+    else:
+        zshift_wins2omit = wins2omit
+else:
+    zshift_wins2omit = None
+        
 '''The STIS data handbook gives a dispersion of 0.60, 1.58, 2.73, and 4.92 Angstroms per pixel for grating settings G140L, 
 G230L, G430L, and G750L, respectively. The resolution element is ~1.5 pixels. '''
 originals = [1.58, 2.73, 4.92]
@@ -191,12 +205,14 @@ for d, s in zip(data, specs):
         spectrum_region[s] = spectrum_region[s]+'_zcorr'
     else:
         z = 0.0  # this is non-important because we are NOT correcting for redshift
-    divide_by_continuum = False   # Change to true if you want to divide by the continuum instead of subtract  
+      
     object_spectra, fitted_continuum, err_cont_fit = spectrum.fit_continuum(object_name, d, z, order=order, sigmas_away=sigmas_away, 
                                                                             window=window, plot=plot, z_correct=correct_redshift, 
                                                                             normalize=normalize, nullfirst150=nullfirst150,
                                                                             divide_by_continuum=divide_by_continuum,
-                                                                            lastangstroms2omit=lastangstroms2omit)
+                                                                            lastangstroms2omit=lastangstroms2omit,
+                                                                            firstangstroms2omit=firstangstroms2omit, 
+                                                                            wins2omit=zshift_wins2omit)
     wavs, fluxs = object_spectra
     _, cont_fluxs = fitted_continuum
 

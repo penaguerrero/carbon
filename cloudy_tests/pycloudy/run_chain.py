@@ -70,24 +70,24 @@ model_name = 'mcmc_'+object_name
 
 # Abundances of:
 #                  He     O      C      N      Ne     S
-abunds_lists = [[10.94,  8.20,  7.32,  7.07,  7.40,  6.42],   # 0 = iiizw107  ** S from Lop-San09
-                [10.91,  8.31,  8.30,  7.51,  7.54,  6.55],   # 1 = iras08339  ** S from Lop-San09 = --
-                [10.97,  8.20,  8.52,  6.77,  7.72,  6.50],   # 2 = mrk1087 ** does not have a "true" initial S value
-                [10.79,  7.92,  7.84,  7.26,  7.81,  6.92],   # 3 = mrk1199  ** S from Lop-San09
-                [10.91,  8.07,  6.82,  6.71,  7.35,  6.44],   # 4 = mrk5  ** S from Lop-San09
-                [10.97,  8.01,  7.12,  7.34,  7.72,  6.65],   # 5 = mrk960  ** S from Lop-San09
-                [10.94,  8.00,  6.94,  6.60,  7.23,  5.81],   # 6 = ngc1741  ** S from Lop-San09 = 6.36
-                [10.88,  8.00,  7.16,  6.50,  7.26,  6.02],   # 7 = pox4  ** S from Lop-San09 = 6.24
-                [10.94,  7.92,  6.59,  6.84,  7.24,  6.45],   # 8 = sbs0218  ** S from Lop-San09 = 6.29                
-                [10.88,  8.07,  7.38,  6.16,  7.30,  6.34],   # 9 = sbs0948  ** S from Lop-San09 
-                [10.94,  7.93,  7.20,  6.48,  6.38,  6.34],   # 10 = sbs0926  ** S from Lop-San09 = 6.29
-                [10.88,  7.97,  7.33,  6.59,  7.33,  6.21],   # 11 = sbs1054  ** S from Lop-San09
-                [10.94,  8.17,  7.21,  6.52,  7.35,  6.17],   # 12 = sbs1319  ** S from Lop-San09 = 6.29
-                [10.95,  7.83,  6.32,  6.27,  7.00,  6.18],   # 13 = tol1457  ** S from Lop-San09
-                [10.93,  8.64,  8.75,  7.80,  7.84,  7.10],   # 14 = tol9  ** S from Lop-San09 = 6.97
-                [10.97,  8.32,  8.11,  7.71,  7.90,  7.00],   # 15 = arp252  ** S from Lop-San09 = --
-                [11.09,  8.55,  7.81,  7.44,  7.66,  6.28],   # 16 = iras08208  ** S from Lop-San09 = 6.39
-                [10.77,  7.56,  6.00,  6.04,  6.67,  5.89]]   # 17 = sbs1415  ** S from Lop-San09 
+abunds_lists = [[10.94,  8.22,  7.50,  7.07,  7.30,  6.42],   # 0 = iiizw107  ** S from Lop-San09
+                [10.91,  8.42,  8.27,  7.51,  8.25,  7.13],   # 1 = iras08339  ** S from Lop-San09 = --
+                [10.84,  8.35,  8.81,  7.76,  8.12,  6.79],   # 2 = mrk1087 ** does not have a "true" initial S value
+                [10.79,  8.29,  8.88,  7.90,  7.66,  6.75],   # 3 = mrk1199  ** S from Lop-San09
+                [10.91,  7.96,  6.95,  6.71,  7.54,  6.46],   # 4 = mrk5  ** S from Lop-San09
+                [10.97,  7.86,  6.90,  7.34,  7.29,  6.71],   # 5 = mrk960  ** S from Lop-San09
+                [10.94,  8.25,  7.83,  7.10,  7.68,  6.00],   # 6 = ngc1741  ** S from Lop-San09 = 6.36
+                [10.91,  8.05,  7.36,  6.50,  7.29,  6.08],   # 7 = pox4  ** S from Lop-San09 = 6.24
+                [10.88,  7.99,  6.82,  6.84,  7.27,  6.36],   # 8 = sbs0218  ** S from Lop-San09 = 6.29                
+                [10.88,  8.03,  7.33,  6.16,  7.44,  6.34],   # 9 = sbs0948  ** S from Lop-San09 
+                [10.94,  7.98,  7.29,  6.48,  6.81,  6.49],   # 10 = sbs0926  ** S from Lop-San09 = 6.29
+                [10.88,  8.06,  7.41,  6.59,  7.62,  6.21],   # 11 = sbs1054  ** S from Lop-San09
+                [10.94,  8.19,  7.66,  6.52,  7.46,  6.05],   # 12 = sbs1319  ** S from Lop-San09 = 6.29
+                [10.95,  7.83,  6.36,  6.27,  7.09,  6.18],   # 13 = tol1457  ** S from Lop-San09
+                [10.93,  8.58,  8.54,  7.80,  8.10,  6.96],   # 14 = tol9  ** S from Lop-San09 = 6.97
+                [11.09,  8.13,  7.98,  7.71,  7.89,  6.89],   # 15 = arp252  ** S from Lop-San09 = --
+                [10.97,  8.43,  7.54,  7.44,  7.82,  6.75],   # 16 = iras08208  ** S from Lop-San09 = 6.39
+                [10.77,  7.56,  5.92,  6.04,  6.66,  5.89]]   # 17 = sbs1415  ** S from Lop-San09 
 abunds = abunds_lists[object_number]
 
 theta = []
@@ -100,11 +100,19 @@ print 'abundances of: He =', abunds[0], ' O =', abunds[1], ' C =', abunds[2], 'N
 print 'INITIAL values of the 6 dimensions used in the MCMC:'
 print '    He =', theta[0], '   O =', theta[1], '   C/O = ', theta[2], '   N/O = ', theta[3], '   Ne/O = ', theta[4], '   S/O = ', theta[5]
 
-# Was the measurement of the line intensities manual or with the code?
+# Was the measurement of the line intensities manual or with the code (this is for E(B-V))?
 #                            0     1     2     3     4       5      6      7     8
 manual_measurement_lists = [False, True, True, True, False, False, False, False, False, 
                             True, False, True, False, False, True, False, True, False]
 #                            9     10     11     12    13     14     15    16    17
+'''
+# For CHbeta
+#                            0     1     2     3      4       5      6      7     8
+manual_measurement_lists = [False, True, False, False, False, False, False, False, False, 
+                           True, False, False, False, False, True, False, False, False]
+#                            9     10     11     12    13     14     15    16    17
+
+'''
 manual_measurement = manual_measurement_lists[object_number]
 
 # start the timer to compute the whole running time

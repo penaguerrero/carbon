@@ -2,7 +2,7 @@ import numpy
 import os
 import string
 import emcee
-import triangle
+import corner
 import scipy.optimize as op
 from matplotlib import pyplot as plt
 from copy import deepcopy
@@ -26,7 +26,9 @@ correct_values = False
 # Type of image to be saved?
 typeofimage = '.jpg'
 # Show fitted line?
-show_fitted_line = False
+show_fitted_line = True
+# Use results from measurements with C_Hbeta?
+C_Hbeta = True
 
 ############################################################################################################################################
 
@@ -111,7 +113,9 @@ def approxC(N, O):
     ''' This function uses equation of Carbon paper to determine C from N and O arrays.'''
     #return 0.5 - 0.18 * (N - O) + N   # previous
     #return 0.35 - 0.30 * (N - O) + N   # MCMC
-    return 0.30 - 0.18 * (N - O) + N   # MCMC without Sun, IZw18, Orion, and 30 Dor
+    #return 0.30 - 0.18 * (N - O) + N   # MCMC without Sun, IZw18, Orion, and 30 Dor, deriving C/N
+    #return N - 0.297 - 0.223*(N - O)  # MCMC without Sun, IZw18, Orion, and 30 Dor, deriving N/C
+    return 0.297 - 0.223*(N - O) + N  # MCMC without Sun, IZw18, Orion, and 30 Dor, deriving C/N
 
 def err_approxC(N, Nerr, O, Oerr):
     ''' This function uses equation of Carbon paper to determine the error in C from N and O arrays.'''
@@ -135,6 +139,8 @@ full_results_path = os.path.abspath(results_path)
 # read the results file
 if use_our_sample_ONLY:
     resfile = os.path.join(full_results_path, 'abunds_OCNNe.txt')
+    if C_Hbeta:
+        resfile = os.path.join(full_results_path, 'abunds_OCNNe_CHbeta.txt')
     rows2skip = 5
     rf = numpy.loadtxt(resfile, skiprows=rows2skip, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18), unpack=True)
     OH, OHerr, CO, COerr, NO, NOerr, NeO, NeOerr, C2O2, C2O2err, XO2, O2O1, O2O1err, N2O2, N2O2err, Z, ifc, ifcerr = rf
@@ -147,6 +153,8 @@ if use_our_sample_ONLY:
         #print '%1.3f  %1.3f' % (eachZ, Z2solar)
 else:
     resfile = os.path.join(full_results_path, 'abunds_OCNNe_plusotherrefs.txt')
+    if C_Hbeta:
+        resfile = os.path.join(full_results_path, 'abunds_OCNNe_plusotherrefs_CHbeta.txt')
     rows2skip = 10
     rf = numpy.loadtxt(resfile, skiprows=rows2skip, usecols=(1,2,3,4,5,6,7,8), unpack=True)
     OH, OHerr, CO, COerr, NO, NOerr, NeO, NeOerr = rf
@@ -891,11 +899,15 @@ print line1
 print line2
 allm, allb = [], []
 subsample = numpy.array([]).reshape(0, 2)
+positives, negatives = 0, 0
 for theta in pos:
     if theta[0] < 0.0:
-        allm.append(theta[0])
-        allb.append(theta[1])
-        subsample = numpy.vstack((subsample, theta))
+        negatives += 1
+    else:
+        positives += 1
+    allm.append(theta[0])
+    allb.append(theta[1])
+    subsample = numpy.vstack((subsample, theta))
 avgm = sum(allm)/len(allm)
 avgb = sum(allb)/len(allb)
 print 'Average values:  m = %0.3f   b= %0.3f' % (avgm, avgb)
@@ -903,7 +915,9 @@ theta = [avgm, avgb]
 if show_fitted_line:
     plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
-fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
+print (samples)
+print ('positives, negatives: ', positives, negatives)
+fig = corner.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
 fig.show()
 # Calculate the uncertainties based on the 25, 50, and 75th percentiles
 m_mcmc, b_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*numpy.percentile(subsample, [25, 50, 75], axis=0)))
@@ -944,8 +958,8 @@ bp = 0.50
 yp = mp*NO + bp
 #plt.plot(NO, yp, 'm')
 
-bp2 = 0.30#+0.15-0.12   #0.35 
-mp2 = -0.18#+0.09-0.11  #-0.30
+bp2 = 0.30#+0.10-0.10   #0.35 
+mp2 = -0.21#+0.09-0.06  #-0.30
 yp2 = mp2*NO + bp2
 plt.plot(NO, yp2, 'g', lw=2)
 
@@ -1014,19 +1028,23 @@ if show_fitted_line:
     plt.plot( x, line_eq( p, x ), "r", lw=5, alpha=0.4 )
     avgp = [avgm, avgb]
     plt.plot( x, line_eq( avgp, x ), "c", lw=5, alpha=0.4 )
+positives, negatives = 0, 0
 for p in pos:
+    y = line_eq(p, x)
+    extrap_xmin = numpy.interp(NO[-2], x, y)
+    #x = numpy.append(x, NO[-2])
+    #y = numpy.append(y, extrap_xmin)
+    plt.plot( x, y, "r", alpha=0.1 )
     if p[0] < 0.0:
-        y = line_eq(p, x)
-        extrap_xmin = numpy.interp(NO[-2], x, y)
-        #x = numpy.append(x, NO[-2])
-        #y = numpy.append(y, extrap_xmin)
-        plt.plot( x, y, "r", alpha=0.1 )
+        negatives += 1
+    else:
+        positives += 1
 #img_name = img_name7 + typeofimage
 #destination = os.path.join(full_results_path+'/plots', img_name)
 #plt.savefig(destination)
 #print('Plot %s was saved!' % destination)
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
-fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
+fig = corner.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
 fig.show()
 # Calculate the uncertainties based on the 25, 50, and 75 percentiles
 m_mcmc, b_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*numpy.percentile(subsample, [25, 50, 75], axis=0)))

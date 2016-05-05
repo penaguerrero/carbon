@@ -2,7 +2,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import emcee
-import triangle
+import corner
 import scipy.optimize as op
 
 '''
@@ -30,8 +30,8 @@ yerr = np.array([np.random.uniform(-2., 2.) for _ in range(n)])   # error in the
 
 # likelihood function
 def lnlike(theta, xobs, yobs, yerrobs):
-    print len(theta), theta
-    print len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs
+    #print len(theta), theta
+    #print len(xobs), len(yobs), len(yerrobs), xobs, yobs, yerrobs
     model = line_eq(theta, xobs)
     chi2 = (yobs - model)**2 / yerrobs**2
     chi2 = chi2.sum()
@@ -125,7 +125,7 @@ for p in pos:
 plt.show()
 
 samples = sampler.chain[:, nruns*0.2, :].reshape((-1, ndim))
-fig = triangle.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
+fig = corner.corner(samples, labels=["$m$", "$b$"], truths=[m, b])
 fig.show()
 fig.savefig("triangle_test.jpg")
 
