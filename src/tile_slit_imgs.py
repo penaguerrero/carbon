@@ -79,6 +79,10 @@ for obj in objects_list:
     img_number = img_number + 1
     if img_number > npt:
         break
+plt.annotate('E', xy=(1.22, -0.2), xycoords='axes fraction', xytext=(0, -0.22), 
+            arrowprops=dict(arrowstyle="<-", color='k'))
+plt.annotate('N', xy=(1.21, -0.21), xycoords='axes fraction', xytext=(1.19, 1), 
+            arrowprops=dict(arrowstyle="<-", color='k'))
 if save_fig:
     path_from_carbon_dir = carbon_dir+'imgs_tile_1'+img_format
     destination = os.path.join(path_list[0], path_from_carbon_dir)
@@ -95,6 +99,10 @@ for i in range(npt, len(objects_list)):
         if objects_list[i] in data:
             show_img_at_loc(data, full_names_list[i], 3, 3, img_number)
     img_number = img_number + 1
+plt.annotate('E', xy=(1.22, -0.2), xycoords='axes fraction', xytext=(0, -0.22), 
+            arrowprops=dict(arrowstyle="<-", color='k'))
+plt.annotate('N', xy=(1.21, -0.21), xycoords='axes fraction', xytext=(1.19, 1), 
+            arrowprops=dict(arrowstyle="<-", color='k'))
 if save_fig:
     path_from_carbon_dir = carbon_dir+'imgs_tile_2'+img_format
     destination = os.path.join(path_list[0], path_from_carbon_dir)
