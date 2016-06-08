@@ -721,7 +721,7 @@ class OneDspecs:
         pyplot.ylabel('Flux  [ergs/s/cm$^2$/$\AA$]')
         pyplot.xlim(1640.0, 10100.0)
         ymax = max(whole_spec_arr[1]) + max(whole_spec_arr[1])*0.12
-        pyplot.ylim(-1.5e-15, ymax)
+        pyplot.ylim(-1.5e-15, ymax)#-0.5e-15, 1.e-15   # for Mrk 1087
         fmax = max(whole_spec_arr[1]) - max(whole_spec_arr[1])*0.2 
         pyplot.text(8000, fmax, full_name, fontsize=18)
         pyplot.plot(whole_spec_arr[0], whole_spec_arr[1], 'k')
@@ -999,6 +999,10 @@ class BasicOps:
         else:
             # Obtain the reddening corrected intensities based on the given law and c(Hb)
             RC = pn.RedCorr(R_V=3.1, law=redlaw, cHbeta=cHbeta)
+            ebv = RC.E_BV
+            Av = RC.R_V * ebv
+            print ' * PyNeb obtained:  E_BV =', ebv, ' and  Av=', Av
+            #raw_input()
         Hbeta_idx = catalog_lines.index(4861)
         #Halpha_idx = catalog_lines.index(6563)
         #RC.setCorr(norm_fluxes[Halpha_idx]/2.86, 6563., 4861.)
@@ -1258,8 +1262,10 @@ class AdvancedOps(BasicOps):
             io = str(io)
             wavid = cw+'A'
             pynebid = el+io
+            if 'He' in pynebid:
+                pynebid += 'r'
             if verbose == True:
-                print w, el, io, Ic, er
+                #print w, el, io, Ic, er
                 print 'pynebid =', pynebid, '    wavid =', wavid
             lineID = pynebid + '_' + wavid
             matching_line = [cw, Ic, er]
@@ -1305,6 +1311,7 @@ class AdvancedOps(BasicOps):
         self.I_5007 = [0.0, 0.0]
         # He 1
         self.I_5876 = 0.0
+        self.I_6678 = 0.0
         self.I_7065= 0.0                               
         self.I_4686 = 0.0 
         # C 3
@@ -1314,187 +1321,195 @@ class AdvancedOps(BasicOps):
         self.I_2144 = [0.0, 0.0] 
         for line in self.obs.lines:
             if self.verbose == True:            
-                print 'line.wave', line.wave, '     line.corrIntens', line.corrIntens
+                print 'line.wave', int(line.wave), '     line.corrIntens', line.corrIntens
             # Carbon
             if line.wave == 1907:           # C 3
                 self.I_1907 = line.corrIntens
-            elif line.wave == 1909:
+            if line.wave == 1909:
                 self.I_1909 = line.corrIntens 
-            elif line.wave == 2326:         # C 2
+            if line.wave == 2326:         # C 2
                 I_2326 = line.corrIntens
-            elif line.wave == 2328:
+            if line.wave == 2328:
                 I_2328 = line.corrIntens 
             # Nitrogen
-            elif line.wave == 1749:         # N 3
+            if line.wave == 1749:         # N 3
                 self.I_1749 = line.corrIntens                      
-            elif line.wave == 1752:
+            if line.wave == 1752:
                 self.I_1752 = line.corrIntens            
-            elif line.wave == 2144:         # N 2
+            if line.wave == 2144:         # N 2
                 self.I_2144 = line.corrIntens                      
-            elif line.wave == 5755:
+            if line.wave == 5755:
                 I_5755 = line.corrIntens            
-            elif line.wave == 6548:
+            if line.wave == 6548:
                 I_6548 = line.corrIntens            
-            #elif line.wave == 6584:   # not using it because most of the time is blended with Halpha
+            #if line.wave == 6584:   # not using it because most of the time is blended with Halpha
             #    I_6584 = line.corrIntens            
-            elif line.wave == 5198:         # N 1
+            if line.wave == 5198:         # N 1
                 I_5198 = line.corrIntens                      
-            elif line.wave == 5200:
+            if line.wave == 5200:
                 I_5200 = line.corrIntens                      
             # Oxygen 2 and 3
-            elif line.wave == 1661:
+            if line.wave == 1661:
                 self.I_1661 = line.corrIntens
-            elif line.wave == 1666:
+            if line.wave == 1666:
                 self.I_1666 = line.corrIntens
-            elif line.wave == 4363:
+            if line.wave == 4363:
                 I_4363 = line.corrIntens
                 print '4363 has an intensity of', I_4363
-            elif line.wave == 4959:
+            if line.wave == 4959:
                 self.I_4959 = line.corrIntens
                 print '4959 has an intensity of', self.I_4959
-            elif line.wave == 5007:
+            if line.wave == 5007:
                 self.I_5007 = line.corrIntens
                 print '5007 has an intensity of', self.I_5007
-            elif line.wave == 3726:
+            if line.wave == 3726:
                 I_3726 = line.corrIntens
                 print '3726 has an intensity of', I_3726
-            elif line.wave == 3729:
+            if line.wave == 3729:
                 I_3729 = line.corrIntens
                 print '3729 has an intensity of', I_3729
-            elif line.wave == 3727:
+            if line.wave == 3727:
                 self.I_3727 = line.corrIntens
                 print '3727 has an intensity of', self.I_3727
-            #elif line.wave == 7320:
+            #if line.wave == 7320:
             #    I_7320 = line.corrIntens
             #    print '7320 has an intensity of', I_7320
-            elif line.wave == 7330:
+            if line.wave == 7330:
                 I_7330 = line.corrIntens
                 print '7330 has an intensity of', I_7330
-            elif line.label == 'O2_7325+':
+            if line.label == 'O2_7325+':
                 I_7325 = line.corrIntens
                 print '3725 has an intensity of', I_7325
             # Neon
-            elif line.wave == 2975:         # Ne 5
+            if line.wave == 2975:         # Ne 5
                 I_2975 = line.corrIntens            
-            elif line.wave == 3346:
+            if line.wave == 3346:
                 I_3346 = line.corrIntens            
-            #elif line.wave == 3426:
+            #if line.wave == 3426:
             #    I_3426 = line.corrIntens            
-            elif line.wave == 2423:         # Ne 4
+            if line.wave == 2423:         # Ne 4
                 I_2423 = line.corrIntens            
-            elif line.wave == 2425:
+            if line.wave == 2425:
                 I_2425 = line.corrIntens            
-            elif line.wave == 3342:         # Ne 3
+            if line.wave == 3342:         # Ne 3
                 I_3342 = line.corrIntens            
-            elif line.wave == 3869:
+            if line.wave == 3869:
                 I_3869 = line.corrIntens            
-            #elif line.wave == 3969:
+            #if line.wave == 3969:
             #    I_3969 = line.corrIntens   
             # Aluminum
-            elif line.wave == 2661:         # Al 2
+            if line.wave == 2661:         # Al 2
                 I_2661 = line.corrIntens            
-            elif line.wave == 2670:
+            if line.wave == 2670:
                 I_2670 = line.corrIntens            
             # Silicon
-            elif line.wave == 1883:         # Si 3
+            if line.wave == 1883:         # Si 3
                 I_1883 = line.corrIntens            
-            elif line.wave == 1892:
+            if line.wave == 1892:
                 I_1892 = line.corrIntens            
-            elif line.wave == 2335:         # Si 2
+            if line.wave == 2335:         # Si 2
                 I_2335 = line.corrIntens            
-            elif line.wave == 2345:
+            if line.wave == 2345:
                 I_2345 = line.corrIntens            
             # Sodium
-            elif line.wave == 2569:         # Na 6
+            if line.wave == 2569:         # Na 6
                 I_2569 = line.corrIntens                        
-            elif line.wave == 2871:
+            if line.wave == 2871:
                 I_2871 = line.corrIntens                      
-            elif line.wave == 2970:
+            if line.wave == 2970:
                 I_2970 = line.corrIntens                   
-            elif line.wave == 2805:         # Na 4
+            if line.wave == 2805:         # Na 4
                 I_2805 = line.corrIntens                        
-            elif line.wave == 3242:
+            if line.wave == 3242:
                 I_3242 = line.corrIntens                      
-            elif line.wave == 3362:
+            if line.wave == 3362:
                 I_3362 = line.corrIntens  
             # Magnesium
-            elif line.wave == 2418:         # Mg 5
+            if line.wave == 2418:         # Mg 5
                 I_2418 = line.corrIntens                               
-            elif line.wave == 2783:
+            if line.wave == 2783:
                 I_2783 = line.corrIntens  
-            elif line.wave == 2928:
+            if line.wave == 2928:
                 I_2928 = line.corrIntens  
             # Sulphur
-            elif line.wave == 4069:         # S 2
+            if line.wave == 4069:         # S 2
                 I_4069 = line.corrIntens    # not using it because it is the weakest of the auroral lines
-            elif line.wave == 4076:
+            if line.wave == 4076:
                 I_4076 = line.corrIntens  
-            elif line.wave == 6716:
+            if line.wave == 6716:
                 I_6716 = line.corrIntens  
-            elif line.wave == 6731:
+            if line.wave == 6731:
                 I_6731 = line.corrIntens  
-            elif line.wave == 6312:         # S 3
+            if line.wave == 6312:         # S 3
                 I_6312 = line.corrIntens
                 print '6312 has an intensity of', I_6312
-            elif line.wave == 9069:
+            if line.wave == 9069:
                 I_9069 = line.corrIntens
                 print '9069 has an intensity of', I_9069
-            elif line.wave == 9531:
+            if line.wave == 9531:
                 I_9531 = line.corrIntens
                 print '9531 has an intensity of', I_9531
             # Chlorine
-            elif line.wave == 5518:         # Cl 3
+            if line.wave == 5518:         # Cl 3
                 I_5518 = line.corrIntens
                 print '5518 has an intensity of', I_5518
-            elif line.wave == 5538:
+            if line.wave == 5538:
                 I_5538 = line.corrIntens
                 print '5538 has an intensity of', I_5538
             # Argon
-            elif line.wave == 4626:         # Ar 5
+            if line.wave == 4626:         # Ar 5
                 I_4626= line.corrIntens                               
-            elif line.wave == 6435:
+            if line.wave == 6435:
                 I_6435 = line.corrIntens  
-            elif line.wave == 7006:
+            if line.wave == 7006:
                 I_7006 = line.corrIntens  
-            #elif line.wave == 2854:         # Ar 4
+            #if line.wave == 2854:         # Ar 4
             #    I_2854= line.corrIntens                               
-            elif line.wave == 2868:
+            if line.wave == 2868:
                 I_2868 = line.corrIntens  
-            #elif line.wave == 4711:
+            #if line.wave == 4711:
             #    I_4711 = line.corrIntens  
-            elif line.wave == 4740:
+            if line.wave == 4740:
                 I_4740 = line.corrIntens  
-            elif line.wave == 5192:         # Ar 3
+            if line.wave == 5192:         # Ar 3
                 I_5192= line.corrIntens                               
-            elif line.wave == 7136:
+            if line.wave == 7136:
                 I_7136 = line.corrIntens  
-            elif line.wave == 7751:
+            if line.wave == 7751:
                 I_7751 = line.corrIntens  
             # Potasium
-            elif line.wave == 2515:         # K 5
+            if line.wave == 2515:         # K 5
                 I_2515= line.corrIntens                               
-            elif line.wave == 2495:
+            if line.wave == 2495:
                 I_2495 = line.corrIntens  
-            elif line.wave == 4123:
+            if line.wave == 4123:
                 I_4123 = line.corrIntens  
-            elif line.wave == 4163:
+            if line.wave == 4163:
                 I_4163 = line.corrIntens  
-            elif line.wave == 6223:
+            if line.wave == 6223:
                 I_6223 = line.corrIntens
-            elif line.wave == 6349:
+            if line.wave == 6349:
                 I_6349 = line.corrIntens
-            elif line.wave == 4511:         # K 4
+            if line.wave == 4511:         # K 4
                 I_4511= line.corrIntens                               
-            elif line.wave == 6102:
+            if line.wave == 6102:
                 I_6102 = line.corrIntens  
-            elif line.wave == 6796:
+            if line.wave == 6796:
                 I_6796 = line.corrIntens  
             # Helium
-            elif line.wave == 5876:         # He 1
+            if line.wave == 3889:         # He 1
+                self.I_3889 = line.corrIntens
+            if line.wave == 4922:         # He 1
+                self.I_4922 = line.corrIntens
+            if line.wave == 5876:         # He 1
                 self.I_5876 = line.corrIntens
-            elif line.wave == 7065:         # He 1
+            if line.wave == 6678:         # He 1
+                self.I_6678= line.corrIntens    
+            if line.wave == 7065:         # He 1
                 self.I_7065= line.corrIntens                               
-            elif line.wave == 4686:         # He 2
+            if line.wave == 7281:         # He 1
+                self.I_7281= line.corrIntens                               
+            if line.wave == 4686:         # He 2
                 self.I_4686 = line.corrIntens  
         # simultaneously compute temperature and density from pairs of line ratios
         # First of all, a Diagnostics object must be created and initialized with the relevant diagnostics.
@@ -1680,7 +1695,7 @@ class AdvancedOps(BasicOps):
             if self.writeouts:
                 Te = self.temS2
                 Terr = numpy.abs(Te[0] - Te[1])
-                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 2]','(6716+6731)/4076', 'Low', Te[0], Te[1], Terr)
+                print >> outf,'{:<8} {:<25} {:<14} {:<11.2f} {:<11.2f} {:<10.2f}'.format('[S 2]','6731/4076', 'Low', Te[0], Te[1], Terr)
         except Exception as e:
             (NameError,),e
         try:
@@ -2131,23 +2146,71 @@ class AdvancedOps(BasicOps):
         print 'HELIUM ABUNDANCES...'
         try:
             abhe1 = He1.getIonAbundance(int_ratio=self.I_5876, tem=te_high, den=dens, wave=5876)
-            print 'He1 abundance =', abhe1
+            print 'He abundance 5876 =', abhe1
+            He=numpy.log10(abhe1)+12
+            print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
         except (RuntimeError, TypeError, NameError):
-            print 'Could not find He1 abundance.'
+            print 'Could not find He abundance 5876.'
             pass
         try:
-            abhe2 = He1.getIonAbundance(int_ratio=self.I_7065, tem=te_high, den=dens, wave=7065)
-            print 'He1 abundance =', abhe2
+            abhe2 = He1.getIonAbundance(int_ratio=self.I_6678, tem=te_high, den=dens, to_eval='A(6678)')
+            print 'He abundance 6678 =', abhe2
+            He=numpy.log10(abhe2)+12
+            print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
         except (RuntimeError, TypeError, NameError):
-            print 'Could not find He1 abundance.'
+            print 'Could not find He abundance 6678.'
             pass
+        #try:
+        #    abhe1 = He1.getIonAbundance(int_ratio=self.I_3889, tem=te_high, den=dens, wave=3889)
+        #    print 'He abundance 3889 =', abhe1
+        #    He=numpy.log10(abhe1)+12
+        #    print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
+        #except (RuntimeError, TypeError, NameError):
+        #    print 'Could not find He abundance 3889.'
+        #    pass
+        #try:
+        #    abhe3 = He1.getIonAbundance(int_ratio=self.I_7281, tem=te_high, den=dens, to_eval='A(7281)')
+        #    print 'He abundance 7281 =', abhe3
+        #    He=numpy.log10(abhe3)+12
+        #    print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
+        #except (RuntimeError, TypeError, NameError):
+        #    print 'Could not find He abundance 7281.'
+        #    pass
         try:
-            abhe3 = He2.getIonAbundance(int_ratio=self.I_4686, tem=te_high, den=dens, wave=4686)
-            print 'He2 abundance =', abhe3
+            abhe3 = He1.getIonAbundance(int_ratio=self.I_7065, tem=te_high, den=dens, to_eval='A(7065)')
+            print 'He abundance 7065 =', abhe3
+            He=numpy.log10(abhe3)+12
+            print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
         except (RuntimeError, TypeError, NameError):
-            print 'Could not find He2 abundance.'
+            print 'Could not find He abundance 7065.'
             pass
-        #raw_input(' ***  press enter to continue')
+        #try:
+        #    abhe4 = He1.getIonAbundance(int_ratio=self.I_4922, tem=te_high, den=dens, to_eval='A(4922)')
+        #    print 'He abundance4 4922 =', abhe4
+        #    He=numpy.log10(abhe4)+12
+        #    print 'log(He)+12 =', He[0], '+-',He[0]-He[1]
+        #except (RuntimeError, TypeError, NameError):
+        #    print 'Could not find He abundance 4922.'
+        #    pass
+        try:
+            abhe5 = He2.getIonAbundance(int_ratio=self.I_4686, tem=te_high, den=dens, to_eval="A(4686)")
+            print 'He2 abundance 4686 =', abhe5
+            He=numpy.log10(abhe5)+12
+            print 'log(He2)+12 =', He[0], '+-',He[0]-He[1]
+            print '  using coeffs my INTRAT: '#-->11.5   (I(4686)/Hbeta)*11.5
+            abund_He2 = (self.I_4686/100.0)*11.5
+            He=numpy.log10(abund_He2)+12
+            print '   He++/H+ = ', abund_He2
+            print '   log(He2)+12 =', He[0], '+-',He[0]-He[1]
+        except (RuntimeError, TypeError, NameError):
+            print 'Could not find He2 abundance 4686 with PyNeb.'
+            print '  using coeffs my INTRAT: '#-->11.5   (I(4686)/Hbeta)*11.5
+            abund_He2 = (self.I_4686/100.0)*11.5
+            He=numpy.log10(abund_He2)+12
+            print '   He++/H+ = ', abund_He2
+            print '   log(He2)+12 =', He[0], '+-',He[0]-He[1]
+            #pass
+        raw_input(' ***  press enter to continue')
         
         # ions of zones of high and medium ionization degree are combined
         ab_high = ['Ar3', 'Ar4', 'Ar5', 'C2', 'C3', 'Ca5', 'Cl2', 'Cl3', 'Cl4', 'Fe3', 'K4', 'K5', 'Mg5', 
@@ -2231,6 +2294,8 @@ class AdvancedOps(BasicOps):
         print '\n OXYGEN'
         Otot = self.atom_abun['O2'][0] + self.atom_abun['O3'][0]
         O23sq = self.atom_abun['O2'][1]**2 + self.atom_abun['O3'][1]**2
+        icfo = (self.atom_abun['O2'][0] / self.atom_abun['O3'][0]) + 1.0
+        icfoerr = icfo*numpy.sqrt((self.atom_abun['O2'][1]/self.atom_abun['O2'][0])**2+(self.atom_abun['O3'][1]/self.atom_abun['O3'][0])**2)
         #O23sq = (Otot * 0.35)**2
         Ototerr = numpy.sqrt(O23sq)
         O_errp = (Ototerr*100) / Otot
@@ -2251,7 +2316,8 @@ class AdvancedOps(BasicOps):
         print '     O+/H+ = %0.2f  +- %0.2f' % (logO2, errlogO2)
         #print '    absOtot = ', Otot, '+-', Ototerr, ', which is', O_errp,'% of error'
         print '    absOtot = %0.3e +- %0.3e (~%0.0f percent)' % (Otot, Ototerr, O_errp)
-        print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++  '
+        print '    Assuming that O+++ contributes less than 1% to Otot, hence Otot = O+ + O++,  '
+        print '     and that Otot=O2+O3, ICF(O) = %0.2f +- %0.2f'%(icfo, icfoerr)
         # To "play" with different uncertainites usefollowing lines, else press enter...
         useOerr_definition = 'y'
         print 'Use ', Ototerr, ' (', logOtoterr, ' dex) as O error?  '
@@ -2299,7 +2365,10 @@ class AdvancedOps(BasicOps):
         N_tot = (Otot / self.atom_abun['O2'][0]) * self.atom_abun['N2'][0]
         N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O3'][0]/Otot)**2 * (self.atom_abun['N2'][0]/self.atom_abun['O2'][0])**2 +
                              self.atom_abun['N2'][1]**2)
-        Nicf = Otot / self.atom_abun['O2'][0]
+        #N_tot = (Otot / self.atom_abun['O3'][0]) * self.atom_abun['N3'][0]
+        #N_toterr = numpy.sqrt(O23sq**2 * (self.atom_abun['O2'][0]/Otot)**2 * (self.atom_abun['N3'][0]/self.atom_abun['O3'][0])**2 +
+        #                     self.atom_abun['N3'][1]**2)
+        Nicf = Otot / self.atom_abun['O3'][0]
         N_errp = (N_toterr/N_tot)*100
         logele = 12+numpy.log10(N_tot)
         #logeleerr = numpy.log10((100+N_errp) / (100-N_errp))/2.0
@@ -2335,44 +2404,52 @@ class AdvancedOps(BasicOps):
         # Neon
         print '\n NEON'
         print '    Assuming ICF(Ne) from Peimbert+Costero 69 =  (Otot / O++) * Ne++'
-        Ne_icf = Otot / self.atom_abun['O3'][0]
+        Ne_icf = (self.atom_abun['O2'][0] / self.atom_abun['O3'][0]) + 1.0
+        Ne_icf_err = icfo*numpy.sqrt((self.atom_abun['O2'][1]/self.atom_abun['O2'][0])**2+(self.atom_abun['O3'][1]/self.atom_abun['O3'][0])**2)
         Ne_tot = self.atom_abun['Ne3'][0] * Ne_icf
         Ne_toterr = numpy.sqrt((O23sq * (self.atom_abun['O2'][0]/Otot)**2) * (self.atom_abun['Ne3'][0]/self.atom_abun['O3'][0])**2 +
                                self.atom_abun['Ne3'][1]**2)
         Ne_errp = (Ne_toterr/Ne_tot)*100
         logele = 12+numpy.log10(Ne_tot)
         logeleerr = numpy.log10((100+Ne_errp) / (100-Ne_errp))/2.0
-        print '    ICF(Ne)=%0.2f ,   Ne_tot = %0.2f +- %0.2f' % (Ne_icf, logele, logeleerr)
+        print '    12+logX^i+ = %0.2f' % (numpy.log10(self.atom_abun['Ne3'][0])+12.0)
+        print '    ICF(Ne)=%0.2f +- %0.2f' % (Ne_icf, Ne_icf_err)
+        print '    Ne_tot = %0.2f +- %0.2f' % (logele, logeleerr)
         R = Ne_tot / Otot
         Ratio = numpy.log10(R)
         Ratioerr = numpy.sqrt((Ne_toterr/Ne_tot)**2 + (Ototerr/Otot)**2) / (2.303 )
         elem_abun['Ne'] = [Ne_tot, Ne_toterr, Ne_errp, logele, logeleerr, Ratio, Ratioerr]
         print '    Ne/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
-        
+                        
         # Sulphur
         print '\n SULPHUR'
+        #if (self.atom_abun['S2'][0] > 0.0) and (self.atom_abun['S3'][0] > 0.0): 
+        print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
+        ofrac = self.atom_abun['O2'][0]/Otot
+        print '    *  O+ / Otot =:', ofrac
+        #OpOtot = float(raw_input('Enter O+/Otot: '))
+        if ofrac <= 0.15:
+            correspondingSvalue2OpOtot = -0.25
+        elif ofrac > 0.15 and ofrac < 0.3:
+            correspondingSvalue2OpOtot = -0.1
+        elif ofrac >= 0.3:
+            correspondingSvalue2OpOtot = -0.05
+        S_icf = 1.0 / 10**(correspondingSvalue2OpOtot)
+        S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
+        S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
         if (self.atom_abun['S2'][0] > 0.0) and (self.atom_abun['S3'][0] > 0.0): 
-            print '    Assuming ICF(S) from Garnett 89:  (S+ + S++)/Stot = [1 - (1 - O+/Otot)^alpha] ^ 1/alpha'
-            ofrac = self.atom_abun['O2'][0]/Otot
-            print '    *  O+ / Otot =:', ofrac
-            #OpOtot = float(raw_input('Enter O+/Otot: '))
-            if ofrac <= 0.15:
-                correspondingSvalue2OpOtot = -0.25
-            elif ofrac > 0.15 and ofrac < 0.3:
-                correspondingSvalue2OpOtot = -0.1
-            elif ofrac >= 0.3:
-                correspondingSvalue2OpOtot = -0.05
-            S_icf = 1.0 / 10**(correspondingSvalue2OpOtot)
-            S_tot = (self.atom_abun['S2'][0] + self.atom_abun['S3'][0]) * S_icf
-            S_icf_perr = 0.2 # this is the percentage error of the ICF taken from the min scale in Fig 7 of Garnett 89 = 0.05
             # the measured value in the x-asis is -0.25 +- 0.05, thus 20% of the measured value
             S_toterr = numpy.sqrt( ((S_icf_perr*S_icf)**2) * (self.atom_abun['S2'][0] + self.atom_abun['S3'][0])**2 +
                                    (self.atom_abun['S2'][1]**2 + self.atom_abun['S3'][1]**2) * S_icf**2 )
             S_errp = (S_toterr/S_tot)*100
             logele = 12+numpy.log10(S_tot)
             logeleerr = numpy.log10((100+S_errp) / (100-S_errp))/2.0
+            logS2 = numpy.log10(self.atom_abun['S2'][0])+12.0
+            logS3 = numpy.log10(self.atom_abun['S3'][0])+12.0
             print '    S_toterr = ', S_toterr, '=', S_errp, '%'
-            print '    ICF(S)=%0.2f ,   S_tot = %0.2f +- %0.2f' % (S_icf, logele, logeleerr)
+            #print '    12+log S2+ = %0.2f' % (logS2)
+            #print '    12+log S3+ = %0.2f' % (logS3)
+            print '    S_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             # For comparison also clculate abundances with Izotov et al (2006)
             if logOtot <= 7.2:
                 rule = 'Ial06_20a'
@@ -2388,16 +2465,47 @@ class AdvancedOps(BasicOps):
             print '        they compare as: Izotov/Garnett = ', S_tot/abS
             print '                          Garnett + err = ', S_tot + S_toterr
             print '                          Izotov - err  = ', abS - erS
+            print 'Use different S dex error?  '
+            useSerr = raw_input('If YES press enter or type "y", otherwise type the desired DEX to be used   ') 
+            if (useSerr == useOerr_definition) or (useSerr == ''):
+                Stoterr = S_toterr
+                S2err = self.atom_abun['S2'][1]
+                S3err = self.atom_abun['S3'][1]
+            else:
+                logStoterr = float(useSerr)
+                Stot_up = 10**(logele+logStoterr - 12.0) - 10**(logele - 12.0)
+                Stot_down = 10**(logele - 12.0) - 10**(logele-logStoterr - 12.0)
+                Stoterr = (Stot_up + Stot_down) / 2.0
+                S_errp = (Stoterr*100) / S_tot
+                #print 'Assuming that the uncertainty of O^2+ is always higher than that for O^3+ by about 1/3 of the uncertainty of O2...'
+                S2logerr = logStoterr + 0.02
+                S2err_up = 10**(logS2+S2logerr - 12.0) - 10**(logS2 - 12.0)
+                S2err_down = 10**(logS2 - 12.0) - 10**(logS2-S2logerr - 12.0)
+                S2err = (S2err_up + S2err_down) / 2.0
+                S3logerr = S2logerr - S2logerr/3.0 
+                S3err_up = 10**(logS3+S3logerr - 12.0) - 10**(logS3 - 12.0)
+                S3err_down = 10**(logS3+S3logerr - 12.0) - 10**(logS3 - 12.0)
+                S3err = (S3err_up + S3err_down) / 2.0
+                S23sq = S2err**2 + S3err**2
+                print 'S23sq, Stoterr**2', S23sq, Stoterr**2
+            print 'Using:\n    abs_Stot = %0.3e +- %0.3e (~%0.0f percent)' % (S_tot, Stoterr, S_errp)
+            print '     S^3+/H+ = %0.2f  +- %0.2f' % (12+numpy.log10(self.atom_abun['S3'][0]), S3err/(2.303*self.atom_abun['S3'][0]))
+            print '     S^2+/H+ = %0.2f  +- %0.2f' % (12+numpy.log10(self.atom_abun['S2'][0]), S2err/(2.303*self.atom_abun['S2'][0]))
+            print '    ICF(S)=%0.2f +- 0.2' % (S_icf)
+            print '    S_tot = %0.2f +- %0.2f' % (logele, logeleerr)
             R = S_tot / Otot
             Ratio = numpy.log10(R)
-            Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Ototerr/Otot)**2)
+            Rerr = R * numpy.sqrt((S_toterr/S_tot)**2 + (Stoterr/Otot)**2)
             Ratioerr = Rerr / (2.303 * R)
             elem_abun['S'] = [S_tot, S_toterr, S_errp, logele, logeleerr, Ratio, Ratioerr]   
             print '    S/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         else:
             elem_abun['S'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]   
-            print 'Not possible to determine the S abundance: S2=', self.atom_abun['S2'], '  S3=', self.atom_abun['S3']
-        
+            print '    12+log S3+ = ', 12+numpy.log10(self.atom_abun['S3'][0]), '+-', numpy.log10(self.atom_abun['S3'][1])
+            print '    12+log S2+ = ', 12+numpy.log10(self.atom_abun['S2'][0]), '+-', numpy.log10(self.atom_abun['S2'][1])
+            print '    ICF(S)=%0.2f +- 0.2' % (S_icf)
+            print 'Not possible to determine the total S abundance: \n S2=', self.atom_abun['S2'], '  S3=', self.atom_abun['S3']
+    
         # Chlorine
         print '\n CHLORINE'
         if self.atom_abun['Cl3'][0] > 0.0:
@@ -2616,7 +2724,9 @@ class AdvancedOps(BasicOps):
             I_1663 = self.I_1661
         else:
             I_1663 = self.I_1666
-        #I_C3 = self.strongC3
+        ##I_C3 = self.strongC3
+        #I_1663 = [I_1663[0], 0.7]
+        #I_C3 = [self.I_1909[0], 3.2]
         I_C3 = self.I_1909
         C2toO2 = 0.089 * numpy.exp(-1.09/tc) * (I_C3[0]/I_1663[0])
 
@@ -2685,8 +2795,8 @@ class AdvancedOps(BasicOps):
         else:
             XCXO = 1.0
             erricfC = 0.20
-        icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
-        print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
+        #icfC = 1/XCXO #1 / (C2toO2 * Ofrac)
+        #print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
         print ' I_1909 = ', I_C3, '   I_1666 =', I_1663
         cpp = sorted_atoms.index('C3')
         objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 'ngc1741', 'pox4', 'sbs0218',
@@ -2708,20 +2818,25 @@ class AdvancedOps(BasicOps):
         #logeleerr_gar = numpy.sqrt( (Cpp2Opp_err/Cpp2Opp)**2 + (erricfC/icfC)**2 ) 
         percent_err = totC_garnett[1]*100 / totC_garnett[0]
         #logeleerr_gar = numpy.log10((100+percent_err)/(100-percent_err)) / 2.0
+        Ratio = logele_gar - logOtot
+        Ratioerr = numpy.sqrt( logeleerr_gar**2 + logOtoterr**2 )          
         print '  C++ = ', C2toO2*totabs_ions_list[opp][0], totabs_ions_list[cpp], '%err=', percent_err
         print ' total C = ', totC_garnett
-        print ' traditional 12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
-        print ' Garnett 95 12+log(C) = %0.2f +- %0.2f' % (totC_gar1, totC_gar1_err)
+        print ' traditional -> 12+log(C) = %0.2f +- %0.2f,   C/O = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar, Ratio, Ratioerr)
+        print '  Garnett 95 -> 12+log(C) = %0.2f +- %0.2f,   C/O = %0.2f +- %0.2f' % (totC_gar1, totC_gar1_err, logCO, logCOerr)
         # To "play" with different uncertainites usefollowing lines, else press enter...
         useCerr_definition = 'y'
-        print '   ***  Use ', totC_garnett, ' (', logeleerr_gar, ' dex) as C error?  '
+        print '   ***  Use ', logeleerr_gar, ' dex as C error?  '
         useCerr = raw_input('    If YES press type "y", otherwise type the desired DEX to be used   ') 
-        if not (useCerr == useCerr_definition):
+        if (useCerr == useCerr_definition) or useCerr == '':
+            logeleerr_gar = logeleerr_gar
+            percent_err = percent_err
+        else:
             logeleerr_gar = float(useCerr)
             percent_err = totC_garnett[1]*100 / totC_garnett[0]
-            print 'C++ = ', totabs_ions_list[cpp], '%err=', percent_err
-            print 'total C = ', totC_garnett
-            print '12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
+        #print 'C++ = ', totabs_ions_list[cpp], '%err=', percent_err
+        #print 'total C = ', totC_garnett
+        #print '12+log(C) = %0.2f +- %0.2f' % (logele_gar, logeleerr_gar)
         # now determine carbon abundance with my thesis method
         if data2use != None:
             if self.use_Chbeta:
@@ -2784,14 +2899,21 @@ class AdvancedOps(BasicOps):
             logeleerr = logeleerr_thes
         else:
         """
+        optionCabund = 't'
         Ctot = totC_garnett
-        optionCabund = raw_input("Want to use traditional (type 't') or Garnett (type 'g') abundance?")
+        optionCabund = raw_input("Want to use traditional (type '[t]') or Garnett (type 'g') abundance?")
         if optionCabund == 'g':
+            print 'OK, will use Garnett... '
             logele = totC_gar1
-            logeleerr = totC_gar1_err
+            logeleerr = logeleerr_gar
+            abionCpp = 10**((logele-logOtot)/icfC) * totabs_ions_list[opp][0]
+            print 'logele, logOtot, icfC, totabs_ions_list[opp][0]', logele, logOtot, icfC, totabs_ions_list[opp][0]
+            print 'abionCpp = ', abionCpp
         else:
+            print 'OK, will use traditional... '
             logele = logele_gar
             logeleerr = logeleerr_gar
+            abionCpp = totabs_ions_list[cpp][0]
         C_errp = Ctot[1]*100/Ctot[0]
         R = Ctot[0] / Otot
         #print Ctot[0], '/', Otot, '=', R
@@ -2800,8 +2922,10 @@ class AdvancedOps(BasicOps):
         Ratio = logele - logOtot
         Ratioerr = numpy.sqrt( logeleerr**2 + logOtoterr**2 )          
         elem_abun['C'] = [Ctot[0], Ctot[1], C_errp, logele, logeleerr, Ratio, Ratioerr]
-        print ' traditional  C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
-        print ' Garnett 95   C/O = %0.2f +- %0.2f' % (logCO, logCOerr)
+        print '12+logX^i+ = %0.2f' % (12+numpy.log10(abionCpp))
+        print ' ICF(C) using Garnett (1995) = %0.2f +- %0.2f' % (icfC, erricfC)
+        print '12+log(C) = %0.2f +- %0.2f' % (logele, logeleerr)
+        print ' C/O = %0.2f +- %0.2f' % (Ratio, Ratioerr)
         #raw_input(' ***  press enter to continue')
         recalculateerrs = True
         if recalculateerrs:
