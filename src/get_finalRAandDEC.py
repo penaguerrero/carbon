@@ -69,6 +69,7 @@ path_oneDspecs = '../HSTdata/'
 
 RAs = []
 DECs = []
+TDATEOBSs = []
 
 for i, obj in enumerate(objects_list):
     if object_number != 'all':
@@ -84,15 +85,21 @@ for i, obj in enumerate(objects_list):
     #print 'Object: ', obj
     for spec in oneDspecs:
         hdr = fits.getheader(spec, 0)
+        #print repr(hdr)
+        #raw_input()
         RA_deg = fits.getval(spec, "RA_TARG", 0)
         DEC_deg = fits.getval(spec, "DEC_TARG", 0)
+        PA_V3 = fits.getval(spec, "PA_V3", 0)
+        TDATEOBS = fits.getval(spec, "TDATEOBS", 0)
         RA = deg2HMS(ra=RA_deg)#, rounding=True)
         DEC = deg2HMS(dec=DEC_deg)#, rounding=True)
         #print 'RA  = ', RA_deg, '  --> ', RA
         #print 'DEC = ', DEC_deg, ' --> ', DEC
+        print full_name, '   TDATEOBS = ', TDATEOBS, '   PA_V3 =', PA_V3
         #raw_input()
     RAs.append(RA)
     DECs.append(DEC)
+    TDATEOBSs.append(TDATEOBS)
     
     if object_number != 'all':
         print 'Object: ', full_name
@@ -103,13 +110,13 @@ for i, obj in enumerate(objects_list):
 
 # Save the RAs and DECs into a text file or show it on screen
 out_file = "../results/Final_RA_Dec_sample.txt"
-line0 = "{:<18} {:<20} {:<16}".format("Galaxy name", "RA", "Dec")
+line0 = "{:<18} {:<20} {:<20} {:<14}".format("Galaxy name", "RA", "Dec", "Obs Date")
 print line0
 if save_txt_file:
     f = open(out_file, "w+")
     f.write(line0+"\n")
 for i, fn in enumerate(full_names_list):
-    line1 = "{:<18} {:<20} {:<16}".format(fn, RAs[i], DECs[i])
+    line1 = "{:<18} {:<20} {:<20} {:<14}".format(fn, RAs[i], DECs[i], TDATEOBSs[i])
     print line1
     if save_txt_file:
         f.write(line1+"\n")
