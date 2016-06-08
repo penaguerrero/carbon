@@ -22,7 +22,7 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 #                 9           10          11       12          13       14       15         16         17
 
 ''' Choose parameters to run script'''
-object_number = 6
+object_number = 5
 faint = False
 
 # faint objects
@@ -46,7 +46,7 @@ new_filetype = 'jpg'
 separate = True
 
 # Do you want to see the rotation angle of the slit in the 2d spectra?
-rotate = False
+rotate = True
 
 ############################################################################################################################################
 
@@ -78,8 +78,11 @@ img_recenter = fits_raw[4].data      # Intensity data
 h1 = fits_raw[1].header
 PA_APER = h1['PA_APER']
 ORIENT = h1['ORIENTAT']
+#PA_V3 = h1['PA_V3']
 print 'PA_APER = ', PA_APER
 print 'ORIENT = ', ORIENT
+#print 'PA_V3 = ', PA_V3
+#raw_input()
 offset = 45.35   # the 45.35 came from the STIS data Handbook for a 52x0.2 slit
 #ORIENT = ORIENT + 180.0
 PA = ORIENT #- offset
@@ -216,6 +219,8 @@ if separate:
     #size = 'x-large'
     #plt.text(68, 10, full_name, size=size, color=color)
     #plt.text(68, 6, 'P.A. = '+repr(pangle), size=size, color=color)
+    if not rotate:
+        PA = 0.01
     add_slit_line(lolim, uplim, PA)
     #cbar_ax = f2.add_axes([0.92, 0.11, 0.03, 0.776])
     #plt.colorbar(im2, cax=cbar_ax)#, orientation='vertical')
