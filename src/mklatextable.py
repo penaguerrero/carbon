@@ -9,7 +9,7 @@ This script creates the LaTeX tables of the intensities with errors for the pape
 '''
 
 # choose the set of object to make each table: 1= from obj 0-5, 2= from obj 6 to 11, 3= from obj 12 to 17
-obj_set = 3
+obj_set = 1
 # do you want to use line measurements from analysis with E(B-V) or with CHbeta?
 CHbeta = True
 
@@ -94,46 +94,71 @@ def read_reasuredIs(text_file):
                 col.append(item)
     return cols_in_file
 
-def find_mcnd(intensity, error, obj_set, last=None):
+def find_mcnd(flambda, intensity, error, obj_set, last=None):
     line = ''
-    if obj_set == 1:
-        andpercent = '&&'
-    else:
-        andpercent = '&'
+    #if obj_set == 1:
+    #    andpercent = '&&'
+    #else:
+    andpercent = '&'
+    line_start = '{:>6.3f} & '.format(flambda)
+    err_perc = (error *100.) / intensity
     if intensity <= 0.0:
-        intensity = '\mcnd'
+        intensity = ' nd '
         error = ''
+        #line = line_start+'{:>15} {:<2}'.format(intensity, andpercent)
         line = '{:>15} {:<2}'.format(intensity, andpercent)
         if last is not None:
-            line = '{:>15} \\\\'.format(intensity)
-    else:
-        err_perc = (error *100.0) / intensity 
-        if err_perc >= 41.0:
-            line = ' $<$&{:<10} {:<2}'.format(intensity, andpercent)
+            #line =  line_start+'{:>15} \\\\'.format(intensity)
+            line =  '{:>15} \\\\'.format(intensity)
+    else: 
+        intensity = np.round(intensity, decimals=0)
+        error = np.round(error, decimals=0)
+        intensity = int(intensity)
+        error = int(error)
+        if err_perc <= 4.:
+                error = intensity * 0.072
+        if err_perc >= 41.:
+            #line =  line_start+'    {:>10}: {:<2}'.format(intensity, andpercent)
+            line =  '    {:>10}: {:<2}'.format(intensity, andpercent)
+            if intensity < 1:
+                line =  '  nd   {:<2}'.format(andpercent)
         else:  
-            line = '{:<6}$\pm$&{:<4} {:<2}'.format(intensity, error, andpercent)
+            #line =  line_start+'{:>6}$\pm${:<4} {:<2}'.format(intensity, error, andpercent)
+            line =  '{:>6}$\pm${:<4} {:<2}'.format(intensity, error, andpercent)
+            if error < 1:
+                line =  '{:>6}: {:<2}'.format(intensity, andpercent)
+            if intensity < 1:
+                line =  '  nd   {:<2}'.format(andpercent)
         if last is not None:
             if err_perc >= 41.0:
-                line = ' $<$&{:<10} \\\\'.format(intensity)
+                #line =  line_start+'   {:>10}:   \\\\'.format(intensity)
+                line =  '   {:>10}:   \\\\'.format(intensity)
             else:
-                line = '{:<6}$\pm$&{:<4} \\\\'.format(intensity, error)          
+                #line =  line_start+'{:>6}$\pm${:<4} \\\\'.format(intensity, error)          
+                line =  '{:>6}$\pm${:<4} \\\\'.format(intensity, error)          
     return line
 
 
 #### CODE
 
 refwav, IDs = read_lines4paper(lines4paper)
-all_wavs = []
 all_Is = []
 all_Iers = []
+all_flambda = []
  
 for object_number in range(len(objects_list)):
     # get the correct intensities file
     use_given_lineinfo = use_given_lineinfo_list[object_number]
-    if use_given_lineinfo:
-        file2use = '_measuredLI_RedCor_Ebv.txt'   # my manual line measurements
+    if CHbeta:
+        if use_given_lineinfo:
+            file2use = '_measuredLI_RedCor_CHbeta.txt'   # my manual line measurements
+        else:
+            file2use = '_RedCor_CHbeta.txt'   # my code's line measurements
     else:
-        file2use = '_RedCor_Ebv.txt'   # my code's line measurements
+        if use_given_lineinfo:
+            file2use = '_measuredLI_RedCor_Ebv.txt'   # my manual line measurements
+        else:
+            file2use = '_RedCor_Ebv.txt'   # my code's line measurements
     object_name = objects_list[object_number]
     measured_lines_file = 'carbon/results/'+object_name+'/'+object_name+file2use
     measured_lines_file_path_list = string.split(os.getcwd(), sep='carbon')
@@ -146,25 +171,30 @@ for object_number in range(len(objects_list)):
     found_wav = []
     found_I = []
     found_Ier = []
+    found_flambda = []
     for rw, rid in zip(refwav, IDs):
         i = -1.0
         ier = 0.0
+        fl = 0.0
         if rw in wav:
             idx = np.where( wav==rw )[0][0]
             if ele[idx] in rid:
                 i = np.round(I[idx], decimals=1)
                 ier = np.round(Ierr[idx], decimals=1)
+                fl = flambda[idx]
         # append the intensities and errors to a list for only this object
         found_wav.append(rw)
         found_I.append(i)
         found_Ier.append(ier)
+        found_flambda.append(fl)
         #print '{:<8} & {:<25} & {:>6}$\pm${:<4} &&'.format(int(rw), rid, i, ier)
     
     #print len(refwav), len(wav)
     
     # append the list of intensities of this object to the list of all objects
     all_Is.append(found_I)
-    all_Iers.append(found_Ier)      
+    all_Iers.append(found_Ier) 
+    all_flambda.append(found_flambda)
 
 #print len(refwav), len(all_Is[0]), len(all_Is[1]), len(all_Is[2]), len(all_Is[3]), len(all_Is[4]), len(all_Is[5])
 
@@ -174,15 +204,18 @@ tf = open(tout, 'w+')
 for idx, rw in enumerate(refwav):
     i1, i2, i3, i4, i5, i6 = all_Is[0][idx], all_Is[1][idx], all_Is[2][idx], all_Is[3][idx], all_Is[4][idx], all_Is[5][idx]
     ier1, ier2, ier3, ier4, ier5, ier6 = all_Iers[0][idx], all_Iers[1][idx], all_Iers[2][idx], all_Iers[3][idx], all_Iers[4][idx], all_Iers[5][idx]
-    line1 = find_mcnd(i1, ier1, obj_set)
-    line2 = find_mcnd(i2, ier2, obj_set)
-    line3 = find_mcnd(i3, ier3, obj_set)
-    line4 = find_mcnd(i4, ier4, obj_set)
-    line5 = find_mcnd(i5, ier5, obj_set)
-    line6 = find_mcnd(i6, ier6, obj_set, last=True)
-    rwid = '{:<8} & {:<25} &'.format(int(rw), IDs[idx])
+    fl1, fl2, fl3, fl4, fl5, fl6 = all_flambda[0][idx], all_flambda[1][idx], all_flambda[2][idx], all_flambda[3][idx], all_flambda[4][idx], all_flambda[5][idx]
+    line1 = find_mcnd(fl1, i1, ier1, obj_set)
+    line2 = find_mcnd(fl2, i2, ier2, obj_set)
+    line3 = find_mcnd(fl3, i3, ier3, obj_set)
+    line4 = find_mcnd(fl4, i4, ier4, obj_set)
+    line5 = find_mcnd(fl5, i5, ier5, obj_set)
+    line6 = find_mcnd(fl6, i6, ier6, obj_set, last=True)
+    #rwid = '{:<8} & {:<25} & '.format(int(rw), IDs[idx])
+    rwid = '{:<8} & {:<25} & {:>6.3f} && '.format(int(rw), IDs[idx], all_flambda[0][idx])
     print rwid, line1, line2, line3, line4, line5, line6
     print >> tf, rwid, line1, line2, line3, line4, line5, line6
+    #raw_input()
 tf.close()
  
 print 'This file contains the LaTeX table: ', tout
