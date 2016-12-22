@@ -1,6 +1,8 @@
 import numpy
 import os
 from science import spectrum
+import matplotlib
+from matplotlib import pyplot as plt
 
 ############################################################################################################################################
 
@@ -215,6 +217,55 @@ for d, s in zip(data, specs):
                                                                             wins2omit=zshift_wins2omit)
     wavs, fluxs = object_spectra
     _, cont_fluxs = fitted_continuum
+    '''
+    # Create the sub-plots
+    def mk_subplt(wavs, fluxs, xlims, lines, legends):
+        font = {#'family' : 'normal',
+                'weight' : 'normal',
+                'size'   : 16}
+        matplotlib.rc('font', **font)
+        fig = plt.figure(1, figsize=(12, 10))
+        xlab = 'Wavelength [$\AA$]'
+        ylab = 'Flux [ergs s$^{-1}$ cm$^{-2}$ $\AA^{-1}$]'
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        plt.minorticks_on()
+        yarr = fluxs[(wavs >= xlims[0]) & (wavs <= xlims[1])]
+        plt.xlim(xlims[0], xlims[1])
+        plt.ylim(min(yarr)+min(yarr)*0.25, max(yarr)+max(yarr)*0.35)
+        plt.plot(wavs, fluxs, 'k')#, wavs, cont_fluxs, 'r--')
+        # Annotate the points 5 _points_ above and to the left of the vertex
+        subxcoord, subycoord, side = 0, 85, 'center'
+        for line, leg in zip(lines, legends):
+            x, idx = spectrum.find_nearest(wavs, line)
+            y = fluxs[idx]
+            #plt.axvline(x=x, ymin=0.25, ymax=0.3, color='r')
+            vlinex, vliney = [x, x], [y+y*0.10, y+y*0.10+0.3e-15]
+            plt.plot(vlinex, vliney, 'r')
+            plt.annotate('{} {}'.format(leg, line), xy=(x,y), xytext=(subxcoord, subycoord), ha=side, 
+                         textcoords='offset points')
+        plt.show()    
+    if s == 0:
+        xlims = [1500.0, 2100.0]
+        lines = [1661, 1666, 1909]
+        legends = ['O III]', 'O III]', 'C III]']
+        mk_subplt(wavs, fluxs, xlims, lines, legends)
+    if s == 1:
+        xlims = [3700.0, 5100.0]
+        lines = [3727, 3869, 3967, 4069, 4076, 4102, 4340, 4363, 4861, 4959, 5007]
+        legends = ['[O II]', '[Ne III]', '[Ne III]', '[S II]', '[S II]', 'Hg', 'Hd', 
+                   '[O III]', 'Hb', '[O III]', '[O III]']
+        mk_subplt(wavs, fluxs, xlims, lines, legends)
+    if s == 2:
+        xlims = [6250.0, 6750.0]
+        lines = [6300, 6312, 6563, 6678, 6716]
+        legends = ['[O I]', '[S III]', 'Ha', 'He I', '[S II]']
+        mk_subplt(wavs, fluxs, xlims, lines, legends)
+        xlims = [9000.0, 9600.0]
+        lines = [9069, 9531]
+        legends = ['[S III]', '[S III]']
+        mk_subplt(wavs, fluxs, xlims, lines, legends)
+        '''
 
     if text_table == True:
         # Write text file of wavelengths, fluxes, and fitted continuum
