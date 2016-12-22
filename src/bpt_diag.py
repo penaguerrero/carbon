@@ -66,6 +66,7 @@ lop_bpt_linefile = '../cloudy_tests/pycloudy/BPT_TEST/BPTintensitiesLop09.txt'
 
 def get_measured_lines(object_name, manual_measurement):
     '''This function reads the line intensity files and returns ONLY the lines of interest.'''
+    #linesofinterest = [4363, 4861, 4959, 5007, 6563, 6312, 9069, 9531]   # temperature lines
     linesofinterest = [4861, 5007, 6563]
     # get the benchmark measurements
     if manual_measurement:
@@ -101,7 +102,12 @@ def get_measured_lines(object_name, manual_measurement):
             meas_Iper.append(float(cols[11]))
             meas_EW.append(float(cols[12]))
     meas.close()
-    #print 'meas_lineIDs, meas_Isrel2Hbeta', meas_lineIDs, meas_Isrel2Hbeta
+    print '\n', object_name
+    print meas_lineIDs
+    print meas_Isrel2Hbeta
+    print meas_Ierr
+    print meas_Iper
+    #raw_input()
     measured_lines = [meas_lineIDs, meas_Isrel2Hbeta, meas_Ierr, meas_Iper, meas_EW]
     return measured_lines
 
@@ -111,6 +117,9 @@ def get_measured_lines(object_name, manual_measurement):
 
 I4861, I5007, I6563 = np.array([]), np.array([]), np.array([])
 I4861err, I5007err, I6563err = np.array([]), np.array([]), np.array([])
+
+I4363, I4959, I9069, I9532, I6312 = np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
+I4363err, I4959err, I9069err, I9532err, I6312err = np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
 
 # get our STIS line intensities
 for object_number, object_name in enumerate(objects_list):
@@ -123,6 +132,19 @@ for object_number, object_name in enumerate(objects_list):
     I4861err = np.append(I4861err, meas_Ierr[0])
     I5007err = np.append(I5007err, meas_Ierr[1])
     I6563err = np.append(I6563err, meas_Ierr[2])
+    '''
+    # lines to calculate temperatures
+    I4363 = np.append(I4363, meas_Isrel2Hbeta[0])
+    I4959 = np.append(I4363, meas_Isrel2Hbeta[0])
+    I6312 = np.append(I6312, meas_Isrel2Hbeta[0])
+    I9069 = np.append(I9069, meas_Isrel2Hbeta[0])
+    I9532 = np.append(I9532, meas_Isrel2Hbeta[0])
+    I4363err = np.append(I4363err, meas_Isrel2Hbeta[1])
+    I4959err = np.append(I4959err, meas_Isrel2Hbeta[1])
+    I6312err = np.append(I6312err, meas_Isrel2Hbeta[1])
+    I9069err = np.append(I9069err, meas_Isrel2Hbeta[1])
+    I9532err = np.append(I9532err, meas_Isrel2Hbeta[1])
+    '''
     if object_name=='sbs1319':
         print I5007err[object_number], I5007err[object_number]/I5007[object_number]*100.
         I5007err[object_number] = I5007[object_number]*0.2
@@ -131,7 +153,15 @@ for object_number, object_name in enumerate(objects_list):
         print I5007err[object_number], I5007err[object_number]/I5007[object_number]*100.
         I5007err[object_number] = I5007[object_number]*0.15
         print I5007err[object_number]
-#print 'I5007err', I5007err
+    #print object_name
+    #print '\n Oxygen',
+    #print 'I4363', I4363, '   I4363err', I4363err
+    #print 'I4959', I4959, '   I4959err', I4959err
+    #print 'I5007', I5007, '   I5007err', I5007err
+    #print '\n Sulfur',
+    #print 'I6312', I6312, '   I6312err', I6312err
+    #print 'I9069', I9069, '   I9069err', I9069err
+    #print 'I9532', I9532, '   I9532err', I9532err, '\n'
 #print 'I6563err', I6563err
 
 # gel the BPT Lopez-Sanchez line intensitites
@@ -301,5 +331,7 @@ if save_plot:
     print 'Figure ', bptfig, ' saved!'
     
 plt.show()
+
+ 
 
 print '\n Done!'
