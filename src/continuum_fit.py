@@ -16,9 +16,9 @@ objects_list =['iiizw107', 'iras08339', 'mrk1087', 'mrk1199', 'mrk5', 'mrk960', 
 
 # Choose parameters to run script
 # Select a number from objects_list, i = :
-object_number = 1
+object_number = 2
 # use all 3 files for NUV, optical, and NIR? Type which ones to use: nuv=0, opt=1, nir=2
-specs = [2]
+specs = [1]
 # set commented parameters, choose options 0 through 3
 choose_conditions4textfiles = 3
 
@@ -217,7 +217,7 @@ for d, s in zip(data, specs):
                                                                             wins2omit=zshift_wins2omit)
     wavs, fluxs = object_spectra
     _, cont_fluxs = fitted_continuum
-    '''
+    
     # Create the sub-plots
     def mk_subplt(wavs, fluxs, xlims, lines, legends):
         font = {#'family' : 'normal',
@@ -265,7 +265,7 @@ for d, s in zip(data, specs):
         lines = [9069, 9531]
         legends = ['[S III]', '[S III]']
         mk_subplt(wavs, fluxs, xlims, lines, legends)
-        '''
+        
 
     if text_table == True:
         # Write text file of wavelengths, fluxes, and fitted continuum
